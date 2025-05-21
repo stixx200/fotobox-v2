@@ -10,7 +10,11 @@
       "executor": "@angular-devkit/build-angular:application",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/apps/fotobox-v2",
+        "outputPath": {
+          "base": "dist/apps/fotobox-v2",
+          "browser": ""
+        },
+        "baseHref": "./",
         "index": "apps/fotobox-v2/src/index.html",
         "browser": "apps/fotobox-v2/src/main.ts",
         "polyfills": ["zone.js"],
@@ -59,7 +63,10 @@
           "buildTarget": "fotobox-v2:build:development"
         }
       },
-      "defaultConfiguration": "development"
+      "defaultConfiguration": "development",
+      "options": {
+        "proxyConfig": "apps/fotobox-v2/proxy.conf.json"
+      }
     },
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n",
