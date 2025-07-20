@@ -1,0 +1,9 @@
+{
+  "name": "app-service",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nest/app-service/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project app-service --web",
+  "targets": {}
+}

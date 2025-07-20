@@ -16,19 +16,19 @@
 To run the dev server for your app, use:
 
 ```sh
-npx nx serve fotobox-v2
+npx nx serve fotobox-ui
 ```
 
 To create a production bundle:
 
 ```sh
-npx nx build fotobox-v2
+npx nx build fotobox-ui
 ```
 
 To see all available targets to run for a project, run:
 
 ```sh
-npx nx show project fotobox-v2
+npx nx show project fotobox-ui
 ```
 
 These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.

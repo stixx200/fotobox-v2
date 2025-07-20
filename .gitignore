@@ -4,6 +4,7 @@
 dist
 tmp
 out-tsc
+application.log
 
 # dependencies
 node_modules

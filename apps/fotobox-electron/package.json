@@ -1,0 +1,10 @@
+{
+  "name": "fotobox-electron",
+  "version": "1.0.0",
+  "description": "Fotobox",
+  "author": {
+    "name": "Markus Völk",
+    "email": "stixx200@gmail.com"
+  },
+  "main": "./main.js"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "nest-collage-maker",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nest/collage-maker/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project collage-maker --web",
+  "targets": {}
+}

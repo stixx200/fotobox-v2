@@ -3,59 +3,37 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/fotobox-electron/src",
   "projectType": "application",
+  "implicitDependencies": ["fotobox-ui"],
   "targets": {
-    "build": {
-      "executor": "nx-electron:build",
-      "outputs": ["{options.outputPath}"],
+    "serve": {
+      "executor": "@nx/js:node",
       "options": {
-        "outputPath": "dist/apps/fotobox-electron",
-        "main": "apps/fotobox-electron/src/main.ts",
-        "tsConfig": "apps/fotobox-electron/tsconfig.app.json",
-        "assets": ["apps/fotobox-electron/src/assets"]
+        "buildTarget": "fotobox-electron:build",
+        "inspect": false,
+        "runtimeArgs": [
+          "./apps/fotobox-electron/tools/serve-electron.mjs"
+        ],
+        "runBuildTargetDependencies": true
       },
       "configurations": {
         "production": {
-          "optimization": true,
-          "extractLicenses": true,
-          "inspect": false,
-          "fileReplacements": [
-            {
-              "replace": "apps/fotobox-electron/src/environments/environment.ts",
-              "with": "apps/fotobox-electron/src/environments/environment.prod.ts"
-            }
-          ]
+          "buildTarget": "fotobox-electron:build:production"
+        },
+        "development": {
+          "buildTarget": "fotobox-electron:build:development"
         }
-      }
-    },
-    "serve": {
-      "executor": "nx-electron:execute",
-      "options": {
-        "buildTarget": "fotobox-electron:build"
-      }
+      },
+      "defaultConfiguration": "production"
     },
     "package": {
       "executor": "nx-electron:package",
+      "dependsOn": ["build"],
       "options": {
         "name": "fotobox-electron",
-        "frontendProject": "fotobox-v2",
+        "frontendProject": "fotobox-ui",
         "sourcePath": "dist/apps",
         "outputPath": "dist/packages",
-        "prepackageOnly": true
-      }
-    },
-    "make": {
-      "executor": "nx-electron:make",
-      "options": {
-        "name": "fotobox-electron",
-        "frontendProject": "fotobox-v2",
-        "sourcePath": "dist/apps",
-        "outputPath": "dist/executables"
-      }
-    },
-    "lint": {
-      "executor": "@nx/eslint:lint",
-      "options": {
-        "lintFilePatterns": ["apps/fotobox-electron/**/*.ts"]
+        "platform": ["mac", "windows"]
       }
     }
   }

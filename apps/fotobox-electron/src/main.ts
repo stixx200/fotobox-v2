@@ -1,34 +1,26 @@
-import SquirrelEvents from './app/events/squirrel.events';
-import ElectronEvents from './app/events/electron.events';
-import UpdateEvents from './app/events/update.events';
-import { app, BrowserWindow } from 'electron';
-import App from './app/app';
+import { NestFactory } from '@nestjs/core';
+import { getLogger } from '@fotobox/logging';
+import { AppModule } from './app/app.module';
+import { AppService } from '@fotobox/nest-app-service';
+import { WinstonLoggerService } from '@fotobox/nest-logger';
 
-export default class Main {
-  static initialize() {
-    if (SquirrelEvents.handleEvents()) {
-      // squirrel event handled (except first run event) and app will exit in 1000ms, so don't do anything else
-      app.quit();
-    }
-  }
+const logger = getLogger();
 
-  static bootstrapApp() {
-    App.main(app, BrowserWindow);
-  }
+async function bootstrapApp() {
+  const app = await NestFactory.create(AppModule, {
+    logger: new WinstonLoggerService(),
+  });
+  const appService = app.get(AppService) as AppService;
+  appService.setApp(app);
 
-  static bootstrapAppEvents() {
-    ElectronEvents.bootstrapElectronEvents();
+  const globalPrefix = 'api';
+  app.setGlobalPrefix(globalPrefix);
 
-    // initialize auto updater service
-    if (!App.isDevelopmentMode()) {
-      // UpdateEvents.initAutoUpdateService();
-    }
-  }
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  logger.info(
+    `🚀 Application backend is running on: http://localhost:${port}/${globalPrefix}`
+  );
 }
 
-// handle setup events as quickly as possible
-Main.initialize();
-
-// bootstrap app
-Main.bootstrapApp();
-Main.bootstrapAppEvents();
+await bootstrapApp();
