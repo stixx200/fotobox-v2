@@ -1,13 +1,9 @@
-import { globalShortcut } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Observable, Subject } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { getLogger } from '@fotobox/logging';
-import { CameraInitConfiguration } from '../../../shared/init-configuration.interface';
-import { ClientProxy } from '../../client.proxy';
-import { PhotoHandler } from '../../photo.handler';
-import { ShutdownHandler } from '../../shutdown.handler';
+import { CameraInitConfiguration } from '@fotobox/cameras';
 import { CameraInterface } from '../camera.interface';
 
 const logger = getLogger('camera.demo');
@@ -16,8 +12,6 @@ const logger = getLogger('camera.demo');
  * Demo Camera
  */
 export class DemoCamera implements CameraInterface {
-  private photosaver: PhotoHandler;
-
   private liveViewSubject = new Subject<Buffer>();
   private picturesSubject = new Subject<Buffer>();
 
@@ -33,30 +27,15 @@ export class DemoCamera implements CameraInterface {
   /**
    * Initializes camera
    * @param {CameraInitConfiguration} config
-   * @param {{clientProxy: ClientProxy}} externals
    * @returns {Promise<void>}
    */
-  async init(
-    config: CameraInitConfiguration,
-    externals: {
-      clientProxy: ClientProxy;
-      shutdownHandler: ShutdownHandler;
-      photosaver: PhotoHandler;
-    }
-  ) {
-    this.photosaver = externals.photosaver;
-
-    globalShortcut.register('CmdOrCtrl+N', this.takePicture);
-  }
+  async init(config: CameraInitConfiguration) {}
 
   /**
    * Deinitializes camera
    * @returns {Promise<void>}
    */
-  async deinit() {
-    globalShortcut.unregister('CmdOrCtrl+N');
-    this.stopLiveView();
-  }
+  async deinit() {}
 
   /**
    * Takes a picture. The new picture is published via picture observer
@@ -89,21 +68,8 @@ export class DemoCamera implements CameraInterface {
    * Observes the live view.
    * @returns {Observable<Buffer>}
    */
-  observePictures(): Observable<string> {
+  observePictures(): Observable<Buffer> {
     logger.info('Observe pictures');
-    return this.picturesSubject.pipe(
-      switchMap((buffer: Buffer) => {
-        return this.photosaver.saveBinaryCollage(buffer, '.jpg');
-      })
-    );
-  }
-
-  /**
-   * Stops live view.
-   * @returns {Observable<string>}
-   */
-  stopLiveView() {
-    logger.info('Stop live view');
-    clearInterval(this.liveViewTimer);
+    return this.picturesSubject;
   }
 }

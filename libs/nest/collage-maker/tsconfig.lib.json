@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "module": "ES2022",
     "declaration": true,
     "outDir": "../../dist/libs/collage-maker"
   },

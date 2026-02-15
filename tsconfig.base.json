@@ -23,8 +23,11 @@
       "@fotobox/error": ["libs/error/src/index.ts"],
       "@fotobox/logging": ["libs/logging/src/index.ts"],
       "@fotobox/nest-app-service": ["libs/nest/app-service/src/index.ts"],
+      "@fotobox/nest-cameras-api": ["libs/nest/cameras-api/src/index.ts"],
       "@fotobox/nest-collage-maker": ["libs/nest/collage-maker/src/index.ts"],
-      "@fotobox/nest-logger": ["libs/nest/logger/src/index.ts"]
+      "@fotobox/nest-graphql": ["libs/nest/graphql/src/index.ts"],
+      "@fotobox/nest-logger": ["libs/nest/logger/src/index.ts"],
+      "@fotobox/nest-settings": ["libs/nest/settings/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

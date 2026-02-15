@@ -1,6 +1,7 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge } from 'electron';
 
+// Minimal preload script - GraphQL communication is now used instead of IPC
+// Only platform information is exposed as it's not available in the renderer
 contextBridge.exposeInMainWorld('electron', {
-  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   platform: process.platform,
 });

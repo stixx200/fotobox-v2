@@ -17,11 +17,12 @@ const cameras = {
   demo: DemoCamera,
 };
 
-const getCamera = (cameraDriver: string): CameraInterface => {
+const getCamera = (cameraDriver: keyof typeof cameras): CameraInterface => {
   if (!cameras[cameraDriver]) {
     throw new Error(`Driver '${cameraDriver}' not available.`);
   }
-  return new cameras[cameraDriver]();
+  const CameraClass = cameras[cameraDriver];
+  return new CameraClass();
 };
 
 export class CameraProvider {

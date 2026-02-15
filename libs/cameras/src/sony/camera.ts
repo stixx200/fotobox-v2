@@ -1,13 +1,11 @@
 import * as http from 'http';
 import { ClientRequest, IncomingMessage } from 'http';
-import * as _ from 'lodash';
 import { Observable, Observer, Subject } from 'rxjs';
 import axios from 'axios';
 import { parseString as xml2jsParseString } from 'xml2js';
 import { promisify } from 'util';
 import { getLogger } from '@fotobox/logging';
-import { FotoboxError } from '../../error/fotoboxError';
-import { ShutdownHandler } from '../../shutdown.handler';
+import { FotoboxError } from '@fotobox/error';
 import { CameraProxy } from './camera.proxy';
 import { LiveStreamParser } from './liveStream.parser';
 
@@ -21,14 +19,12 @@ export class SonyCameraCommunication {
 
   public pictureUrl$ = new Subject<string>();
   private cameraProxy: CameraProxy;
-  private shutdownHandler: ShutdownHandler;
   private liveviewRequest: ClientRequest;
   private statusObservation = false;
 
   constructor(private descriptionUrl: string) {}
 
-  async init({ shutdownHandler }: { shutdownHandler: ShutdownHandler }) {
-    this.shutdownHandler = shutdownHandler;
+  async init() {
     const response = await axios.get(this.descriptionUrl);
     const description = await parseString(response.data);
 
@@ -67,6 +63,11 @@ export class SonyCameraCommunication {
       '1.0'
     );
     this.pictureUrl$.next(results[0]);
+  }
+
+  observePictures(): Observable<string> {
+    logger.info('Observe pictures');
+    return this.pictureUrl$;
   }
 
   observeLiveView(): Observable<Buffer> {
