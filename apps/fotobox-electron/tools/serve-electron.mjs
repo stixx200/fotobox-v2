@@ -1,11 +1,9 @@
-import {spawn} from 'node:child_process';
-import {once} from 'node:events';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import * as inspector from 'node:inspector';
 import pathToElectron from 'electron';
 
-const processArgs = [
-  ...process.argv.slice(2),
-];
+const processArgs = [...process.argv.slice(2)];
 const inspectorUrl = inspector.url();
 if (inspectorUrl) {
   inspector.close();

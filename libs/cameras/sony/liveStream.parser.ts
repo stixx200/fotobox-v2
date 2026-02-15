@@ -1,7 +1,8 @@
-import * as _ from "lodash";
-import { Observer } from "rxjs";
+import * as _ from 'lodash';
+import { Observer } from 'rxjs';
+import { getLogger } from '@fotobox/logging';
 
-const logger = require("logger-winston").getLogger("camera.sony.livestreamparser");
+const logger = getLogger('camera.sony.livestreamparser');
 
 enum RECEIVING_TYPE {
   commonHeader,
@@ -11,10 +12,14 @@ enum RECEIVING_TYPE {
 }
 
 const typeToLength = {
-  [RECEIVING_TYPE.commonHeader]: (paddingSize: number, payloadSize: number) => 8,
-  [RECEIVING_TYPE.payloadHeader]: (paddingSize: number, payloadSize: number) => 128,
-  [RECEIVING_TYPE.jpegData]: (paddingSize: number, payloadSize: number) => paddingSize + payloadSize,
-  [RECEIVING_TYPE.frameData]: (paddingSize: number, payloadSize: number) => 16 + paddingSize,
+  [RECEIVING_TYPE.commonHeader]: (paddingSize: number, payloadSize: number) =>
+    8,
+  [RECEIVING_TYPE.payloadHeader]: (paddingSize: number, payloadSize: number) =>
+    128,
+  [RECEIVING_TYPE.jpegData]: (paddingSize: number, payloadSize: number) =>
+    paddingSize + payloadSize,
+  [RECEIVING_TYPE.frameData]: (paddingSize: number, payloadSize: number) =>
+    16 + paddingSize,
 };
 
 class ReceivingInfo {
@@ -31,12 +36,20 @@ class ReceivingInfo {
       payloadSize?: number;
       frameCount?: number;
       frameSize?: number;
-    } = {},
+    } = {}
   ) {
-    this.payloadType = _.isNil(data.payloadType) ? this.payloadType : data.payloadType;
-    this.paddingSize = _.isNil(data.paddingSize) ? this.paddingSize : data.paddingSize;
-    this.payloadSize = _.isNil(data.payloadSize) ? this.payloadSize : data.payloadSize;
-    this.frameCount = _.isNil(data.frameCount) ? this.frameCount : data.frameCount;
+    this.payloadType = _.isNil(data.payloadType)
+      ? this.payloadType
+      : data.payloadType;
+    this.paddingSize = _.isNil(data.paddingSize)
+      ? this.paddingSize
+      : data.paddingSize;
+    this.payloadSize = _.isNil(data.payloadSize)
+      ? this.payloadSize
+      : data.payloadSize;
+    this.frameCount = _.isNil(data.frameCount)
+      ? this.frameCount
+      : data.frameCount;
     this.frameSize = _.isNil(data.frameSize) ? this.frameSize : data.frameSize;
   }
 }
@@ -48,23 +61,33 @@ export class LiveStreamParser {
 
   constructor(private observer: Observer<Buffer>) {}
 
-  private reset(receivingType: RECEIVING_TYPE, bufferOverlap: Buffer, receivingInfo?: ReceivingInfo) {
+  private reset(
+    receivingType: RECEIVING_TYPE,
+    bufferOverlap: Buffer,
+    receivingInfo?: ReceivingInfo
+  ) {
     this.receivingType = receivingType;
     this.buffer = bufferOverlap;
     this.receivingInfo = receivingInfo || new ReceivingInfo();
   }
 
   onNewChunk(data?: Buffer) {
-    logger.silly("\nreceived new chunk:");
+    logger.silly('\nreceived new chunk:');
 
     // if new data is provided, add it to buffer
     if (data) {
-      this.buffer = Buffer.concat([this.buffer, data], this.buffer.length + data.length);
+      this.buffer = Buffer.concat(
+        [this.buffer, data],
+        this.buffer.length + data.length
+      );
     }
     // skip if not enough data are available
     if (
       this.buffer.length <
-      typeToLength[this.receivingType](this.receivingInfo.paddingSize, this.receivingInfo.payloadSize)
+      typeToLength[this.receivingType](
+        this.receivingInfo.paddingSize,
+        this.receivingInfo.payloadSize
+      )
     ) {
       return;
     }
@@ -86,28 +109,37 @@ export class LiveStreamParser {
 
     if (
       this.buffer.length >=
-      typeToLength[this.receivingType](this.receivingInfo.paddingSize, this.receivingInfo.payloadSize)
+      typeToLength[this.receivingType](
+        this.receivingInfo.paddingSize,
+        this.receivingInfo.payloadSize
+      )
     ) {
       this.onNewChunk();
     }
   }
 
   private parseCommonHeader() {
-    const receivingInfo = new ReceivingInfo({ payloadType: this.buffer.readInt8(1) });
-    this.reset(RECEIVING_TYPE.payloadHeader, this.buffer.slice(8), receivingInfo);
+    const receivingInfo = new ReceivingInfo({
+      payloadType: this.buffer.readInt8(1),
+    });
+    this.reset(
+      RECEIVING_TYPE.payloadHeader,
+      this.buffer.slice(8),
+      receivingInfo
+    );
   }
 
   private parsePayloadHeader() {
     // check verification point
     if (
       !(
-        this.buffer.readInt8(8).toString(16) !== "0x24" &&
-        this.buffer.readInt8(9).toString(16) !== "0x35" &&
-        this.buffer.readInt8(10).toString(16) !== "0x68" &&
-        this.buffer.readInt8(11).toString(16) !== "0x79"
+        this.buffer.readInt8(8).toString(16) !== '0x24' &&
+        this.buffer.readInt8(9).toString(16) !== '0x35' &&
+        this.buffer.readInt8(10).toString(16) !== '0x68' &&
+        this.buffer.readInt8(11).toString(16) !== '0x79'
       )
     ) {
-      throw new Error("Payload header start not detected");
+      throw new Error('Payload header start not detected');
     }
 
     const receivingInfo = new ReceivingInfo({
@@ -117,11 +149,19 @@ export class LiveStreamParser {
 
     if (this.receivingInfo.payloadType === 1) {
       // no interesting information
-      this.reset(RECEIVING_TYPE.jpegData, this.buffer.slice(128), receivingInfo);
+      this.reset(
+        RECEIVING_TYPE.jpegData,
+        this.buffer.slice(128),
+        receivingInfo
+      );
     } else if (this.receivingInfo.payloadType === 2) {
       receivingInfo.frameCount = this.buffer.readIntBE(10, 2);
       receivingInfo.frameSize = this.buffer.readIntBE(12, 2);
-      this.reset(RECEIVING_TYPE.frameData, this.buffer.slice(128), receivingInfo);
+      this.reset(
+        RECEIVING_TYPE.frameData,
+        this.buffer.slice(128),
+        receivingInfo
+      );
     } else {
       throw new Error(`Payloadtype unknown: ${this.receivingInfo.payloadType}`);
     }
@@ -131,19 +171,30 @@ export class LiveStreamParser {
     this.observer.next(this.buffer.slice(0, this.receivingInfo.payloadSize));
     this.reset(
       RECEIVING_TYPE.commonHeader,
-      this.buffer.slice(this.receivingInfo.payloadSize + this.receivingInfo.paddingSize),
-      null,
+      this.buffer.slice(
+        this.receivingInfo.payloadSize + this.receivingInfo.paddingSize
+      ),
+      null
     );
   }
 
   private parseFrameData() {
-    const packageSize = this.receivingInfo.payloadSize + this.receivingInfo.paddingSize;
+    const packageSize =
+      this.receivingInfo.payloadSize + this.receivingInfo.paddingSize;
 
     if (this.receivingInfo.frameCount === 1) {
-      this.reset(RECEIVING_TYPE.commonHeader, this.buffer.slice(packageSize), null);
+      this.reset(
+        RECEIVING_TYPE.commonHeader,
+        this.buffer.slice(packageSize),
+        null
+      );
     } else {
       this.receivingInfo.frameCount = this.receivingInfo.frameCount - 1;
-      this.reset(RECEIVING_TYPE.frameData, this.buffer.slice(packageSize), this.receivingInfo);
+      this.reset(
+        RECEIVING_TYPE.frameData,
+        this.buffer.slice(packageSize),
+        this.receivingInfo
+      );
     }
   }
 }

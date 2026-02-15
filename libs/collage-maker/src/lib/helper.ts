@@ -1,6 +1,10 @@
-import { Border } from "./template.interface";
+import { Border } from './template.interface';
 
-export function calculateWidthHeight(width: number, height: number, border?: Border) {
+export function calculateWidthHeight(
+  width: number,
+  height: number,
+  border?: Border
+) {
   let w = width;
   let h = height;
   if (border) {

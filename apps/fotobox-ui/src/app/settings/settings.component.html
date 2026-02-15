@@ -5,14 +5,20 @@
   <div class="settings-row">
     <button matButton="outlined">Fotobox starten</button>
   </div>
-    <mat-checkbox class="settings-row" formControlName="usePrinter">Drucker aktivieren</mat-checkbox>
+  <mat-checkbox class="settings-row" formControlName="usePrinter"
+    >Drucker aktivieren</mat-checkbox
+  >
 
   <mat-form-field floatLabel="always" class="settings-row">
     <mat-label>Auslösezeit</mat-label>
-    <input matInput type="number" placeholder="0" formControlName="shutterTimeout" />
+    <input
+      matInput
+      type="number"
+      placeholder="0"
+      formControlName="shutterTimeout"
+    />
     <span matTextSuffix>s</span>
   </mat-form-field>
-
 
   <mat-form-field floatLabel="always">
     <mat-label>Drucker</mat-label>
@@ -23,25 +29,29 @@
   </mat-form-field>
 
   <mat-form-field>
-    <input (click)="openPicker($event.target)"
-           formControlName="photoDirectory"
-           class="input"
-           matInput
-           placeholder="Speicherort für Fotos"/>
+    <input
+      (click)="openPicker($event.target)"
+      formControlName="photoDirectory"
+      class="input"
+      matInput
+      placeholder="Speicherort für Fotos"
+    />
   </mat-form-field>
   <mat-form-field>
-    <input (click)="openPicker($event.target)"
-           formControlName="photoDirectory"
-           class="input"
-           matInput
-           placeholder="Ordner Collage-Vorlagen"/>
+    <input
+      (click)="openPicker($event.target)"
+      formControlName="photoDirectory"
+      class="input"
+      matInput
+      placeholder="Ordner Collage-Vorlagen"
+    />
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Layouts</mat-label>
     <mat-select formControlName="layouts" multiple>
       @for (layout of layouts; track layout) {
-        <mat-option [value]="layout">{{layout}}</mat-option>
+      <mat-option [value]="layout">{{ layout }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
@@ -50,7 +60,7 @@
     <mat-label>Kamera</mat-label>
     <mat-select formControlName="camera">
       @for (camera of cameras; track camera) {
-        <mat-option [value]="camera">{{camera}}</mat-option>
+      <mat-option [value]="camera">{{ camera }}</mat-option>
       }
     </mat-select>
   </mat-form-field>

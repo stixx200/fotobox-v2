@@ -10,9 +10,7 @@
       "options": {
         "buildTarget": "fotobox-electron:build",
         "inspect": false,
-        "runtimeArgs": [
-          "./apps/fotobox-electron/tools/serve-electron.mjs"
-        ],
+        "runtimeArgs": ["./apps/fotobox-electron/tools/serve-electron.mjs"],
         "runBuildTargetDependencies": true
       },
       "configurations": {

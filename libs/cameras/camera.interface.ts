@@ -1,12 +1,12 @@
-import { Observable } from "rxjs";
-import { CameraInitConfiguration } from "../../shared/init-configuration.interface";
-import { ClientProxy } from "../client.proxy";
-import { PhotoHandler } from "../photo.handler";
+import { Observable } from 'rxjs';
+import { CameraInitConfiguration } from '../../shared/init-configuration.interface';
+import { ClientProxy } from '../client.proxy';
+import { PhotoHandler } from '../photo.handler';
 
 export interface CameraInterface {
   init(
     initConfig: CameraInitConfiguration,
-    externals: { clientProxy: ClientProxy; photosaver: PhotoHandler },
+    externals: { clientProxy: ClientProxy; photosaver: PhotoHandler }
   ): Promise<void>;
 
   deinit(): Promise<void>;

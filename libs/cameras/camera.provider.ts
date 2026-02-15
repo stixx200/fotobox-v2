@@ -1,15 +1,16 @@
-import { ipcMain } from "electron";
-import { Subscription } from "rxjs";
-import { TOPICS } from "../../shared/constants";
-import { CameraProviderInitConfig } from "../../shared/init-configuration.interface";
-import { ClientProxy } from "../client.proxy";
-import { PhotoHandler } from "../photo.handler";
-import { ShutdownHandler } from "../shutdown.handler";
-import { CameraInterface } from "./camera.interface";
-import { DemoCamera } from "./demo";
-import { SonyCamera } from "./sony";
+import { ipcMain } from 'electron';
+import { Subscription } from 'rxjs';
+import { getLogger } from '@fotobox/logging';
+import { TOPICS } from '../../shared/constants';
+import { CameraProviderInitConfig } from '../../shared/init-configuration.interface';
+import { ClientProxy } from '../client.proxy';
+import { PhotoHandler } from '../photo.handler';
+import { ShutdownHandler } from '../shutdown.handler';
+import { CameraInterface } from './camera.interface';
+import { DemoCamera } from './demo';
+import { SonyCamera } from './sony';
 
-const logger = require("logger-winston").getLogger("camera.provider");
+const logger = getLogger('camera.provider');
 
 const cameras = {
   sony: SonyCamera,
@@ -39,7 +40,11 @@ export class CameraProvider {
 
   async init(
     config: CameraProviderInitConfig,
-    externals: { clientProxy: ClientProxy; shutdownHandler: ShutdownHandler; photosaver: PhotoHandler },
+    externals: {
+      clientProxy: ClientProxy;
+      shutdownHandler: ShutdownHandler;
+      photosaver: PhotoHandler;
+    }
   ) {
     this.client = externals.clientProxy;
 
@@ -77,13 +82,15 @@ export class CameraProvider {
   startLiveViewObserving() {
     // don't start live view twice
     if (this.liveViewSubscription) {
-      logger.warn("LiveViewObserving started twice. Ignore last call.");
+      logger.warn('LiveViewObserving started twice. Ignore last call.');
       return;
     }
 
-    this.liveViewSubscription = this.camera.observeLiveView().subscribe((data: any) => {
-      this.client.send(TOPICS.LIVEVIEW_DATA, data);
-    });
+    this.liveViewSubscription = this.camera
+      .observeLiveView()
+      .subscribe((data: any) => {
+        this.client.send(TOPICS.LIVEVIEW_DATA, data);
+      });
   }
 
   takePicture() {

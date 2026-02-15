@@ -1,15 +1,16 @@
-import { globalShortcut } from "electron";
-import * as fs from "fs";
-import * as path from "path";
-import { Observable, Subject } from "rxjs";
-import { switchMap } from "rxjs/operators";
-import { CameraInitConfiguration } from "../../../shared/init-configuration.interface";
-import { ClientProxy } from "../../client.proxy";
-import { PhotoHandler } from "../../photo.handler";
-import {ShutdownHandler}'../../shutdown.handler'ndler";
-import {CameraInterface}'../camera.interface'rface";
+import { globalShortcut } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Observable, Subject } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { getLogger } from '@fotobox/logging';
+import { CameraInitConfiguration } from '../../../shared/init-configuration.interface';
+import { ClientProxy } from '../../client.proxy';
+import { PhotoHandler } from '../../photo.handler';
+import { ShutdownHandler } from '../../shutdown.handler';
+import { CameraInterface } from '../camera.interface';
 
-const logger = require("logger-winston").getLogger("camera.demo");
+const logger = getLogger('camera.demo');
 
 /**
  * Demo Camera
@@ -20,8 +21,8 @@ export class DemoCamera implements CameraInterface {
   private liveViewSubject = new Subject<Buffer>();
   private picturesSubject = new Subject<Buffer>();
 
-  private giraffe = fs.readFileSync(path.join(__dirname, "giraffe.jpg"));
-  private rabbit = fs.readFileSync(path.join(__dirname, "rabbit.jpg"));
+  private giraffe = fs.readFileSync(path.join(__dirname, 'giraffe.jpg'));
+  private rabbit = fs.readFileSync(path.join(__dirname, 'rabbit.jpg'));
   private currentPicture = this.rabbit;
   private liveViewTimer: any;
 
@@ -37,11 +38,15 @@ export class DemoCamera implements CameraInterface {
    */
   async init(
     config: CameraInitConfiguration,
-    externals: { clientProxy: ClientProxy; shutdownHandler: ShutdownHandler; photosaver: PhotoHandler },
+    externals: {
+      clientProxy: ClientProxy;
+      shutdownHandler: ShutdownHandler;
+      photosaver: PhotoHandler;
+    }
   ) {
     this.photosaver = externals.photosaver;
 
-    globalShortcut.register("CmdOrCtrl+N", this.takePicture);
+    globalShortcut.register('CmdOrCtrl+N', this.takePicture);
   }
 
   /**
@@ -89,7 +94,7 @@ export class DemoCamera implements CameraInterface {
     return this.picturesSubject.pipe(
       switchMap((buffer: Buffer) => {
         return this.photosaver.saveBinaryCollage(buffer, '.jpg');
-      }),
+      })
     );
   }
 
