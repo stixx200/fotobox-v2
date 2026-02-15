@@ -33,7 +33,7 @@ import { MatButton } from '@angular/material/button';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
-  protected readonly settingsForm = new FormGroup(
+  readonly settingsForm = new FormGroup(
     {
       shutterTimeout: new FormControl(5),
       usePrinter: new FormControl(true),

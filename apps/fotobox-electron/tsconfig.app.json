@@ -3,12 +3,11 @@
   "compilerOptions": {
     "outDir": "../../../../dist/out-tsc",
     "types": ["node"],
-    "module": "ESNext",
+    "module": "esnext"
   },
   "exclude": [
     "**/*.spec.ts",
     "**/*.test.ts",
-    "jest.config.ts",
     "src/**/*.spec.ts",
     "src/**/*.test.ts",
     "vite.config.ts",

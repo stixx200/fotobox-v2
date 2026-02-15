@@ -19,18 +19,22 @@ export class CollageMakerService {
   } | null>(null);
 
   private collage$ = this.cache$.pipe(
-    switchMap(async (cache) => {
-      if (cache === null) {
-        return of(Buffer.from(''));
+    switchMap(
+      async (
+        cache: { template: TemplateInterface; photos: string[] } | null
+      ) => {
+        if (cache === null) {
+          return of(Buffer.from(''));
+        }
+        const maker = new CollageMaker({ photoDir: this.photoDirectory });
+        const output = await maker.createCollage(cache.template, cache.photos);
+        return {
+          data: output,
+          done: maker.getPhotoCount(cache.template) >= cache.photos.length,
+        };
       }
-      const maker = new CollageMaker({ photoDir: this.photoDirectory });
-      const output = await maker.createCollage(cache.template, cache.photos);
-      return {
-        data: output,
-        done: maker.getPhotoCount(cache.template) >= cache.photos.length,
-      };
-    }),
-    catchError((error) => {
+    ),
+    catchError((error: Error) => {
       throw new FotoboxError(`Error creating collage: ${error.message}`, {
         code: 'MAIN.COLLAGE-MAKER.CREATION_ERROR',
       });

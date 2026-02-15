@@ -1,8 +1,15 @@
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 const { NxAppRspackPlugin } = require('@nx/rspack/app-plugin');
 const devkit = require('@nx/devkit');
-const { join } = require('path');
 
-module.exports = {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export default {
   output: {
     path: join(__dirname, '../../dist/apps/fotobox-electron'),
   },
