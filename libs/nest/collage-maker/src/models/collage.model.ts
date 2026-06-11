@@ -42,6 +42,18 @@ export class CollageOutput {
   done!: boolean;
 }
 
+@ObjectType()
+export class CollageResult {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  path!: string;
+
+  @Field(() => String)
+  timestamp!: string;
+}
+
 @InputType()
 export class CreateCollageInput {
   @Field(() => String)

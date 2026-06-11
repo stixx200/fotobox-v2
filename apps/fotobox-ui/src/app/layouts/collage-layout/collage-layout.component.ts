@@ -1,140 +1,215 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  OnDestroy,
+  effect,
+  signal,
+  computed,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SettingsStore, CameraStore } from '../../store';
 import { CameraLiveViewComponent } from '../../components/camera-live-view/camera-live-view.component';
+import { CountdownComponent } from '../../components/countdown/countdown.component';
+import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
+import { CollageService } from '../../services/collage.service';
+import { getPhotoUrl } from '../../api-config';
 
 @Component({
   selector: 'app-collage-layout',
   standalone: true,
   imports: [
     CommonModule,
-    MatButtonModule,
-    MatIconModule,
     CameraLiveViewComponent,
+    CountdownComponent,
+    PhotoViewComponent,
   ],
   templateUrl: './collage-layout.component.html',
   styleUrl: './collage-layout.component.scss',
 })
-export class CollageLayoutComponent implements OnInit {
+export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
+  private readonly collageService = inject(CollageService);
 
-  photos: string[] = [];
-  collagePhoto: string | null = null;
-  countdown: number | null = null;
-  countdownInterval: any = null;
-  currentPhotoIndex = 0;
-  totalPhotos = 4; // Default number of photos for collage
+  private readonly liveView = viewChild(CameraLiveViewComponent);
+  private readonly countdownRef = viewChild(CountdownComponent);
 
-  ngOnInit(): void {
-    // Check if camera is loaded, redirect to settings if not
-    this.validateCameraAndRedirect();
+  /** Display URLs of the photos captured so far. */
+  readonly photos = signal<string[]>([]);
+  readonly requiredPhotos = signal<number>(4);
+  readonly collagePhoto = signal<string | null>(null);
+  readonly capturing = signal(false);
+  readonly building = signal(false);
+
+  private templateId = 'Collage';
+  private collageDirectory?: string;
+
+  /** True while we expect a freshly captured photo to arrive in the store. */
+  private awaitingPicture = false;
+  private lastProcessedPath: string | null = null;
+
+  readonly showPrint = computed(() => this.usePrinter());
+
+  readonly isCollageComplete = computed(
+    () => this.photos().length >= this.requiredPhotos(),
+  );
+
+  readonly emptySlots = computed(() => {
+    const remaining = this.requiredPhotos() - this.photos().length;
+    return remaining > 0
+      ? Array(remaining)
+          .fill(0)
+          .map((_, i) => i)
+      : [];
+  });
+
+  readonly topMessage = computed(() => {
+    if (this.building()) {
+      return 'Collage wird erstellt...';
+    }
+    return `Foto ${this.photos().length + 1} von ${this.requiredPhotos()} - Berühren um Foto zu machen`;
+  });
+
+  constructor() {
+    // Process each freshly captured photo as it arrives in the store.
+    effect(() => {
+      const picture = this.cameraStore.lastPicture();
+      if (
+        picture &&
+        this.awaitingPicture &&
+        picture.path !== this.lastProcessedPath
+      ) {
+        this.lastProcessedPath = picture.path;
+        this.awaitingPicture = false;
+        this.onPhotoCaptured(picture.path);
+      }
+    });
   }
 
-  private validateCameraAndRedirect(): void {
+  ngOnInit(): void {
+    if (!this.validateCamera()) {
+      return;
+    }
+
+    this.templateId =
+      this.route.snapshot.queryParamMap.get('template') ?? 'Collage';
+    this.collageDirectory = this.readSetting<string>('collageDirectory');
+
+    // Resolve how many photos this template needs.
+    this.collageService
+      .getRequiredPhotoCount(this.templateId, this.collageDirectory)
+      .subscribe({
+        next: (count) => {
+          if (count > 0) {
+            this.requiredPhotos.set(count);
+          }
+        },
+      });
+
+    // Start a fresh collage on the backend.
+    this.collageService.startCollage(this.templateId).subscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.countdownRef()?.abort();
+  }
+
+  private validateCamera(): boolean {
     const currentCamera = this.cameraStore.currentCamera();
     if (
       !currentCamera ||
       currentCamera.driver === 'none' ||
       !currentCamera.available
     ) {
-      console.warn(
-        '[CollageLayoutComponent] No camera loaded, redirecting to settings',
-      );
-      this.router.navigate(['/settings']).catch((err) => {
-        console.error('Navigation to settings failed:', err);
-      });
+      this.router.navigate(['/settings']);
+      return false;
+    }
+    return true;
+  }
+
+  private readSetting<T>(key: string): T | undefined {
+    const setting = this.settingsStore.settings().find((s) => s.key === key);
+    if (!setting) {
+      return undefined;
+    }
+    try {
+      return JSON.parse(setting.value) as T;
+    } catch {
+      return undefined;
     }
   }
 
-  get currentPhoto(): string | null {
-    if (this.photos.length > 0 && this.currentPhotoIndex < this.photos.length) {
-      return this.photos[this.currentPhotoIndex];
-    }
-    return null;
+  private usePrinter(): boolean {
+    return this.readSetting<boolean>('usePrinter') !== false;
   }
 
-  get isCollageComplete(): boolean {
-    return this.photos.length >= this.totalPhotos;
+  private shutterTimeout(): number {
+    return this.readSetting<number>('shutterTimeout') ?? 3;
   }
 
-  get emptySlots(): number[] {
-    const remaining = this.totalPhotos - this.photos.length;
-    return Array(remaining)
-      .fill(0)
-      .map((_, i) => i);
-  }
-
-  get topMessage(): string {
-    if (this.isCollageComplete) {
-      return 'Collage wird erstellt...';
-    }
-    return `Foto ${this.photos.length + 1} von ${this.totalPhotos} - Berühren um Foto zu machen`;
-  }
-
-  takePicture() {
+  takePicture(): void {
     if (
-      this.collagePhoto ||
-      this.countdown !== null ||
-      this.isCollageComplete
+      this.collagePhoto() ||
+      this.building() ||
+      this.capturing() ||
+      this.countdownRef()?.isRunning ||
+      this.isCollageComplete()
     ) {
-      return; // Already showing collage or taking a picture
+      return;
     }
+    this.countdownRef()?.start(this.shutterTimeout());
+  }
 
-    // Get shutter timeout from settings
-    const settings = this.settingsStore.settings();
-    const shutterTimeoutSetting = settings.find(
-      (s) => s.key === 'shutterTimeout',
-    );
-    const shutterTimeout = shutterTimeoutSetting
-      ? JSON.parse(shutterTimeoutSetting.value)
-      : 3;
+  onCountdownComplete(): void {
+    this.capturing.set(true);
+    this.awaitingPicture = true;
 
-    // Start countdown
-    this.countdown = shutterTimeout;
-    this.countdownInterval = setInterval(() => {
-      if (this.countdown !== null && this.countdown > 0) {
-        this.countdown--;
+    if (this.cameraStore.isClientCamera()) {
+      const frame = this.liveView()?.captureFrame();
+      if (frame) {
+        this.cameraStore.uploadPhoto(frame);
       } else {
-        this.finishCountdown();
+        this.awaitingPicture = false;
+        this.capturing.set(false);
       }
-    }, 1000);
-  }
-
-  finishCountdown() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-      this.countdownInterval = null;
-    }
-    this.countdown = null;
-
-    // TODO: Call camera API to take actual photo
-    // For now, simulate a photo
-    this.photos.push(`/singlelayout.preview.jpg`);
-
-    if (this.isCollageComplete) {
-      // Create collage after delay
-      setTimeout(() => {
-        this.createCollage();
-      }, 1000);
+    } else {
+      this.cameraStore.takePicture();
     }
   }
 
-  createCollage() {
-    // TODO: Call collage maker API
-    this.collagePhoto = '/collagelayout.preview.jpg';
+  private onPhotoCaptured(path: string): void {
+    this.capturing.set(false);
+
+    // The collage maker expects a filename relative to the photo directory.
+    const filename = path.split('/').pop() ?? path;
+
+    this.photos.update((photos) => [...photos, getPhotoUrl(path)]);
+
+    this.collageService.addPhotoToCollage(filename).subscribe({
+      next: () => {
+        if (this.isCollageComplete()) {
+          this.finalizeCollage();
+        }
+      },
+    });
   }
 
-  abortCountdown() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-      this.countdownInterval = null;
-    }
-    this.countdown = null;
+  private finalizeCollage(): void {
+    this.building.set(true);
+    this.collageService.finalizeCollage().subscribe({
+      next: (result) => {
+        this.building.set(false);
+        this.collagePhoto.set(getPhotoUrl(result.path));
+      },
+      error: () => {
+        this.building.set(false);
+      },
+    });
   }
 
   get isOnlyLayoutActive(): boolean {
@@ -142,20 +217,22 @@ export class CollageLayoutComponent implements OnInit {
     return layouts.length === 1 && layouts[0] === 'Collage';
   }
 
-  reset() {
-    this.abortCountdown();
-    this.photos = [];
-    this.collagePhoto = null;
-    this.currentPhotoIndex = 0;
-  }
-
-  print() {
-    // TODO: Call print API
-    console.log('Print collage:', this.collagePhoto);
+  print(): void {
+    // Printing is wired in Phase 4; for now return home.
     this.exitToHome();
   }
 
-  exitToHome() {
+  private reset(): void {
+    this.countdownRef()?.abort();
+    this.photos.set([]);
+    this.collagePhoto.set(null);
+    this.capturing.set(false);
+    this.building.set(false);
+    this.awaitingPicture = false;
+  }
+
+  exitToHome(): void {
+    this.collageService.resetCollage().subscribe();
     this.reset();
     this.router.navigate(['/home']);
   }

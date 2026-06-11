@@ -1,21 +1,27 @@
 <div class="camera-live-view">
-  @if (liveFrame(); as frame) {
+  @if (isClient()) {
+    <video #videoEl class="live-frame" autoplay playsinline muted></video>
+    @if (error()) {
+      <div class="error-state">
+        <p class="error-title">Webcam-Fehler</p>
+        <p class="error-message">{{ error() }}</p>
+      </div>
+    }
+  } @else if (liveFrame(); as frame) {
     <img
       [src]="'data:image/jpeg;base64,' + frame"
       alt="Live camera view"
       class="live-frame"
     />
-    <div class="debug-overlay">Frame received</div>
   } @else if (error()) {
     <div class="error-state">
-      <p class="error-title">Camera Error</p>
+      <p class="error-title">Kamera-Fehler</p>
       <p class="error-message">{{ error() }}</p>
-      <p class="debug-message">{{ debugInfo() }}</p>
     </div>
   } @else {
     <div class="loading-state">
       <div class="spinner"></div>
-      <p>{{ debugInfo() }}</p>
+      <p>{{ statusMessage() }}</p>
     </div>
   }
 </div>

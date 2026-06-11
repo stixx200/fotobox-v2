@@ -7,7 +7,20 @@ import { FotoboxError } from '@fotobox/error';
 import { getLogger } from '@fotobox/logging';
 
 const logger = getLogger('CollageTemplates');
-const nodeRequire = createRequire(import.meta.url);
+
+/**
+ * Resolve a real CommonJS `require` at runtime.
+ *
+ * When bundled by webpack (e.g. inside the API server) `createRequire` and
+ * `import.meta.url` get stubbed out, breaking dynamic template loading. Webpack
+ * exposes the untouched runtime require as `__non_webpack_require__`, so prefer
+ * that and fall back to `createRequire` for non-bundled (ESM/test) execution.
+ */
+declare const __non_webpack_require__: NodeRequire | undefined;
+const nodeRequire: NodeRequire =
+  typeof __non_webpack_require__ !== 'undefined'
+    ? __non_webpack_require__
+    : createRequire(import.meta.url);
 
 function loadTemplatesFromDirectory(
   templateDirectory: string,

@@ -18,6 +18,7 @@ export class CollageMakerService {
   private photoDirectory: string;
   private templateDirectory?: string;
   private builtInDirectory: string;
+  private currentTemplateId?: string;
   private cache$ = new BehaviorSubject<{
     template: TemplateInterface;
     photos: string[];
@@ -73,15 +74,18 @@ export class CollageMakerService {
     }
   }
 
-  public startCollage(templateId: string) {
+  public startCollage(templateId: string, userTemplateDirectory?: string) {
+    const dir = userTemplateDirectory || this.templateDirectory;
+    this.currentTemplateId = templateId;
     this.cache$.next({
-      template: resolveTemplate(templateId, this.templateDirectory),
+      template: resolveTemplate(templateId, dir, this.builtInDirectory),
       photos: [],
     });
     return this.collage$;
   }
 
   public resetCollage() {
+    this.currentTemplateId = undefined;
     this.cache$.next(null);
   }
 
@@ -96,6 +100,77 @@ export class CollageMakerService {
       ...this.cache$.value,
       photos: [...this.cache$.value.photos, photo],
     });
+  }
+
+  /**
+   * Get the number of photos a template requires.
+   */
+  public getRequiredPhotoCount(
+    templateId: string,
+    userTemplateDirectory?: string,
+  ): number {
+    const dir = userTemplateDirectory || this.templateDirectory;
+    const template = resolveTemplate(templateId, dir, this.builtInDirectory);
+    const maker = new CollageMaker({ photoDir: this.photoDirectory });
+    return maker.getPhotoCount(template);
+  }
+
+  /**
+   * Number of photos collected so far for the in-progress collage.
+   */
+  public getCurrentPhotoCount(): number {
+    return this.cache$.value?.photos.length ?? 0;
+  }
+
+  /**
+   * Whether the in-progress collage has collected all required photos.
+   */
+  public isComplete(): boolean {
+    const cache = this.cache$.value;
+    if (cache === null) {
+      return false;
+    }
+    const maker = new CollageMaker({ photoDir: this.photoDirectory });
+    return cache.photos.length >= maker.getPhotoCount(cache.template);
+  }
+
+  /**
+   * Render the in-progress collage into a final image buffer.
+   */
+  public async createCurrentCollage(): Promise<Buffer> {
+    const cache = this.cache$.value;
+    if (cache === null) {
+      throw new FotoboxError('No collage in progress to finalize.', {
+        code: 'MAIN.COLLAGE-MAKER.NOT_INITIALIZED',
+      });
+    }
+    const maker = new CollageMaker({ photoDir: this.photoDirectory });
+    return maker.createCollage(cache.template, cache.photos);
+  }
+
+  /**
+   * Current collage status snapshot.
+   */
+  public getStatus(): {
+    templateId: string;
+    photoCount: number;
+    requiredPhotoCount: number;
+    complete: boolean;
+    photos: string[];
+  } | null {
+    const cache = this.cache$.value;
+    if (cache === null || this.currentTemplateId === undefined) {
+      return null;
+    }
+    const maker = new CollageMaker({ photoDir: this.photoDirectory });
+    const requiredPhotoCount = maker.getPhotoCount(cache.template);
+    return {
+      templateId: this.currentTemplateId,
+      photoCount: cache.photos.length,
+      requiredPhotoCount,
+      complete: cache.photos.length >= requiredPhotoCount,
+      photos: cache.photos,
+    };
   }
 
   /**

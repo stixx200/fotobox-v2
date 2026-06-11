@@ -1,6 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
+
+export interface CollageResult {
+  id: string;
+  path: string;
+  timestamp: string;
+}
 
 // GraphQL Queries
 const GET_AVAILABLE_LAYOUT_IDS = gql`
@@ -12,6 +18,52 @@ const GET_AVAILABLE_LAYOUT_IDS = gql`
 const GET_LAYOUT_PREVIEW = gql`
   query GetLayoutPreview($layoutId: String!, $collageDirectory: String) {
     layoutPreview(layoutId: $layoutId, collageDirectory: $collageDirectory)
+  }
+`;
+
+const GET_REQUIRED_COLLAGE_PHOTOS = gql`
+  query RequiredCollagePhotos($templateId: String!, $collageDirectory: String) {
+    requiredCollagePhotos(
+      templateId: $templateId
+      collageDirectory: $collageDirectory
+    )
+  }
+`;
+
+const START_COLLAGE = gql`
+  mutation StartCollage($input: CreateCollageInput!) {
+    startCollage(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+const ADD_PHOTO_TO_COLLAGE = gql`
+  mutation AddPhotoToCollage($input: AddPhotoInput!) {
+    addPhotoToCollage(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+const FINALIZE_COLLAGE = gql`
+  mutation FinalizeCollage {
+    finalizeCollage {
+      id
+      path
+      timestamp
+    }
+  }
+`;
+
+const RESET_COLLAGE = gql`
+  mutation ResetCollage {
+    resetCollage {
+      success
+      message
+    }
   }
 `;
 
@@ -87,5 +139,76 @@ export class CollageService {
             return subscription;
           }),
       );
+  }
+
+  /**
+   * Number of photos required for a collage template.
+   */
+  getRequiredPhotoCount(
+    templateId: string,
+    collageDirectory?: string,
+  ): Observable<number> {
+    return this.apollo
+      .query<{ requiredCollagePhotos: number }>({
+        query: GET_REQUIRED_COLLAGE_PHOTOS,
+        variables: { templateId, collageDirectory: collageDirectory || null },
+        fetchPolicy: 'network-only',
+      })
+      .pipe(map((result) => result.data?.requiredCollagePhotos ?? 0));
+  }
+
+  /**
+   * Start a new collage with the given template.
+   */
+  startCollage(templateId: string): Observable<boolean> {
+    return this.apollo
+      .mutate<{ startCollage: { success: boolean; message: string } }>({
+        mutation: START_COLLAGE,
+        variables: { input: { templateId } },
+      })
+      .pipe(map((result) => result.data?.startCollage.success ?? false));
+  }
+
+  /**
+   * Add a captured photo (filename relative to the photo directory) to the
+   * in-progress collage.
+   */
+  addPhotoToCollage(photoPath: string): Observable<boolean> {
+    return this.apollo
+      .mutate<{ addPhotoToCollage: { success: boolean; message: string } }>({
+        mutation: ADD_PHOTO_TO_COLLAGE,
+        variables: { input: { photoPath } },
+      })
+      .pipe(map((result) => result.data?.addPhotoToCollage.success ?? false));
+  }
+
+  /**
+   * Render and persist the in-progress collage, returning the saved result.
+   */
+  finalizeCollage(): Observable<CollageResult> {
+    return this.apollo
+      .mutate<{ finalizeCollage: CollageResult }>({
+        mutation: FINALIZE_COLLAGE,
+      })
+      .pipe(
+        map((result) => {
+          const collage = result.data?.finalizeCollage;
+          if (!collage) {
+            throw new Error('Failed to finalize collage');
+          }
+          return collage;
+        }),
+      );
+  }
+
+  /**
+   * Reset / abort the current collage.
+   */
+  resetCollage(): Observable<boolean> {
+    return this.apollo
+      .mutate<{ resetCollage: { success: boolean; message: string } }>({
+        mutation: RESET_COLLAGE,
+      })
+      .pipe(map((result) => result.data?.resetCollage.success ?? false));
   }
 }

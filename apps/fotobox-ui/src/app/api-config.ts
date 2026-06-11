@@ -77,3 +77,16 @@ export function getGraphqlWsUri(): string {
   const wsBase = base.replace(/^http/i, 'ws');
   return `${wsBase}/graphql`;
 }
+
+/**
+ * Resolve a server-relative photo path (e.g. `/api/photos/photo-1.jpg`) to an
+ * absolute URL against the API origin, so it loads correctly when the UI runs
+ * on a different origin than the API (e.g. a tablet browser).
+ */
+export function getPhotoUrl(photoPath: string): string {
+  if (/^(https?:|data:)/i.test(photoPath)) {
+    return photoPath;
+  }
+  const base = resolveApiBaseUrl();
+  return `${base}${photoPath.startsWith('/') ? '' : '/'}${photoPath}`;
+}

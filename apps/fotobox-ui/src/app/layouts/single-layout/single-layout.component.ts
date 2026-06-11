@@ -1,19 +1,28 @@
-import { Component, inject, OnInit, effect, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  effect,
+  signal,
+  computed,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { SettingsStore, CameraStore } from '../../store';
 import { CameraLiveViewComponent } from '../../components/camera-live-view/camera-live-view.component';
+import { CountdownComponent } from '../../components/countdown/countdown.component';
+import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
+import { getPhotoUrl } from '../../api-config';
 
 @Component({
   selector: 'app-single-layout',
   standalone: true,
   imports: [
     CommonModule,
-    MatButtonModule,
-    MatIconModule,
     CameraLiveViewComponent,
+    CountdownComponent,
+    PhotoViewComponent,
   ],
   templateUrl: './single-layout.component.html',
   styleUrl: './single-layout.component.scss',
@@ -23,23 +32,30 @@ export class SingleLayoutComponent implements OnInit {
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
 
-  photo = signal<string | null>(null);
-  countdown = signal<number | null>(null);
-  countdownInterval: any = null;
+  private readonly liveView = viewChild(CameraLiveViewComponent);
+  private readonly countdownRef = viewChild(CountdownComponent);
+
+  readonly photo = signal<string | null>(null);
+  readonly capturing = signal(false);
+
+  /** True while we expect a freshly captured photo to arrive in the store. */
+  private awaitingPicture = false;
+
+  readonly showPrint = computed(() => this.usePrinter());
 
   constructor() {
-    // Watch for new pictures from the camera store
+    // Display the photo once a freshly captured one arrives in the store.
     effect(() => {
       const lastPicture = this.cameraStore.lastPicture();
-      if (lastPicture) {
-        // Set the photo path for display
-        this.photo.set(lastPicture.path);
+      if (lastPicture && this.awaitingPicture) {
+        this.awaitingPicture = false;
+        this.capturing.set(false);
+        this.photo.set(getPhotoUrl(lastPicture.path));
       }
     });
   }
 
   ngOnInit(): void {
-    // Check if camera is loaded, redirect to settings if not
     this.validateCameraAndRedirect();
   }
 
@@ -50,57 +66,60 @@ export class SingleLayoutComponent implements OnInit {
       currentCamera.driver === 'none' ||
       !currentCamera.available
     ) {
-      console.warn(
-        '[SingleLayoutComponent] No camera loaded, redirecting to settings',
-      );
-      this.router.navigate(['/settings']).catch((err) => {
-        console.error('Navigation to settings failed:', err);
-      });
+      this.router.navigate(['/settings']);
     }
   }
 
-  takePicture() {
-    if (this.photo() || this.countdown() !== null) {
-      return; // Already taking a picture or showing one
+  private usePrinter(): boolean {
+    const setting = this.settingsStore
+      .settings()
+      .find((s) => s.key === 'usePrinter');
+    if (!setting) {
+      return true;
     }
+    try {
+      return JSON.parse(setting.value) !== false;
+    } catch {
+      return true;
+    }
+  }
 
-    // Get shutter timeout from settings
-    const settings = this.settingsStore.settings();
-    const shutterTimeoutSetting = settings.find(
-      (s) => s.key === 'shutterTimeout',
-    );
-    const shutterTimeout = shutterTimeoutSetting
-      ? JSON.parse(shutterTimeoutSetting.value)
-      : 3;
+  private shutterTimeout(): number {
+    const setting = this.settingsStore
+      .settings()
+      .find((s) => s.key === 'shutterTimeout');
+    if (!setting) {
+      return 3;
+    }
+    try {
+      return JSON.parse(setting.value);
+    } catch {
+      return 3;
+    }
+  }
 
-    // Start countdown
-    this.countdown.set(shutterTimeout);
-    this.countdownInterval = setInterval(() => {
-      if (this.countdown() !== null && this.countdown()! > 0) {
-        this.countdown.set(this.countdown()! - 1);
+  takePicture(): void {
+    if (this.photo() || this.countdownRef()?.isRunning || this.capturing()) {
+      return; // Already showing a photo or counting down.
+    }
+    this.countdownRef()?.start(this.shutterTimeout());
+  }
+
+  onCountdownComplete(): void {
+    this.capturing.set(true);
+    this.awaitingPicture = true;
+
+    if (this.cameraStore.isClientCamera()) {
+      const frame = this.liveView()?.captureFrame();
+      if (frame) {
+        this.cameraStore.uploadPhoto(frame);
       } else {
-        this.finishCountdown();
+        this.awaitingPicture = false;
+        this.capturing.set(false);
       }
-    }, 1000);
-  }
-
-  finishCountdown() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-      this.countdownInterval = null;
+    } else {
+      this.cameraStore.takePicture();
     }
-    this.countdown.set(null);
-
-    // Call camera API to take actual photo
-    this.cameraStore.takePicture();
-  }
-
-  abortCountdown() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-      this.countdownInterval = null;
-    }
-    this.countdown.set(null);
   }
 
   get isOnlyLayoutActive(): boolean {
@@ -108,17 +127,28 @@ export class SingleLayoutComponent implements OnInit {
     return layouts.length === 1 && layouts[0] === 'Einzelbild';
   }
 
-  print() {
-    // TODO: Call print API
-    console.log('Print photo:', this.photo);
-    this.exitToHome();
+  print(): void {
+    // Printing is wired in Phase 4; for now return to the live view / home.
+    this.onPhotoDismissed();
   }
-  backToLiveView() {
-    this.abortCountdown();
+
+  onPhotoDismissed(): void {
+    if (this.isOnlyLayoutActive) {
+      this.backToLiveView();
+    } else {
+      this.exitToHome();
+    }
+  }
+
+  backToLiveView(): void {
+    this.countdownRef()?.abort();
+    this.capturing.set(false);
     this.photo.set(null);
   }
-  exitToHome() {
-    this.abortCountdown();
+
+  exitToHome(): void {
+    this.countdownRef()?.abort();
+    this.capturing.set(false);
     this.photo.set(null);
     this.router.navigate(['/home']);
   }

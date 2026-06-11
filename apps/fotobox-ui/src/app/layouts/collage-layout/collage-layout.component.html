@@ -1,53 +1,38 @@
 <div class="layout-container" (click)="takePicture()">
-  <div class="live-view">
+  <div class="live-view" [class.photo-mode]="collagePhoto()">
     <app-camera-live-view></app-camera-live-view>
   </div>
 
-  <!-- Ready message when no collage and no countdown -->
-  @if (!collagePhoto && countdown === null) {
+  <!-- Ready / progress message -->
+  @if (!collagePhoto() && !capturing()) {
     <div class="message-stripe top-message">
-      <p>{{ topMessage }}</p>
+      <p>{{ topMessage() }}</p>
     </div>
   }
 
-  <!-- Collage view -->
-  @if (collagePhoto) {
-    <div class="photo-view">
-      <img [src]="collagePhoto" alt="Collage" />
-
-      <div class="photo-actions">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="print(); $event.stopPropagation()"
-        >
-          <mat-icon>print</mat-icon>
-          Drucken
-        </button>
-        <button
-          mat-raised-button
-          (click)="exitToHome(); $event.stopPropagation()"
-        >
-          <mat-icon>home</mat-icon>
-          Zurück
-        </button>
-      </div>
-    </div>
+  <!-- Finished collage view -->
+  @if (collagePhoto(); as src) {
+    <app-photo-view
+      [src]="src"
+      [showPrint]="showPrint()"
+      (print)="print()"
+      (back)="exitToHome()"
+    ></app-photo-view>
   }
 
   <!-- Photo grid showing taken photos -->
-  @if (!collagePhoto && photos.length > 0) {
+  @if (!collagePhoto() && photos().length > 0) {
     <div class="collage-preview">
       <div class="photo-grid">
-        @for (photo of photos; track $index; let i = $index) {
+        @for (photo of photos(); track $index; let i = $index) {
           <div class="grid-item">
             <img [src]="photo" [alt]="'Foto ' + (i + 1)" />
             <div class="photo-number">{{ i + 1 }}</div>
           </div>
         }
-        @for (slot of emptySlots; track $index; let i = $index) {
+        @for (slot of emptySlots(); track $index; let i = $index) {
           <div class="grid-item empty">
-            <div class="photo-number">{{ photos.length + i + 1 }}</div>
+            <div class="photo-number">{{ photos().length + i + 1 }}</div>
           </div>
         }
       </div>
@@ -55,19 +40,13 @@
   }
 
   <!-- Countdown -->
-  @if (countdown !== null) {
-    <div class="countdown-overlay">
-      <div class="countdown-number">
-        {{ countdown === 0 ? 'Lächeln!' : countdown }}
-      </div>
-    </div>
-  }
+  <app-countdown (completed)="onCountdownComplete()"></app-countdown>
 
   <!-- Bottom message to exit (only if single layout is available) -->
   @if (
-    !collagePhoto &&
-    countdown === null &&
-    !isCollageComplete &&
+    !collagePhoto() &&
+    !capturing() &&
+    !isCollageComplete() &&
     !isOnlyLayoutActive
   ) {
     <div

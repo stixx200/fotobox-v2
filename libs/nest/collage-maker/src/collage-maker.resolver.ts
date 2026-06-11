@@ -4,13 +4,15 @@ import { CollageMakerService } from './collage-maker.service';
 import {
   CollageTemplate,
   CollageStatus,
-  CollageOutput,
+  CollageResult,
   CreateCollageInput,
   AddPhotoInput,
 } from './models/collage.model';
 import { GenericMutationResult } from '@fotobox/nest-graphql';
 import { getLogger } from '@fotobox/logging';
 import { SettingsService } from '@fotobox/nest-settings';
+import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
+import { Int } from '@nestjs/graphql';
 
 const logger = getLogger('CollageMakerResolver');
 const pubSub = new PubSub();
@@ -23,6 +25,7 @@ export class CollageMakerResolver {
   constructor(
     private readonly collageMakerService: CollageMakerService,
     private readonly settingsService: SettingsService,
+    private readonly photoStorage: PhotoStorageProviderService,
   ) {}
 
   @Query(() => [String], {
@@ -86,10 +89,38 @@ export class CollageMakerResolver {
   })
   async collageStatus(): Promise<CollageStatus | null> {
     logger.debug('Fetching collage status');
+    return this.collageMakerService.getStatus();
+  }
 
-    // This would check the internal state of the collage maker
-    // For now returning null to indicate no active collage
-    return null;
+  @Query(() => Int, {
+    description: 'Get the number of photos required for a template',
+  })
+  async requiredCollagePhotos(
+    @Args('templateId') templateId: string,
+    @Args('collageDirectory', { nullable: true }) collageDirectory?: string,
+  ): Promise<number> {
+    try {
+      let directory = collageDirectory;
+      if (!directory) {
+        const collageDirectorySetting =
+          await this.settingsService.getSetting('collageDirectory');
+        directory = collageDirectorySetting
+          ? typeof collageDirectorySetting.value === 'string'
+            ? JSON.parse(collageDirectorySetting.value)
+            : collageDirectorySetting.value
+          : undefined;
+      }
+      return this.collageMakerService.getRequiredPhotoCount(
+        templateId,
+        directory,
+      );
+    } catch (error) {
+      logger.error('Error resolving required photo count', {
+        templateId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return 0;
+    }
   }
 
   @Mutation(() => GenericMutationResult, {
@@ -101,7 +132,15 @@ export class CollageMakerResolver {
     logger.info(`Starting collage with template: ${input.templateId}`);
 
     try {
-      this.collageMakerService.startCollage(input.templateId);
+      const collageDirectorySetting =
+        await this.settingsService.getSetting('collageDirectory');
+      const directory = collageDirectorySetting
+        ? typeof collageDirectorySetting.value === 'string'
+          ? JSON.parse(collageDirectorySetting.value)
+          : collageDirectorySetting.value
+        : undefined;
+
+      this.collageMakerService.startCollage(input.templateId, directory);
 
       return {
         success: true,
@@ -152,6 +191,30 @@ export class CollageMakerResolver {
     }
   }
 
+  @Mutation(() => CollageResult, {
+    description: 'Render and persist the current collage',
+  })
+  async finalizeCollage(): Promise<CollageResult> {
+    logger.info('Finalizing collage');
+
+    const buffer = await this.collageMakerService.createCurrentCollage();
+    const id = `collage-${Date.now()}`;
+    this.photoStorage.savePhoto(id, buffer);
+    const result: CollageResult = {
+      id,
+      path: `/api/photos/${id}.jpg`,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.collageMakerService.resetCollage();
+
+    pubSub.publish(COLLAGE_COMPLETE_TOPIC, {
+      collageComplete: result,
+    });
+
+    return result;
+  }
+
   @Mutation(() => GenericMutationResult, {
     description: 'Reset the current collage',
   })
@@ -171,6 +234,13 @@ export class CollageMakerResolver {
   })
   collageProgress() {
     return pubSub.asyncIterableIterator(COLLAGE_PROGRESS_TOPIC);
+  }
+
+  @Subscription(() => CollageResult, {
+    description: 'Subscribe to collage completion events',
+  })
+  collageComplete() {
+    return pubSub.asyncIterableIterator(COLLAGE_COMPLETE_TOPIC);
   }
 
   @Query(() => String, {
