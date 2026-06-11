@@ -69,7 +69,11 @@ export class CollageMakerService {
       fs.existsSync(candidate),
     );
 
-    return existingDirectory ?? candidates[0] ?? path.join(process.cwd(), 'collage-templates');
+    return (
+      existingDirectory ??
+      candidates[0] ??
+      path.join(process.cwd(), 'collage-templates')
+    );
   }
 
   /**

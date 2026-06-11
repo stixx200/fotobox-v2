@@ -422,7 +422,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
                 };
                 return dialogResult.canceled
                   ? null
-                  : dialogResult.filePaths[0] ?? null;
+                  : (dialogResult.filePaths[0] ?? null);
               })()
             : null;
 

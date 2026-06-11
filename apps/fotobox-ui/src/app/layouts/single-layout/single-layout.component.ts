@@ -14,6 +14,7 @@ import { CameraLiveViewComponent } from '../../components/camera-live-view/camer
 import { CountdownComponent } from '../../components/countdown/countdown.component';
 import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
 import { getPhotoUrl } from '../../api-config';
+import { PrintService } from '../../services/print.service';
 
 @Component({
   selector: 'app-single-layout',
@@ -31,6 +32,7 @@ export class SingleLayoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
+  private readonly printService = inject(PrintService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -128,8 +130,10 @@ export class SingleLayoutComponent implements OnInit {
   }
 
   print(): void {
-    // Printing is wired in Phase 4; for now return to the live view / home.
-    this.onPhotoDismissed();
+    const url = this.photo();
+    if (url) {
+      this.printService.printPhoto(url);
+    }
   }
 
   onPhotoDismissed(): void {

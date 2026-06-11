@@ -16,6 +16,7 @@ import { CountdownComponent } from '../../components/countdown/countdown.compone
 import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
 import { CollageService } from '../../services/collage.service';
 import { getPhotoUrl } from '../../api-config';
+import { PrintService } from '../../services/print.service';
 
 @Component({
   selector: 'app-collage-layout',
@@ -35,6 +36,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
   private readonly collageService = inject(CollageService);
+  private readonly printService = inject(PrintService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -236,8 +238,10 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   }
 
   print(): void {
-    // Printing is wired in Phase 4; for now return home.
-    this.exitToHome();
+    const url = this.collagePhoto();
+    if (url) {
+      this.printService.printPhoto(url);
+    }
   }
 
   private reset(): void {
