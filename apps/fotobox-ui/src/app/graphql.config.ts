@@ -5,8 +5,8 @@ import { onError } from '@apollo/client/link/error';
 import { createClient } from 'graphql-ws';
 import { GraphQLError } from 'graphql';
 
-const GRAPHQL_URI = 'http://localhost:3000/api/graphql';
-const WS_URI = 'ws://localhost:3000/api/graphql';
+const GRAPHQL_URI = 'http://localhost:3000/graphql';
+const WS_URI = 'ws://localhost:3000/graphql';
 
 export function createApolloOptions() {
   // Create HTTP link for queries and mutations

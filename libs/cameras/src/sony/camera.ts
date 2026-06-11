@@ -14,19 +14,19 @@ const logger = getLogger('camera.sony.communication');
 const parseString = promisify(xml2jsParseString);
 
 export class SonyCameraCommunication {
-  public name: string;
-  public manufacturer: string;
+  public name!: string;
+  public manufacturer!: string;
 
   public pictureUrl$ = new Subject<string>();
-  private cameraProxy: CameraProxy;
-  private liveviewRequest: ClientRequest;
+  private cameraProxy!: CameraProxy;
+  private liveviewRequest?: ClientRequest;
   private statusObservation = false;
 
   constructor(private descriptionUrl: string) {}
 
   async init() {
     const response = await axios.get(this.descriptionUrl);
-    const description = await parseString(response.data);
+    const description = (await parseString(response.data)) as any;
 
     const device = description.root.device[0];
     const serviceList =
@@ -36,7 +36,7 @@ export class SonyCameraCommunication {
 
     this.name = device.friendlyName[0];
     this.manufacturer = device.manufacturer;
-    const services = _.map(serviceList, (data) => ({
+    const services = serviceList.map((data: any) => ({
       type: data['av:X_ScalarWebAPI_ServiceType'][0],
       url: `${data['av:X_ScalarWebAPI_ActionList_URL'][0]}/${data['av:X_ScalarWebAPI_ServiceType'][0]}`,
     }));
@@ -70,10 +70,20 @@ export class SonyCameraCommunication {
     return this.pictureUrl$;
   }
 
-  observeLiveView(): Observable<Buffer> {
+  observeLiveView(): Observable<string> {
     logger.info('Observe liveview');
-    return Observable.create((observer: Observer<Buffer>) => {
-      const liveStreamParser = new LiveStreamParser(observer);
+    return Observable.create((observer: Observer<string>) => {
+      const bufferObserver: Observer<Buffer> = {
+        next: (buffer: Buffer) => {
+          // Convert buffer to base64 string
+          const base64 = buffer.toString('base64');
+          observer.next(base64);
+        },
+        error: (err) => observer.error(err),
+        complete: () => observer.complete(),
+      };
+
+      const liveStreamParser = new LiveStreamParser(bufferObserver);
       this.cameraProxy
         .call('camera', 'startLiveviewWithSize', ['L'])
         .then(([liveViewUrl]) => {
@@ -125,7 +135,8 @@ export class SonyCameraCommunication {
           );
         }
       } catch (error) {
-        logger.error("failed to set shootmode to 'still': " + error.stack);
+        const err = error as any;
+        logger.error("failed to set shootmode to 'still': " + (err.stack || err.message || String(error)));
       }
     }, 1000);
   }
@@ -151,7 +162,8 @@ export class SonyCameraCommunication {
         this.newStatusReceived(result);
         await new Promise((r) => setTimeout(r, 200));
       } catch (error) {
-        if (error.message.match(/Timed out/)) {
+        const err = error as any;
+        if (err.message?.match(/Timed out/)) {
           continue;
         }
         logger.error(
@@ -160,16 +172,17 @@ export class SonyCameraCommunication {
           )}`
         );
         this.statusObservation = false;
-        this.shutdownHandler.publishError(new FotoboxError(error));
+        // Note: shutdownHandler was removed - errors are just logged
       }
     } while (this.statusObservation);
   }
 
   private newStatusReceived(input: any[]) {
-    const newStatus = _.flatten(_.compact(input));
+    const compacted = input.filter(item => item != null);
+    const newStatus = compacted.flat();
     logger.debug(`Received new status: ${JSON.stringify(newStatus)}`);
 
-    _.forEach(newStatus, (status) => {
+    newStatus.forEach((status: any) => {
       this.parseStatus(status.type, status);
     });
   }

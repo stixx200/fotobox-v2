@@ -30,6 +30,24 @@ export default {
           glob: '**/*',
           output: 'fotobox-ui',
         },
+        // Copy collage-maker images for runtime access
+        {
+          input: join(devkit.workspaceRoot, 'libs/collage-maker/src/images'),
+          glob: '**/*',
+          output: 'images',
+        },
+        // Copy demo camera images for runtime access
+        {
+          input: join(devkit.workspaceRoot, 'libs/cameras/src/demo'),
+          glob: '*.jpg',
+          output: 'demo-camera',
+        },
+        // Copy collage templates for runtime access
+        {
+          input: join(devkit.workspaceRoot, 'libs/collage-maker/src/templates'),
+          glob: '**/*',
+          output: 'collage-templates',
+        },
       ],
       additionalEntryPoints: [
         {

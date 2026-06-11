@@ -1,9 +1,32 @@
 <h1>Fotobox Settings</h1>
 
+<!-- Error Display -->
+@if (settingsError(); as error) {
+  <div class="error-message">
+    <mat-icon>error</mat-icon>
+    <span>{{ error }}</span>
+  </div>
+}
+
+<!-- Loading Indicator -->
+@if (settingsIsLoading()) {
+  <div class="loading-indicator">
+    <mat-spinner diameter="30"></mat-spinner>
+    <span>Loading...</span>
+  </div>
+}
+
+@if (layoutsAutoSelectionMessage(); as message) {
+  <div class="info-message">
+    <mat-icon>info</mat-icon>
+    <span>{{ message }}</span>
+  </div>
+}
+
 <form [formGroup]="settingsForm" class="settings-container">
   <!-- Start button -->
   <div class="settings-row">
-    <button matButton="outlined">Fotobox starten</button>
+    <button mat-stroked-button (click)="startFotobox()">Fotobox starten</button>
   </div>
   <mat-checkbox class="settings-row" formControlName="usePrinter"
     >Drucker aktivieren</mat-checkbox
@@ -23,35 +46,69 @@
   <mat-form-field floatLabel="always">
     <mat-label>Drucker</mat-label>
     <mat-select required formControlName="printerName">
-      <mat-option value="printer1">Drucker1</mat-option>
-      <mat-option value="printer2">Drucker2</mat-option>
+      @for (printer of availablePrinterNames(); track printer) {
+        <mat-option [value]="printer">{{ printer }}</mat-option>
+      }
+      @if (availablePrinterNames().length === 0) {
+        <mat-option disabled>Keine Drucker verfügbar</mat-option>
+      }
     </mat-select>
   </mat-form-field>
 
   <mat-form-field>
+    <mat-label>Speicherort für Fotos</mat-label>
     <input
-      (click)="openPicker($event.target)"
+      [readonly]="isElectronAvailable"
+      (click)="handleDirectoryClick('photoDirectory')"
       formControlName="photoDirectory"
       class="input"
       matInput
       placeholder="Speicherort für Fotos"
     />
+    @if (isElectronAvailable) {
+      <button
+        mat-icon-button
+        matSuffix
+        (click)="openPicker('photoDirectory'); $event.stopPropagation()"
+      >
+        <mat-icon>folder_open</mat-icon>
+      </button>
+    }
   </mat-form-field>
   <mat-form-field>
+    <mat-label>Ordner Collage-Vorlagen</mat-label>
     <input
-      (click)="openPicker($event.target)"
-      formControlName="photoDirectory"
+      [readonly]="isElectronAvailable"
+      (click)="handleDirectoryClick('collageDirectory')"
+      formControlName="collageDirectory"
       class="input"
       matInput
       placeholder="Ordner Collage-Vorlagen"
+      [class.error-input]="collageDirectoryError()"
     />
+    @if (isElectronAvailable) {
+      <button
+        mat-icon-button
+        matSuffix
+        (click)="openPicker('collageDirectory'); $event.stopPropagation()"
+      >
+        <mat-icon>folder_open</mat-icon>
+      </button>
+    }
+    @if (collageDirectoryError(); as error) {
+      <mat-error>{{ error }}</mat-error>
+    }
   </mat-form-field>
 
   <mat-form-field>
-    <mat-label>Layouts</mat-label>
+    <mat-label>Layouts (max. 3)</mat-label>
     <mat-select formControlName="layouts" multiple>
-      @for (layout of layouts; track layout) {
-      <mat-option [value]="layout">{{ layout }}</mat-option>
+      @for (layout of layouts(); track layout) {
+        <mat-option
+          [value]="layout"
+          [disabled]="isLayoutOptionDisabled(layout)"
+          >{{ layout }}</mat-option
+        >
       }
     </mat-select>
   </mat-form-field>
@@ -59,9 +116,44 @@
   <mat-form-field>
     <mat-label>Kamera</mat-label>
     <mat-select formControlName="camera">
-      @for (camera of cameras; track camera) {
-      <mat-option [value]="camera">{{ camera }}</mat-option>
+      @for (camera of availableCameraNames(); track camera) {
+        <mat-option [value]="camera">{{ camera }}</mat-option>
+      }
+      @if (availableCameraNames().length === 0) {
+        <mat-option disabled>Keine Kameras verfügbar</mat-option>
       }
     </mat-select>
   </mat-form-field>
+
+  <!-- Buttons Section -->
+  <div class="settings-row buttons-group">
+    @if (settingsIsLoading()) {
+      <button mat-raised-button color="primary" disabled>
+        <mat-icon>hourglass_empty</mat-icon>
+        Speichern läuft...
+      </button>
+    } @else {
+      <button mat-raised-button color="primary" (click)="saveSettings()">
+        Einstellungen speichern
+      </button>
+    }
+
+    @if (settingsIsLoading()) {
+      <button mat-stroked-button disabled>
+        <mat-icon>hourglass_empty</mat-icon>
+        Wird zurückgesetzt...
+      </button>
+    } @else {
+      <button mat-stroked-button (click)="resetSettings()">
+        Einstellungen zurücksetzen
+      </button>
+    }
+  </div>
 </form>
+
+<!-- App Info Section -->
+<div class="app-info">
+  @if (appVersion(); as version) {
+    <p>Version: {{ version }}</p>
+  }
+</div>

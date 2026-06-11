@@ -3,7 +3,7 @@ import { getLogger } from '@fotobox/logging';
 import { Setting, SettingInput } from './models/settings.model';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { app } from 'electron';
+// import { app } from 'electron';
 
 const logger = getLogger('SettingsService');
 
@@ -14,16 +14,25 @@ export class SettingsService {
 
   constructor() {
     // Store settings in userData directory
-    const userDataPath = app?.getPath('userData') || process.cwd();
+    const userDataPath = this.getUserDataPath();
     this.settingsFilePath = path.join(userDataPath, 'settings.json');
     this.loadSettings();
+  }
+
+  private getUserDataPath(): string {
+    try {
+      const { app } = require('electron');
+      return app?.getPath('userData') || process.cwd();
+    } catch {
+      return process.cwd();
+    }
   }
 
   private async loadSettings(): Promise<void> {
     try {
       const data = await fs.readFile(this.settingsFilePath, 'utf-8');
       const settingsArray: Setting[] = JSON.parse(data);
-      settingsArray.forEach(setting => {
+      settingsArray.forEach((setting) => {
         this.settings.set(setting.key, setting);
       });
       logger.info(`Loaded ${settingsArray.length} settings from file`);
@@ -40,10 +49,12 @@ export class SettingsService {
   private async saveSettings(): Promise<void> {
     try {
       const settingsArray = Array.from(this.settings.values());
+      logger.info(`Saving ${settingsArray.length} settings to ${this.settingsFilePath}`);
+      logger.debug('Settings data:', JSON.stringify(settingsArray, null, 2));
       await fs.writeFile(
         this.settingsFilePath,
         JSON.stringify(settingsArray, null, 2),
-        'utf-8'
+        'utf-8',
       );
       logger.debug('Settings saved to file');
     } catch (error) {
@@ -67,17 +78,17 @@ export class SettingsService {
       value: input.value,
       description: existing?.description,
     };
-    
+
     this.settings.set(input.key, setting);
     await this.saveSettings();
     logger.info(`Updated setting: ${input.key}`);
-    
+
     return setting;
   }
 
   async updateSettings(inputs: SettingInput[]): Promise<Setting[]> {
     const updatedSettings: Setting[] = [];
-    
+
     for (const input of inputs) {
       const existing = this.settings.get(input.key);
       const setting: Setting = {
@@ -88,17 +99,19 @@ export class SettingsService {
       this.settings.set(input.key, setting);
       updatedSettings.push(setting);
     }
-    
+
     await this.saveSettings();
     logger.info(`Updated ${inputs.length} settings`);
-    
+
     return updatedSettings;
   }
 
   async resetSettings(): Promise<boolean> {
+    // Clear current in-memory settings
     this.settings.clear();
-    await this.saveSettings();
-    logger.info('All settings reset');
+    // Reload settings from file
+    await this.loadSettings();
+    logger.info('Settings reloaded from file');
     return true;
   }
 }

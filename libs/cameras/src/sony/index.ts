@@ -1,9 +1,10 @@
 import { getLogger } from '@fotobox/logging';
 import { Client as SsdpClient, SsdpHeaders } from 'node-ssdp';
 import { Observable, throwError } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { FotoboxError } from '@fotobox/error';
 import { CameraInterface } from '../camera.interface';
 import { SonyCameraCommunication } from './camera';
-import { FotoboxError } from "@fotobox/error";
 
 const logger = getLogger('camera.sony');
 
@@ -13,6 +14,7 @@ const M_SEARCH_CAMERA = 'urn:schemas-sony-com:service:ScalarWebAPI:1';
  * Sony Camera
  */
 export class SonyCamera implements CameraInterface {
+  public driver = 'sony';
   private camera: SonyCameraCommunication | null = null;
   private isInitialized = false;
   private ssdpInterval: NodeJS.Timeout | null = null;
@@ -57,23 +59,25 @@ export class SonyCamera implements CameraInterface {
   /**
    * Takes a picture. The new picture is published via picture observer
    */
-  takePicture(): void {
+  async takePicture(): Promise<void> {
     if (this.camera) {
-      this.camera.takePicture();
+      await this.camera.takePicture();
     } else {
       logger.error("Can't take a picture. No camera connected");
+      throw new FotoboxError('No camera connected');
     }
   }
 
   /**
    * Observes the live view.
-   * @returns {Observable<Buffer>}
+   * @returns {Observable<string>} Base64 encoded images
    */
-  observeLiveView(): Observable<Buffer> {
+  observeLiveView(): Observable<string> {
     if (!this.camera) {
       logger.error("Can't observe live view. No camera connected");
       return throwError(() => new FotoboxError('No camera connected'));
     }
+    // Sony camera returns Buffer, need to convert to base64 string
     return this.camera.observeLiveView();
   }
 
@@ -91,14 +95,20 @@ export class SonyCamera implements CameraInterface {
 
   /**
    * Stops live view.
-   * @returns {Observable<string>}
    */
-  stopLiveView() {
+  async stopLiveView(): Promise<void> {
     if (!this.camera) {
       logger.error("Can't stop live view. No camera connected");
-      return throwError(() => new FotoboxError('No camera connected'));
+      throw new FotoboxError('No camera connected');
     }
     this.camera.stopLiveViewObserving();
+  }
+
+  /**
+   * Check if camera is available
+   */
+  isAvailable(): boolean {
+    return this.isInitialized;
   }
 
   /**

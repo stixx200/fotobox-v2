@@ -1,9 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Observable, Subject } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { getLogger } from '@fotobox/logging';
-import { CameraInitConfiguration } from '@fotobox/cameras';
 import { CameraInterface } from '../camera.interface';
 
 const logger = getLogger('camera.demo');
@@ -12,44 +10,69 @@ const logger = getLogger('camera.demo');
  * Demo Camera
  */
 export class DemoCamera implements CameraInterface {
-  private liveViewSubject = new Subject<Buffer>();
-  private picturesSubject = new Subject<Buffer>();
+  public driver = 'demo';
+  private liveViewSubject = new Subject<string>();
+  private picturesSubject = new Subject<string>();
 
-  private giraffe = fs.readFileSync(path.join(__dirname, 'giraffe.jpg'));
-  private rabbit = fs.readFileSync(path.join(__dirname, 'rabbit.jpg'));
-  private currentPicture = this.rabbit;
+  private giraffe!: Buffer;
+  private rabbit!: Buffer;
+  private currentPicture!: Buffer;
   private liveViewTimer: any;
 
   constructor() {
     this.takePicture = this.takePicture.bind(this);
+    // Load images - they will be in demo-camera folder in dist
+    try {
+      this.giraffe = fs.readFileSync(
+        path.join(__dirname, 'demo-camera', 'giraffe.jpg'),
+      );
+      this.rabbit = fs.readFileSync(
+        path.join(__dirname, 'demo-camera', 'rabbit.jpg'),
+      );
+    } catch (error) {
+      // Fallback: try loading from the source directory (for development)
+      logger.warn('Could not load from dist, trying source directory', error);
+      this.giraffe = fs.readFileSync(path.join(__dirname, 'giraffe.jpg'));
+      this.rabbit = fs.readFileSync(path.join(__dirname, 'rabbit.jpg'));
+    }
+    this.currentPicture = this.rabbit;
   }
 
   /**
    * Initializes camera
-   * @param {CameraInitConfiguration} config
    * @returns {Promise<void>}
    */
-  async init(config: CameraInitConfiguration) {}
+  async init(): Promise<void> {
+    logger.info('Demo camera initialized');
+  }
 
   /**
    * Deinitializes camera
    * @returns {Promise<void>}
    */
-  async deinit() {}
+  async deinit(): Promise<void> {
+    if (this.liveViewTimer) {
+      clearInterval(this.liveViewTimer);
+      this.liveViewTimer = null;
+    }
+    logger.info('Demo camera deinitialized');
+  }
 
   /**
    * Takes a picture. The new picture is published via picture observer
    */
-  takePicture(): void {
+  async takePicture(): Promise<void> {
     logger.info('Take picture and send to client.');
-    this.picturesSubject.next(this.currentPicture);
+    // Emit the current picture as base64 data
+    const base64Data = `data:image/jpeg;base64,${this.currentPicture.toString('base64')}`;
+    this.picturesSubject.next(base64Data);
   }
 
   /**
    * Observes the live view.
-   * @returns {Observable<Buffer>}
+   * @returns {Observable<string>} Base64 encoded JPEG images
    */
-  observeLiveView(): Observable<Buffer> {
+  observeLiveView(): Observable<string> {
     logger.info('Observe live view');
     this.liveViewTimer = setInterval(() => {
       if (this.currentPicture === this.rabbit) {
@@ -57,19 +80,42 @@ export class DemoCamera implements CameraInterface {
       } else {
         this.currentPicture = this.rabbit;
       }
-      this.liveViewSubject.next(this.currentPicture);
+      // Convert buffer to base64
+      const base64 = this.currentPicture.toString('base64');
+      this.liveViewSubject.next(base64);
     }, 2000);
 
-    setImmediate(() => this.liveViewSubject.next(this.currentPicture));
+    setImmediate(() => {
+      const base64 = this.currentPicture.toString('base64');
+      this.liveViewSubject.next(base64);
+    });
     return this.liveViewSubject;
   }
 
   /**
-   * Observes the live view.
-   * @returns {Observable<Buffer>}
+   * Observes pictures taken.
+   * @returns {Observable<string>} Picture IDs
    */
-  observePictures(): Observable<Buffer> {
+  observePictures(): Observable<string> {
     logger.info('Observe pictures');
     return this.picturesSubject;
+  }
+
+  /**
+   * Stop live view streaming
+   */
+  async stopLiveView(): Promise<void> {
+    if (this.liveViewTimer) {
+      clearInterval(this.liveViewTimer);
+      this.liveViewTimer = null;
+      logger.info('Live view stopped');
+    }
+  }
+
+  /**
+   * Check if camera is available
+   */
+  isAvailable(): boolean {
+    return true; // Demo camera is always available
   }
 }

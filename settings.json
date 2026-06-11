@@ -1,0 +1,30 @@
+[
+  {
+    "key": "shutterTimeout",
+    "value": "1"
+  },
+  {
+    "key": "usePrinter",
+    "value": "true"
+  },
+  {
+    "key": "printerName",
+    "value": "\"printer1\""
+  },
+  {
+    "key": "photoDirectory",
+    "value": "\"\""
+  },
+  {
+    "key": "collageDirectory",
+    "value": "\"\""
+  },
+  {
+    "key": "layouts",
+    "value": "[\"Einzelbild\",\"2x2\"]"
+  },
+  {
+    "key": "camera",
+    "value": "\"demo\""
+  }
+]

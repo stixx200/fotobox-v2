@@ -1,0 +1,75 @@
+{
+  "id": "2x2",
+  "width": 1796,
+  "height": 1204,
+  "border": {
+    "background": { "r": 255, "g": 255, "b": 255, "alpha": 1 },
+    "top": 0,
+    "bottom": 0,
+    "left": 0,
+    "right": 0
+  },
+  "background": "background.jpg",
+  "spaces": [
+    {
+      "type": "photo",
+      "width": 751,
+      "height": 501,
+      "x": 108,
+      "y": 72,
+      "border": {
+        "background": { "r": 255, "g": 255, "b": 255 },
+        "top": 4,
+        "bottom": 4,
+        "left": 4,
+        "right": 4
+      },
+      "rotation": 2
+    },
+    {
+      "type": "photo",
+      "width": 751,
+      "height": 501,
+      "x": 937,
+      "y": 72,
+      "border": {
+        "background": { "r": 255, "g": 255, "b": 255 },
+        "top": 4,
+        "bottom": 4,
+        "left": 4,
+        "right": 4
+      },
+      "rotation": 355
+    },
+    {
+      "type": "photo",
+      "width": 751,
+      "height": 501,
+      "x": 108,
+      "y": 622,
+      "border": {
+        "background": { "r": 255, "g": 255, "b": 255 },
+        "top": 4,
+        "bottom": 4,
+        "left": 4,
+        "right": 4
+      },
+      "rotation": 357
+    },
+    {
+      "type": "photo",
+      "width": 751,
+      "height": 501,
+      "x": 937,
+      "y": 622,
+      "border": {
+        "background": { "r": 255, "g": 255, "b": 255 },
+        "top": 4,
+        "bottom": 4,
+        "left": 4,
+        "right": 4
+      },
+      "rotation": 1
+    }
+  ]
+}

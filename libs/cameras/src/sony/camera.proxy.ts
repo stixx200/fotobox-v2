@@ -1,4 +1,3 @@
-import * as _ from 'lodash';
 import axios from 'axios';
 
 interface IService {
@@ -41,7 +40,7 @@ export class CameraProxy {
   }
 
   private getService(type: string): IService {
-    const service = _.find(this.services, ['type', type]);
+    const service = this.services.find(s => s.type === type);
     if (!service) {
       throw new Error(
         `service '${type}' not found. Available are: '${this.services

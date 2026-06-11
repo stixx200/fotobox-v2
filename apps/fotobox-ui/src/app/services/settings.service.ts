@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 
 // GraphQL Queries
 const GET_SETTINGS = gql`
@@ -79,16 +79,22 @@ export class SettingsService {
   constructor(private apollo: Apollo) {}
 
   getAllSettings(): Observable<Setting[]> {
+    console.log('SettingsService: getAllSettings called');
     return this.apollo
       .query<{ settings: { items: Setting[] } }>({
         query: GET_SETTINGS,
       })
-      .pipe(map((result) => result.data!.settings.items));
+      .pipe(
+        tap((result) =>
+          console.log('SettingsService: getAllSettings result:', result),
+        ),
+        map((result) => result.data!.settings.items),
+      );
   }
 
   getSetting(key: string): Observable<Setting | null> {
     return this.apollo
-      .query<{ setting: Setting | null }>({  
+      .query<{ setting: Setting | null }>({
         query: GET_SETTING,
         variables: { key },
       })

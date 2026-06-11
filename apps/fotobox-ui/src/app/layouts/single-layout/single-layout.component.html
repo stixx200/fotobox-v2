@@ -1,0 +1,56 @@
+<div class="layout-container" (click)="takePicture()">
+  <div class="live-view" [class.photo-mode]="photo()">
+    <app-camera-live-view></app-camera-live-view>
+  </div>
+
+  <!-- Ready message when no photo and no countdown -->
+  @if (!photo() && countdown() === null) {
+    <div class="message-stripe top-message">
+      <p>Berühren um ein Foto zu machen</p>
+    </div>
+  }
+
+  <!-- Photo view -->
+  @if (photo()) {
+    <div class="photo-view">
+      <img [src]="photo()" alt="Captured photo" />
+
+      <div class="photo-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="print(); $event.stopPropagation()"
+        >
+          <mat-icon>print</mat-icon>
+          Drucken
+        </button>
+        <button
+          mat-raised-button
+          (click)="isOnlyLayoutActive ? backToLiveView() : exitToHome(); $event.stopPropagation()"
+        >
+          <mat-icon>home</mat-icon>
+          Zurück
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Countdown -->
+  @if (countdown() !== null) {
+    <div class="countdown-overlay">
+      <div class="countdown-number">
+        {{ countdown() === 0 ? 'Lächeln!' : countdown() }}
+      </div>
+    </div>
+  }
+
+  <!-- Bottom message to exit (only if collage is available) -->
+  @if (!photo() && countdown() === null && !isOnlyLayoutActive) {
+    <div
+      class="message-stripe bottom-message"
+      (click)="exitToHome(); $event.stopPropagation()"
+    >
+      <p>Abbrechen</p>
+    </div>
+  }
+</div>

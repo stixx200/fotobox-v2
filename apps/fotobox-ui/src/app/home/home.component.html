@@ -1,0 +1,35 @@
+<div class="home-container">
+  <!-- Live view will be shown here in the background -->
+  <div class="live-view">
+    <app-camera-live-view></app-camera-live-view>
+  </div>
+
+  <!-- Layout selection tiles -->
+  <div class="layout-tiles">
+    @for (layout of activeLayouts(); track layout; let i = $index) {
+      <div [class]="'panel panel-' + (i + 1)">
+        <mat-card class="layout-card" (click)="navigateToLayout(layout)">
+          <mat-card-header>
+            <mat-card-title>
+              <h3>{{ getLayoutDescription(layout) }}</h3>
+            </mat-card-title>
+          </mat-card-header>
+
+          <mat-card-content>
+            @if (getLayoutPreview(layout); as previewUrl) {
+              <div class="layout-preview">
+                <img [src]="previewUrl" [alt]="layout" />
+              </div>
+            } @else {
+              <div class="layout-icon">
+                <mat-icon [attr.aria-label]="layout">{{
+                  getLayoutIcon(layout)
+                }}</mat-icon>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+  </div>
+</div>

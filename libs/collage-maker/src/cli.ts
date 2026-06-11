@@ -9,22 +9,22 @@ function parseCliArguments() {
     .option(
       '--photo-dir <path>',
       'Directory containing photos. If not provided, no photos get rendered into the collage',
-      '.'
+      '.',
     )
     .option(
       '--template-directory <path>',
       'Directory containing templates. If not specified, you can only use the built-in templates.',
-      './templates'
+      './templates',
     )
     .option('--template-id <id>', 'ID of the template to use', '2x2')
     .option(
       '--output <path>',
       'Output path for the collage image',
-      'collage.jpg'
+      'collage.jpg',
     )
     .argument(
       '[photos...]',
-      'List of photo filenames to include in the collage. They get resolved relative to the photo directory.'
+      'List of photo filenames to include in the collage. They get resolved relative to the photo directory.',
     );
 
   program.parse();
@@ -51,7 +51,7 @@ async function main() {
 
   const template = resolveTemplate(
     options.templateId,
-    options.templateDirectory
+    options.templateDirectory,
   );
 
   try {
@@ -60,7 +60,6 @@ async function main() {
       ? options.output
       : path.resolve(process.cwd(), options.output);
     await fs.writeFile(outputPath, collageBuffer);
-    console.log('Collage created successfully:', options.output);
   } catch (error) {
     console.error('Error creating collage:', error);
   }

@@ -1,104 +1,57 @@
-import { ipcMain } from 'electron';
-import { Subscription } from 'rxjs';
 import { getLogger } from '@fotobox/logging';
-import { TOPICS } from '../../shared/constants';
-import { CameraProviderInitConfig } from '../../shared/init-configuration.interface';
-import { ClientProxy } from '../client.proxy';
-import { PhotoHandler } from '../photo.handler';
-import { ShutdownHandler } from '../shutdown.handler';
 import { CameraInterface } from './camera.interface';
 import { DemoCamera } from './demo';
 import { SonyCamera } from './sony';
 
-const logger = getLogger('camera.provider');
+const logger = getLogger('camera.factory');
 
-const cameras = {
-  sony: SonyCamera,
+/**
+ * Available camera drivers
+ */
+export const CAMERA_DRIVERS = {
   demo: DemoCamera,
-};
+  sony: SonyCamera,
+} as const;
 
-const getCamera = (cameraDriver: keyof typeof cameras): CameraInterface => {
-  if (!cameras[cameraDriver]) {
-    throw new Error(`Driver '${cameraDriver}' not available.`);
-  }
-  const CameraClass = cameras[cameraDriver];
-  return new CameraClass();
-};
+export type CameraDriverType = keyof typeof CAMERA_DRIVERS;
 
-export class CameraProvider {
-  private camera: CameraInterface = null;
-  private liveViewSubscription: Subscription;
-  private client: ClientProxy;
-  private picturesSubscription: Subscription;
-
-  constructor() {
-    this.takePicture = this.takePicture.bind(this);
+/**
+ * Camera factory to create camera instances by driver name
+ */
+export class CameraFactory {
+  /**
+   * Get list of available camera driver names
+   */
+  static getAvailableDrivers(): string[] {
+    return Object.keys(CAMERA_DRIVERS);
   }
 
-  static getCameraDriverNames() {
-    return Object.keys(cameras);
-  }
-
-  async init(
-    config: CameraProviderInitConfig,
-    externals: {
-      clientProxy: ClientProxy;
-      shutdownHandler: ShutdownHandler;
-      photosaver: PhotoHandler;
-    }
-  ) {
-    this.client = externals.clientProxy;
-
-    this.camera = getCamera(config.cameraDriver);
-    await this.camera.init(config, externals);
-
-    ipcMain.on(TOPICS.TAKE_PICTURE, this.takePicture);
-
-    this.startLiveViewObserving();
-    this.picturesSubscription = this.camera
-      .observePictures()
-      .subscribe((fileName: string) => this.onNewPhoto(fileName));
-  }
-
-  async deinit() {
-    if (this.liveViewSubscription) {
-      this.liveViewSubscription.unsubscribe();
-      this.liveViewSubscription = null;
-    }
-    if (this.picturesSubscription) {
-      this.picturesSubscription.unsubscribe();
-      this.picturesSubscription = null;
+  /**
+   * Create a camera instance by driver name
+   * @param driver - The camera driver name (e.g., 'demo', 'sony')
+   * @returns Camera instance
+   * @throws Error if driver is not available
+   */
+  static createCamera(driver: string): CameraInterface {
+    const driverKey = driver.toLowerCase() as CameraDriverType;
+    
+    if (!CAMERA_DRIVERS[driverKey]) {
+      throw new Error(
+        `Camera driver '${driver}' not available. Available drivers: ${this.getAvailableDrivers().join(', ')}`
+      );
     }
 
-    ipcMain.removeListener(TOPICS.TAKE_PICTURE, this.takePicture);
-
-    if (this.camera) {
-      await this.camera.deinit();
-      this.camera = null;
-    }
-
-    this.client = null;
+    logger.info(`Creating camera instance for driver: ${driver}`);
+    const CameraClass = CAMERA_DRIVERS[driverKey];
+    return new CameraClass();
   }
 
-  startLiveViewObserving() {
-    // don't start live view twice
-    if (this.liveViewSubscription) {
-      logger.warn('LiveViewObserving started twice. Ignore last call.');
-      return;
-    }
-
-    this.liveViewSubscription = this.camera
-      .observeLiveView()
-      .subscribe((data: any) => {
-        this.client.send(TOPICS.LIVEVIEW_DATA, data);
-      });
-  }
-
-  takePicture() {
-    this.camera.takePicture();
-  }
-
-  private onNewPhoto(fileName: string) {
-    this.client.send(TOPICS.PHOTO, fileName);
+  /**
+   * Check if a driver is available
+   * @param driver - The camera driver name
+   * @returns true if driver is available
+   */
+  static isDriverAvailable(driver: string): boolean {
+    return driver.toLowerCase() in CAMERA_DRIVERS;
   }
 }

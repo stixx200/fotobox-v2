@@ -1,4 +1,4 @@
 export * from './camera.interface';
 export * from './camera.provider';
-export * from './demo';
-export * from './sony';
+export { DemoCamera } from './demo';
+export { SonyCamera } from './sony';

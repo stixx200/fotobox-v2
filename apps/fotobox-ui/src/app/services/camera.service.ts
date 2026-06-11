@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap, take } from 'rxjs/operators';
 
 // GraphQL Queries
 const GET_AVAILABLE_CAMERAS = gql`
@@ -32,16 +32,6 @@ const INITIALIZE_CAMERA = gql`
     initializeCamera(driver: $driver) {
       success
       message
-    }
-  }
-`;
-
-const TAKE_PICTURE = gql`
-  mutation TakePicture {
-    takePicture {
-      id
-      path
-      timestamp
     }
   }
 `;
@@ -138,10 +128,17 @@ export class CameraService {
       .pipe(map((result) => result.data!.initializeCamera));
   }
 
-  takePicture(): Observable<Picture> {
+  takePicture(): Observable<MutationResult> {
     return this.apollo
-      .mutate<{ takePicture: Picture }>({
-        mutation: TAKE_PICTURE,
+      .mutate<{ takePicture: MutationResult }>({
+        mutation: gql`
+          mutation TakePicture {
+            takePicture {
+              success
+              message
+            }
+          }
+        `,
       })
       .pipe(map((result) => result.data!.takePicture));
   }

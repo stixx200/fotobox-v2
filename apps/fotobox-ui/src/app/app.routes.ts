@@ -1,4 +1,18 @@
 import { Route } from '@angular/router';
 import { SettingsComponent } from './settings/settings.component';
+import { HomeComponent } from './home/home.component';
+import { SingleLayoutComponent } from './layouts/single-layout/single-layout.component';
+import { CollageLayoutComponent } from './layouts/collage-layout/collage-layout.component';
 
-export const appRoutes: Route[] = [{ path: '', component: SettingsComponent }];
+export const appRoutes: Route[] = [
+  { path: '', component: SettingsComponent },
+  { path: 'settings', component: SettingsComponent },
+  { path: 'home', component: HomeComponent },
+  {
+    path: 'layouts',
+    children: [
+      { path: 'single', component: SingleLayoutComponent },
+      { path: 'collage', component: CollageLayoutComponent },
+    ],
+  },
+];

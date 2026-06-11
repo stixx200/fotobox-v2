@@ -1,9 +1,16 @@
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
+import { OnModuleDestroy } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 import { CameraService } from './cameras.service';
-import { CameraInfo, CameraList, Picture, LiveViewFrame } from './models/camera.model';
+import {
+  CameraInfo,
+  CameraList,
+  Picture,
+  LiveViewFrame,
+} from './models/camera.model';
 import { GenericMutationResult } from '@fotobox/nest-graphql';
 import { getLogger } from '@fotobox/logging';
+import { Subscription as RxSubscription } from 'rxjs';
 
 const logger = getLogger('CameraResolver');
 const pubSub = new PubSub();
@@ -12,8 +19,26 @@ const LIVE_VIEW_TOPIC = 'liveView';
 const PICTURE_TAKEN_TOPIC = 'pictureTaken';
 
 @Resolver(() => CameraInfo)
-export class CameraResolver {
+export class CameraResolver implements OnModuleDestroy {
+  private pictureTakenSubscription: RxSubscription | null = null;
+  private liveViewSubscription: RxSubscription | null = null;
+
   constructor(private readonly cameraService: CameraService) {}
+
+  /**
+   * Cleanup subscription on module destruction
+   */
+  async onModuleDestroy(): Promise<void> {
+    this.pictureTakenSubscription?.unsubscribe();
+    this.pictureTakenSubscription = null;
+
+    if (this.liveViewSubscription) {
+      this.liveViewSubscription.unsubscribe();
+      this.liveViewSubscription = null;
+      // Decrement the reference count
+      this.cameraService.stopLiveView();
+    }
+  }
 
   @Query(() => CameraList, { description: 'Get list of available cameras' })
   async availableCameras(): Promise<CameraList> {
@@ -28,22 +53,33 @@ export class CameraResolver {
     return this.cameraService.getCameraStatus();
   }
 
-  @Mutation(() => GenericMutationResult, { 
-    description: 'Initialize camera with specified driver' 
+  @Mutation(() => GenericMutationResult, {
+    description: 'Initialize camera with specified driver',
   })
   async initializeCamera(
-    @Args('driver') driver: string
+    @Args('driver') driver: string,
   ): Promise<GenericMutationResult> {
     logger.debug(`Initializing camera: ${driver}`);
-    
+
     try {
       await this.cameraService.initializeCamera(driver);
+      this.pictureTakenSubscription = this.cameraService
+        .getPictureTaken$()
+        .subscribe((pictureData) => {
+          const picture: Picture = {
+            id: pictureData.photoId,
+            timestamp: pictureData.timestamp,
+            path: pictureData.path,
+          };
+          pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
+        });
       return {
         success: true,
         message: `Camera initialized with driver: ${driver}`,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return {
         success: false,
         message: errorMessage,
@@ -51,63 +87,93 @@ export class CameraResolver {
     }
   }
 
-  @Mutation(() => Picture, { description: 'Take a picture with the camera' })
-  async takePicture(): Promise<Picture> {
+  @Mutation(() => GenericMutationResult, {
+    description: 'Take a picture with the camera',
+  })
+  async takePicture(): Promise<GenericMutationResult> {
     logger.debug('Taking picture');
-    
-    const pictureId = await this.cameraService.takePicture();
-    const picture: Picture = {
-      id: pictureId,
-      path: `/photos/${pictureId}.jpg`,
-      timestamp: new Date().toISOString(),
-    };
 
-    // Publish picture taken event
-    pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
-
-    return picture;
+    await this.cameraService.takePicture();
+    return { success: true };
   }
 
-  @Mutation(() => GenericMutationResult, { 
-    description: 'Start live view streaming' 
+  @Mutation(() => GenericMutationResult, {
+    description: 'Start live view streaming',
   })
   async startLiveView(): Promise<GenericMutationResult> {
     logger.debug('Starting live view');
-    
-    // Simulate live view - in production this would start the camera stream
-    const interval = setInterval(() => {
-      const frame: LiveViewFrame = {
-        data: Buffer.from('mock-image-data').toString('base64'),
-        timestamp: new Date().toISOString(),
+
+    try {
+      const camera = this.cameraService.getCurrentCamera();
+      if (!camera) {
+        return {
+          success: false,
+          message: 'No camera initialized. Please initialize a camera first.',
+        };
+      }
+
+      // Stop any existing live view subscription
+      this.liveViewSubscription?.unsubscribe();
+      this.liveViewSubscription = null;
+
+      // Subscribe to camera's live view through the service (with reference counting)
+      this.liveViewSubscription = this.cameraService.startLiveView().subscribe({
+        next: (base64Data) => {
+          const frame: LiveViewFrame = {
+            data: base64Data,
+            timestamp: new Date().toISOString(),
+          };
+          pubSub.publish(LIVE_VIEW_TOPIC, { liveViewStream: frame });
+        },
+        error: (error) => {
+          logger.error('Error in live view stream:', error);
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Live view started',
       };
-      pubSub.publish(LIVE_VIEW_TOPIC, { liveViewStream: frame });
-    }, 1000);
-
-    // Store interval for cleanup (in production this would be managed better)
-    (global as any).__liveViewInterval = interval;
-
-    return {
-      success: true,
-      message: 'Live view started',
-    };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error('Failed to start live view:', errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
   }
 
-  @Mutation(() => GenericMutationResult, { 
-    description: 'Stop live view streaming' 
+  @Mutation(() => GenericMutationResult, {
+    description: 'Stop live view streaming',
   })
   async stopLiveView(): Promise<GenericMutationResult> {
     logger.debug('Stopping live view');
-    
-    const interval = (global as any).__liveViewInterval;
-    if (interval) {
-      clearInterval(interval);
-      delete (global as any).__liveViewInterval;
-    }
 
-    return {
-      success: true,
-      message: 'Live view stopped',
-    };
+    try {
+      // Unsubscribe from live view
+      if (this.liveViewSubscription) {
+        this.liveViewSubscription.unsubscribe();
+        this.liveViewSubscription = null;
+      }
+
+      // Stop live view on service (with reference counting)
+      this.cameraService.stopLiveView();
+
+      return {
+        success: true,
+        message: 'Live view stopped',
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error('Failed to stop live view:', errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
   }
 
   @Subscription(() => LiveViewFrame, {

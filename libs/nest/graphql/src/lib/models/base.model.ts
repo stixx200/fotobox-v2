@@ -28,7 +28,7 @@ export class GenericMutationResult implements MutationResult {
  * Error type for GraphQL responses
  */
 @ObjectType()
-export class GraphQLError {
+export class AppErrorResponse {
   @Field(() => String)
   code!: string;
 

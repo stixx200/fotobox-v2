@@ -19,9 +19,12 @@
         },
         "development": {
           "buildTarget": "fotobox-electron:build:development"
+        },
+        "nest-only": {
+          "runtimeArgs": []
         }
       },
-      "defaultConfiguration": "production"
+      "defaultConfiguration": "development"
     },
     "package": {
       "executor": "nx-electron:package",

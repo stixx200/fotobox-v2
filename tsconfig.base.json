@@ -17,7 +17,7 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@fotobox/cameras": ["libs/cameras/index.ts"],
+      "@fotobox/cameras": ["libs/cameras/src/index.ts"],
       "@fotobox/collage-maker": ["libs/collage-maker/src/index.ts"],
       "@fotobox/electron-window": ["libs/electron/window/src/index.ts"],
       "@fotobox/error": ["libs/error/src/index.ts"],
@@ -27,7 +27,10 @@
       "@fotobox/nest-collage-maker": ["libs/nest/collage-maker/src/index.ts"],
       "@fotobox/nest-graphql": ["libs/nest/graphql/src/index.ts"],
       "@fotobox/nest-logger": ["libs/nest/logger/src/index.ts"],
-      "@fotobox/nest-settings": ["libs/nest/settings/src/index.ts"]
+      "@fotobox/nest-printer-api": ["libs/nest/printer-api/src/index.ts"],
+      "@fotobox/nest-settings": ["libs/nest/settings/src/index.ts"],
+      "@fotobox/nest-photo-storage": ["libs/nest/photo-storage/src/index.ts"],
+      "@fotobox/photo-storage": ["libs/photo-storage/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

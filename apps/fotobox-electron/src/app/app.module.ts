@@ -10,22 +10,51 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { getLogger } from '@fotobox/logging';
 import { SettingsModule } from '@fotobox/nest-settings';
 import { CamerasApiModule } from '@fotobox/nest-cameras-api';
+import { PrinterApiModule } from '@fotobox/nest-printer-api';
 import { FotoboxError } from '@fotobox/error';
+import { GraphqlModule } from '@fotobox/nest-graphql';
+import { PhotosController } from './photos.controller';
 
-const logger = getLogger('GraphQL');
+const logger = getLogger('AppModule');
+
+// Determine the UI URL based on environment
+const getUIUrl = (): string => {
+  const url =
+    process.env.FOTOBOX_DEV_SERVER ||
+    pathToFileURL(path.join(__dirname, 'fotobox-ui/index.html')).toString();
+
+  logger.info(`Loading UI from: ${url}`);
+  return url;
+};
+
+// Default configuration
+const getDefaultConfig = () => {
+  const cwd = process.cwd();
+  return {
+    photoDirectory: path.join(cwd, 'photos'),
+    templateDirectory: path.join(cwd, 'collage-templates'),
+  };
+};
 
 @Module({
   imports: [
-    AppServiceModule,
-    WindowModule.register({
-      url: pathToFileURL(
-        path.join(__dirname, 'fotobox-ui/index.html')
-      ).toString(),
+    ...(process.env.FOTOBOX_SKIP_VIEW
+      ? []
+      : [
+          WindowModule.register({
+            url: getUIUrl(),
+          }),
+        ]),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [getDefaultConfig],
     }),
+    GraphqlModule,
     CollageMakerModule,
     SettingsModule,
     CamerasApiModule,
-    ConfigModule.forRoot({}),
+    PrinterApiModule,
+    AppServiceModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
@@ -34,17 +63,14 @@ const logger = getLogger('GraphQL');
       path: '/graphql',
       subscriptions: {
         'graphql-ws': true,
-        'subscriptions-transport-ws': false,
       },
       formatError: (error) => {
-        // Log all errors
         logger.error('GraphQL Error:', {
           message: error.message,
           path: error.path,
           extensions: error.extensions,
         });
 
-        // If it's a FotoboxError, include the error code in extensions
         if (error.extensions?.originalError instanceof FotoboxError) {
           const fotoboxError = error.extensions.originalError as FotoboxError;
           return {
@@ -59,17 +85,9 @@ const logger = getLogger('GraphQL');
 
         return error;
       },
-      context: ({ req, connection }: { req?: any; connection?: any }) => {
-        if (connection) {
-          // WebSocket connection context
-          return { subscription: true };
-        }
-        // HTTP request context
-        return { req };
-      },
     }),
   ],
-  controllers: [],
+  controllers: [PhotosController],
   providers: [],
 })
 export class AppModule {}

@@ -1,32 +1,56 @@
 import sharp from 'sharp';
 import path from 'path';
+import fs from 'fs';
 import { CollageMakerConfiguration } from './collage-maker-configuration.interface';
 import { calculateWidthHeight } from './helper';
 import { TemplateLoader } from './template-loader';
 import { Space, TemplateInterface } from './template.interface';
 import { getLogger } from '@fotobox/logging';
-
 const logger = getLogger('collage-maker.maker');
 
-const questionmarkPhoto = path.resolve(__dirname, '../images/questionmark.png');
-const defaultBackgroundPhoto = path.resolve(
-  __dirname,
-  '../images/default-background.jpg'
-);
+/**
+ * Resolves asset path for both development and production environments.
+ * In production (electron build), images are copied to dist/apps/fotobox-electron/images/
+ * In development, images are at libs/collage-maker/src/images/
+ */
+function resolveAssetPath(filename: string): string {
+  // Production path (relative to bundled main.js in dist/apps/fotobox-electron/)
+  const productionPath = path.resolve(__dirname, 'images', filename);
+  if (fs.existsSync(productionPath)) {
+    return productionPath;
+  }
+
+  // Development path (relative to libs/collage-maker/src/lib/)
+  const developmentPath = path.resolve(__dirname, '../images', filename);
+  if (fs.existsSync(developmentPath)) {
+    return developmentPath;
+  }
+
+  // Fall back to production path even if it doesn't exist (will fail with clear error)
+  logger.error('Asset not found in production or development paths', {
+    productionPath,
+    developmentPath,
+    filename,
+  });
+  return productionPath;
+}
+
+const questionmarkPhoto = resolveAssetPath('questionmark.png');
+const defaultBackgroundPhoto = resolveAssetPath('default-background.jpg');
 
 function convertPhotoPath(photoPath: string) {
   return photoPath.replace('app.asar', 'app.asar.unpacked');
 }
 
 logger.info(
-  `Paths to questionmark and background: ${questionmarkPhoto}, ${defaultBackgroundPhoto}`
+  `Paths to questionmark and background: ${questionmarkPhoto}, ${defaultBackgroundPhoto}`,
 );
 
 async function createComposite(photoToAdd: string, space: Space) {
   const { width, height } = calculateWidthHeight(
     space.width,
     space.height,
-    space.border
+    space.border,
   );
   let input: sharp.Sharp | Buffer = sharp(convertPhotoPath(photoToAdd))
     .png()
@@ -75,8 +99,8 @@ export class CollageMaker {
     try {
       let sharpInstance = sharp(
         convertPhotoPath(
-          templateLoader.getBackground() || defaultBackgroundPhoto
-        )
+          templateLoader.getBackground() || defaultBackgroundPhoto,
+        ),
       ).resize(contentSize);
       if (border) {
         sharpInstance = sharpInstance.extend(border);
@@ -99,10 +123,10 @@ export class CollageMaker {
             return createComposite(photoToAdd, space);
           } catch (error: unknown) {
             throw new Error(
-              `Can't add ${photoToAdd}: ${(error as Error).message}`
+              `Can't add ${photoToAdd}: ${(error as Error).message}`,
             );
           }
-        })
+        }),
     );
   }
 }

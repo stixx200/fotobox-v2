@@ -1,63 +1,131 @@
 import * as fs from 'fs-extra';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
-import template2x2 from './2x2';
 import { TemplateInterface } from '../lib/template.interface';
 import { FotoboxError } from '@fotobox/error';
+import { getLogger } from '@fotobox/logging';
 
-const defaultTemplates = [template2x2];
+const logger = getLogger('CollageTemplates');
+const nodeRequire = createRequire(import.meta.url);
 
-export function getTemplates(
-  templateDirectory?: string
-): Record<string, TemplateInterface> {
-  const templates: Record<string, TemplateInterface> = {};
-  for (const template of defaultTemplates) {
-    if (template && template.id) {
-      templates[template.id] = template;
-    } else {
-      throw new FotoboxError(
-        `Default template '${template.id}' does not have a valid 'id' property.`,
-        { code: 'MAIN.COLLAGE-MAKER.INVALID_TEMPLATE' }
-      );
-    }
+function loadTemplatesFromDirectory(
+  templateDirectory: string,
+  templates: Record<string, TemplateInterface>,
+) {
+  if (!fs.existsSync(templateDirectory)) {
+    return;
   }
+  const templateFolders = fs
+    .readdirSync(templateDirectory)
+    .filter((template) =>
+      fs.statSync(path.join(templateDirectory, template)).isDirectory(),
+    );
+  for (const templateName of templateFolders) {
+    const templatePath = path.join(templateDirectory, templateName);
+    try {
+      let resolvedTemplate: TemplateInterface | undefined;
 
-  if (templateDirectory && fs.existsSync(templateDirectory)) {
-    const templateFolders = fs
-      .readdirSync(templateDirectory)
-      .filter((template) =>
-        fs.statSync(path.join(templateDirectory, template)).isDirectory()
-      );
-    for (const template of templateFolders) {
-      const resolvedTemplate = require(/* webpackIgnore: true */ path.join(
-        templateDirectory,
-        template
-      )) as TemplateInterface;
+      // Try loading as JSON
+      const indexJsonPath = path.join(templatePath, 'index.json');
+      if (fs.existsSync(indexJsonPath)) {
+        try {
+          const templateData = fs.readFileSync(indexJsonPath, 'utf8');
+          resolvedTemplate = JSON.parse(templateData) as TemplateInterface;
+          // resolve background
+          if (
+            resolvedTemplate.background &&
+            typeof resolvedTemplate.background === 'string' &&
+            !path.isAbsolute(resolvedTemplate.background)
+          ) {
+            resolvedTemplate.background = path.join(
+              templatePath,
+              resolvedTemplate.background,
+            );
+          }
+        } catch (jsonError) {
+          logger.debug(
+            `Failed to load '${templateName}' as JSON: ${
+              jsonError instanceof Error ? jsonError.message : String(jsonError)
+            }`,
+          );
+        }
+      }
+
+      // Try loading as CommonJS module
+      if (!resolvedTemplate) {
+        try {
+          const indexJsPath = path.join(templatePath, 'index.js');
+          if (fs.existsSync(indexJsPath)) {
+            // Clear require cache
+            delete nodeRequire.cache[nodeRequire.resolve(indexJsPath)];
+            resolvedTemplate = nodeRequire(indexJsPath) as TemplateInterface;
+          }
+        } catch (requireError) {
+          logger.debug(
+            `Failed to load '${templateName}' as CommonJS: ${
+              requireError instanceof Error
+                ? requireError.message
+                : String(requireError)
+            }`,
+          );
+        }
+      }
+
       if (resolvedTemplate && resolvedTemplate.id) {
         templates[resolvedTemplate.id] = resolvedTemplate;
-      } else {
-        throw new FotoboxError(
-          `Template '${template}' in directory '${templateDirectory}' does not have a valid 'id' property.`,
-          { code: 'MAIN.COLLAGE-MAKER.INVALID_TEMPLATE' }
+        logger.debug(
+          `Loaded template '${resolvedTemplate.id}' from '${templateName}'`,
+        );
+      } else if (resolvedTemplate) {
+        logger.warn(
+          `Template '${templateName}' does not have a valid 'id' property.`,
         );
       }
+    } catch (error) {
+      logger.warn(
+        `Failed to load template '${templateName}': ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
-  return templates;
 }
 
+export function getTemplates(
+  userTemplateDirectory?: string,
+  builtInTemplateDirectory?: string,
+): Record<string, TemplateInterface> {
+  const templates: Record<string, TemplateInterface> = {};
+
+  // Load built-in templates first
+  if (builtInTemplateDirectory) {
+    loadTemplatesFromDirectory(builtInTemplateDirectory, templates);
+  }
+
+  // Load user templates (can override built-in)
+  if (userTemplateDirectory) {
+    loadTemplatesFromDirectory(userTemplateDirectory, templates);
+  }
+
+  return templates;
+}
 export function resolveTemplate(
   templateId: string,
-  templateDirectory?: string
+  userTemplateDirectory?: string,
+  builtInTemplateDirectory?: string,
 ): TemplateInterface {
-  const templates = getTemplates(templateDirectory);
+  const templates = getTemplates(
+    userTemplateDirectory,
+    builtInTemplateDirectory,
+  );
   if (templateId in templates) {
     return templates[templateId];
   }
   throw new FotoboxError(
     `Template '${templateId}' not found. Available are: '${Object.keys(
-      templates
+      templates,
     ).join(', ')}'`,
-    { code: 'MAIN.COLLAGE-MAKER.TEMPLATE_NOT_FOUND', info: { templateId } }
+    { code: 'MAIN.COLLAGE-MAKER.TEMPLATE_NOT_FOUND', info: { templateId } },
   );
 }

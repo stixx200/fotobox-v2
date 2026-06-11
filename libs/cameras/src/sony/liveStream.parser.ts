@@ -1,10 +1,9 @@
-import * as _ from 'lodash';
 import { Observer } from 'rxjs';
 import { getLogger } from '@fotobox/logging';
 
 const logger = getLogger('camera.sony.livestreamparser');
 
-enum RECEIVING_TYPE {
+const enum RECEIVING_TYPE {
   commonHeader,
   payloadHeader,
   jpegData,
@@ -38,19 +37,11 @@ class ReceivingInfo {
       frameSize?: number;
     } = {}
   ) {
-    this.payloadType = _.isNil(data.payloadType)
-      ? this.payloadType
-      : data.payloadType;
-    this.paddingSize = _.isNil(data.paddingSize)
-      ? this.paddingSize
-      : data.paddingSize;
-    this.payloadSize = _.isNil(data.payloadSize)
-      ? this.payloadSize
-      : data.payloadSize;
-    this.frameCount = _.isNil(data.frameCount)
-      ? this.frameCount
-      : data.frameCount;
-    this.frameSize = _.isNil(data.frameSize) ? this.frameSize : data.frameSize;
+    this.payloadType = data.payloadType ?? this.payloadType;
+    this.paddingSize = data.paddingSize ?? this.paddingSize;
+    this.payloadSize = data.payloadSize ?? this.payloadSize;
+    this.frameCount = data.frameCount ?? this.frameCount;
+    this.frameSize = data.frameSize ?? this.frameSize;
   }
 }
 
@@ -173,8 +164,7 @@ export class LiveStreamParser {
       RECEIVING_TYPE.commonHeader,
       this.buffer.slice(
         this.receivingInfo.payloadSize + this.receivingInfo.paddingSize
-      ),
-      null
+      )
     );
   }
 
@@ -185,8 +175,7 @@ export class LiveStreamParser {
     if (this.receivingInfo.frameCount === 1) {
       this.reset(
         RECEIVING_TYPE.commonHeader,
-        this.buffer.slice(packageSize),
-        null
+        this.buffer.slice(packageSize)
       );
     } else {
       this.receivingInfo.frameCount = this.receivingInfo.frameCount - 1;

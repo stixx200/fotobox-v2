@@ -1,0 +1,143 @@
+.home-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.live-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a1a;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-tiles {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 10px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.panel {
+  width: 25%;
+  max-width: 300px;
+  min-width: 200px;
+  height: 320px;
+  pointer-events: auto;
+
+  &.panel-1 {
+    flex-grow: 1;
+  }
+
+  &.panel-2 {
+    flex-grow: 1;
+  }
+
+  &.panel-3 {
+    flex-grow: 1;
+  }
+}
+
+.layout-card {
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+
+mat-card-header {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 16px;
+  flex-shrink: 0;
+
+  mat-card-title h3 {
+    margin: 0;
+    text-align: center;
+    color: #8b4513;
+    font:
+      italic bold 1.8em 'Trebuchet MS',
+      Arial,
+      Helvetica;
+  }
+}
+
+mat-card-content {
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.layout-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  mat-icon {
+    font-size: 120px;
+    width: 120px;
+    height: 120px;
+    color: #8b4513;
+    opacity: 0.8;
+  }
+}
+
+.layout-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  box-sizing: border-box;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+}
+
+.image {
+  background-size: contain !important;
+  background-position: center center;
+  background-repeat: no-repeat;
+  height: 200px;
+  margin: auto;
+}
+
+.single-img {
+  background-image: url('/singlelayout.preview.jpg');
+}
+
+.collage-img {
+  background-image: url('/collagelayout.preview.jpg');
+}
