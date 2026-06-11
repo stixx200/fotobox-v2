@@ -30,7 +30,8 @@
       "@fotobox/nest-printer-api": ["libs/nest/printer-api/src/index.ts"],
       "@fotobox/nest-settings": ["libs/nest/settings/src/index.ts"],
       "@fotobox/nest-photo-storage": ["libs/nest/photo-storage/src/index.ts"],
-      "@fotobox/photo-storage": ["libs/photo-storage/src/index.ts"]
+      "@fotobox/photo-storage": ["libs/photo-storage/src/index.ts"],
+      "@fotobox/nest-api": ["libs/nest/api/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

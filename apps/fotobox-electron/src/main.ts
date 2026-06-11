@@ -1,47 +1,125 @@
-import { NestFactory } from '@nestjs/core';
+import { app, BrowserWindow, screen } from 'electron';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import type { INestApplication } from '@nestjs/common';
 import { getLogger } from '@fotobox/logging';
-import { AppModule } from './app/app.module';
-import { AppService } from '@fotobox/nest-app-service';
-import { WinstonLoggerService } from '@fotobox/nest-logger';
-import { EventEmitter } from 'events';
+import { bootstrapApiServer } from '@fotobox/nest-api';
+import { registerElectronEvents } from './app/events/electron.events';
 
-const logger = getLogger();
+const logger = getLogger('fotobox-electron');
 
-async function bootstrapApp() {
-  try {
-    const app = await NestFactory.create(AppModule, {
-      logger: new WinstonLoggerService(),
-    });
-    const appService = app.get(AppService) as AppService;
-    appService.setApp(app);
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
 
-    // Enable CORS
-    app.enableCors();
+let mainWindow: BrowserWindow | null = null;
+let apiApp: INestApplication | null = null;
 
-    const globalPrefix = 'api';
-    app.setGlobalPrefix(globalPrefix);
-
-    const port = process.env.PORT || 3000;
-    await app.listen(port);
-    logger.info(
-      `🚀 Application backend is running on: http://localhost:${port}/${globalPrefix}`,
-    );
-  } catch (error) {
-    logger.error('Failed to start application:', error);
-    process.exit(1);
+/**
+ * Resolve the API URL the renderer should talk to. By default the Electron
+ * host runs the API in-process on localhost. Set FOTOBOX_API_URL to point the
+ * kiosk window at an external API instead (e.g. a shared server).
+ */
+function resolveApiUrl(): string {
+  if (process.env.FOTOBOX_API_URL) {
+    return process.env.FOTOBOX_API_URL.replace(/\/+$/, '');
   }
+  return `http://localhost:${DEFAULT_PORT}`;
 }
 
-// Handle unhandled promise rejections globally
+function getUIUrl(): string {
+  const url =
+    process.env.FOTOBOX_DEV_SERVER ||
+    pathToFileURL(join(__dirname, 'fotobox-ui/index.html')).toString();
+  logger.info(`Loading UI from: ${url}`);
+  return url;
+}
+
+/**
+ * Start the backend in-process unless an external API is configured. Reuses the
+ * exact same module as the standalone `fotobox-api` server.
+ */
+async function startEmbeddedApi(): Promise<void> {
+  if (process.env.FOTOBOX_API_URL) {
+    logger.info(`Using external API at ${process.env.FOTOBOX_API_URL}`);
+    return;
+  }
+
+  // Persist settings under the OS user-data directory when acting as the host.
+  if (!process.env.FOTOBOX_SETTINGS_PATH) {
+    process.env.FOTOBOX_SETTINGS_PATH = join(
+      app.getPath('userData'),
+      'settings.json',
+    );
+  }
+
+  apiApp = await bootstrapApiServer({ port: DEFAULT_PORT, host: '127.0.0.1' });
+}
+
+async function createWindow(): Promise<void> {
+  const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
+
+  mainWindow = new BrowserWindow({
+    width: workAreaSize.width || 1280,
+    height: workAreaSize.height || 720,
+    show: false,
+    fullscreen: true,
+    webPreferences: {
+      contextIsolation: true,
+      backgroundThrottling: false,
+      preload: join(__dirname, 'main.preload.js'),
+      additionalArguments: [`--fotobox-api-url=${resolveApiUrl()}`],
+    },
+  });
+
+  mainWindow.setMenu(null);
+  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  await mainWindow.loadURL(getUIUrl());
+}
+
+async function bootstrap(): Promise<void> {
+  await app.whenReady();
+  registerElectronEvents();
+
+  try {
+    await startEmbeddedApi();
+  } catch (error) {
+    logger.error('Failed to start embedded API server:', error);
+  }
+
+  await createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      void createWindow();
+    }
+  });
+}
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('before-quit', async () => {
+  if (apiApp) {
+    await apiApp.close().catch(() => undefined);
+    apiApp = null;
+  }
+});
+
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Promise Rejection:', { reason, promise });
-  process.exit(1);
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  process.exit(1);
 });
 
-await bootstrapApp();
+bootstrap().catch((error) => {
+  logger.error('Electron bootstrap failed:', error);
+  app.quit();
+});

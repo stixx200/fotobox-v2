@@ -4,20 +4,18 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from 'graphql-ws';
 import { GraphQLError } from 'graphql';
-
-const GRAPHQL_URI = 'http://localhost:3000/graphql';
-const WS_URI = 'ws://localhost:3000/graphql';
+import { getGraphqlHttpUri, getGraphqlWsUri } from './api-config';
 
 export function createApolloOptions() {
   // Create HTTP link for queries and mutations
   const http = new HttpLink({
-    uri: GRAPHQL_URI,
+    uri: getGraphqlHttpUri(),
   });
 
   // Create WebSocket link for subscriptions
   const ws = new GraphQLWsLink(
     createClient({
-      url: WS_URI,
+      url: getGraphqlWsUri(),
       connectionParams: () => ({
         // Add any auth headers here if needed
       }),

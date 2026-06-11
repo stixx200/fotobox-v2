@@ -1,50 +1,30 @@
 import { Module } from '@nestjs/common';
-import { WindowModule } from '@fotobox/electron-window';
-import { AppServiceModule } from '@fotobox/nest-app-service';
-import { pathToFileURL } from 'node:url';
-import * as path from 'node:path';
-import { CollageMakerModule } from '@fotobox/nest-collage-maker';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { getLogger } from '@fotobox/logging';
+import { FotoboxError } from '@fotobox/error';
+import { GraphqlModule } from '@fotobox/nest-graphql';
 import { SettingsModule } from '@fotobox/nest-settings';
 import { CamerasApiModule } from '@fotobox/nest-cameras-api';
 import { PrinterApiModule } from '@fotobox/nest-printer-api';
-import { FotoboxError } from '@fotobox/error';
-import { GraphqlModule } from '@fotobox/nest-graphql';
+import { CollageMakerModule } from '@fotobox/nest-collage-maker';
+import { AppServiceModule } from '@fotobox/nest-app-service';
+import { getDefaultConfig } from './api.config';
 import { PhotosController } from './photos.controller';
 
-const logger = getLogger('AppModule');
+const logger = getLogger('ApiModule');
 
-// Determine the UI URL based on environment
-const getUIUrl = (): string => {
-  const url =
-    process.env.FOTOBOX_DEV_SERVER ||
-    pathToFileURL(path.join(__dirname, 'fotobox-ui/index.html')).toString();
-
-  logger.info(`Loading UI from: ${url}`);
-  return url;
-};
-
-// Default configuration
-const getDefaultConfig = () => {
-  const cwd = process.cwd();
-  return {
-    photoDirectory: path.join(cwd, 'photos'),
-    templateDirectory: path.join(cwd, 'collage-templates'),
-  };
-};
-
+/**
+ * Shared backend module for the Fotobox API. Used by both the standalone
+ * `fotobox-api` server and the embedded Electron host so there is a single
+ * source of truth for the GraphQL/REST surface and its feature modules.
+ *
+ * Note: deliberately does NOT include any Electron window concerns — those
+ * live in the Electron shell only.
+ */
 @Module({
   imports: [
-    ...(process.env.FOTOBOX_SKIP_VIEW
-      ? []
-      : [
-          WindowModule.register({
-            url: getUIUrl(),
-          }),
-        ]),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [getDefaultConfig],
@@ -90,4 +70,4 @@ const getDefaultConfig = () => {
   controllers: [PhotosController],
   providers: [],
 })
-export class AppModule {}
+export class ApiModule {}

@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  NotFoundException,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
@@ -20,7 +26,6 @@ export class PhotosController {
     // Try to get photo directory from settings first, fallback to config
     const settings = await this.settingsService.getAllSettings();
     const photoDirSetting = settings.find((s) => s.key === 'photoDirectory');
-    console.log('photoDirSetting', photoDirSetting);
     const photoDirectory =
       photoDirSetting?.value && photoDirSetting.value !== '""'
         ? JSON.parse(photoDirSetting.value)
@@ -41,11 +46,9 @@ export class PhotosController {
         throw new NotFoundException('File not found');
       }
 
-      // Set appropriate headers
       res.setHeader('Content-Type', 'image/jpeg');
       res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
 
-      // Stream the file
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
     } catch (error) {

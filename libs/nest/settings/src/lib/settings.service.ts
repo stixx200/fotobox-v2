@@ -13,10 +13,26 @@ export class SettingsService {
   private settingsFilePath: string;
 
   constructor() {
-    // Store settings in userData directory
-    const userDataPath = this.getUserDataPath();
-    this.settingsFilePath = path.join(userDataPath, 'settings.json');
+    this.settingsFilePath = this.resolveSettingsFilePath();
+    logger.info(`Using settings file: ${this.settingsFilePath}`);
     this.loadSettings();
+  }
+
+  /**
+   * Resolves where to persist settings. Order of precedence:
+   * 1. FOTOBOX_SETTINGS_PATH env var (explicit file path) — used by the
+   *    standalone API server so it does not depend on Electron.
+   * 2. Electron's userData directory, when running inside Electron.
+   * 3. The current working directory as a last resort.
+   */
+  private resolveSettingsFilePath(): string {
+    const explicitPath = process.env.FOTOBOX_SETTINGS_PATH;
+    if (explicitPath) {
+      return path.isAbsolute(explicitPath)
+        ? explicitPath
+        : path.resolve(process.cwd(), explicitPath);
+    }
+    return path.join(this.getUserDataPath(), 'settings.json');
   }
 
   private getUserDataPath(): string {

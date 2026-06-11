@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, retry, timeout, catchError } from 'rxjs';
 import { of } from 'rxjs';
+import { getGraphqlHttpUri } from '../api-config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ApiHealthService {
-  private readonly API_HEALTH_URL = '/graphql';
+  private readonly API_HEALTH_URL = getGraphqlHttpUri();
   private readonly RETRY_ATTEMPTS = 30;
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly TIMEOUT = 5000; // 5 seconds
