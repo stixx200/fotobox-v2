@@ -1,5 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { PhotoStorageService, PhotoStorageConfig } from '@fotobox/photo-storage';
+import {
+  PhotoStorageService,
+  PhotoStorageConfig,
+} from '@fotobox/photo-storage';
 
 @Injectable()
 export class PhotoStorageProviderService implements OnModuleInit {
@@ -13,7 +16,7 @@ export class PhotoStorageProviderService implements OnModuleInit {
 
   onModuleInit(): void {
     this.logger.log(
-      `Photo storage initialized at: ${this.photoStorageService.getPhotoDirectory()}`
+      `Photo storage initialized at: ${this.photoStorageService.getPhotoDirectory()}`,
     );
   }
 
@@ -61,6 +64,13 @@ export class PhotoStorageProviderService implements OnModuleInit {
   deletePhoto(photoId: string): void {
     this.photoStorageService.deletePhoto(photoId);
     this.logger.debug(`Photo ${photoId} deleted`);
+  }
+
+  /**
+   * List all photos, sorted newest-first.
+   */
+  listPhotos(): { id: string; path: string; timestamp: string }[] {
+    return this.photoStorageService.listPhotos();
   }
 
   /**

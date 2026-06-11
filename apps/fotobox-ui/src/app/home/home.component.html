@@ -11,6 +11,16 @@
     [attr.data-taps]="escapeTapCount() || null"
   ></div>
 
+  <!-- Gallery button: visible in upper-right corner -->
+  <button
+    class="gallery-btn"
+    mat-mini-fab
+    aria-label="Galerie öffnen"
+    (click)="goToGallery(); $event.stopPropagation()"
+  >
+    <mat-icon>photo_library</mat-icon>
+  </button>
+
   <!-- Layout selection tiles -->
   <div class="layout-tiles">
     @for (layout of activeLayouts(); track layout; let i = $index) {

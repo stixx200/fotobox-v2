@@ -1,6 +1,25 @@
-import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Field,
+  ObjectType,
+} from '@nestjs/graphql';
 import { PhotoStorageProviderService } from './photo-storage-provider.service';
 import { Logger } from '@nestjs/common';
+
+@ObjectType()
+export class PhotoInfo {
+  @Field()
+  id!: string;
+
+  @Field()
+  path!: string;
+
+  @Field()
+  timestamp!: string;
+}
 
 @Resolver('PhotoStorage')
 export class PhotoStorageResolver {
@@ -11,6 +30,13 @@ export class PhotoStorageResolver {
   @Query(() => String, { description: 'Get the current photo directory' })
   getPhotoDirectory(): string {
     return this.photoStorageService.getPhotoDirectory();
+  }
+
+  @Query(() => [PhotoInfo], {
+    description: 'List all stored photos, newest first',
+  })
+  photos(): PhotoInfo[] {
+    return this.photoStorageService.listPhotos();
   }
 
   @Mutation(() => String, { description: 'Set the photo directory' })

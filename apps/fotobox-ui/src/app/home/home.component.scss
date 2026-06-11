@@ -32,6 +32,19 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+// Gallery button: small FAB in the upper-right corner.
+.gallery-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  opacity: 0.75;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
 .layout-tiles {
   position: relative;
   z-index: 1;

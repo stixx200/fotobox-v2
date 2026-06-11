@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { PhotoStorageConfig, getDefaultPhotoStorageConfig } from './photo-storage.config';
+import {
+  PhotoStorageConfig,
+  getDefaultPhotoStorageConfig,
+} from './photo-storage.config';
 
 /**
  * Singleton service for managing photo storage
@@ -59,14 +62,18 @@ export class PhotoStorageService {
    * @returns Path where the photo was saved
    */
   savePhoto(photoId: string, photoBuffer: Buffer): string {
-    const photoDirectory = this.config.photoDirectory || getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory =
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!;
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
 
     try {
       fs.writeFileSync(filePath, photoBuffer);
       return filePath;
     } catch (error) {
-      throw new Error(`Failed to save photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to save photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -76,7 +83,9 @@ export class PhotoStorageService {
    * @returns Buffer containing the photo data
    */
   getPhoto(photoId: string): Buffer {
-    const photoDirectory = this.config.photoDirectory || getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory =
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!;
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
 
     try {
@@ -85,7 +94,9 @@ export class PhotoStorageService {
       }
       return fs.readFileSync(filePath);
     } catch (error) {
-      throw new Error(`Failed to retrieve photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to retrieve photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -94,7 +105,9 @@ export class PhotoStorageService {
    * @param photoId Unique identifier for the photo
    */
   photoExists(photoId: string): boolean {
-    const photoDirectory = this.config.photoDirectory || getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory =
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!;
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
     return fs.existsSync(filePath);
   }
@@ -104,7 +117,9 @@ export class PhotoStorageService {
    * @param photoId Unique identifier for the photo
    */
   deletePhoto(photoId: string): void {
-    const photoDirectory = this.config.photoDirectory || getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory =
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!;
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
 
     try {
@@ -112,22 +127,56 @@ export class PhotoStorageService {
         fs.unlinkSync(filePath);
       }
     } catch (error) {
-      throw new Error(`Failed to delete photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to delete photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
+  }
+
+  /**
+   * List all photos in storage, sorted newest-first.
+   * Returns objects with the photo id, a server-relative path usable by the
+   * UI's getPhotoUrl() helper, and the file modification timestamp.
+   */
+  listPhotos(): { id: string; path: string; timestamp: string }[] {
+    const photoDirectory =
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!;
+    if (!fs.existsSync(photoDirectory)) {
+      return [];
+    }
+    return fs
+      .readdirSync(photoDirectory)
+      .filter((f) => /\.(jpg|jpeg|png)$/i.test(f))
+      .map((f) => {
+        const stat = fs.statSync(path.join(photoDirectory, f));
+        const id = path.basename(f, path.extname(f));
+        return {
+          id,
+          path: `/api/photos/${f}`,
+          timestamp: stat.mtime.toISOString(),
+        };
+      })
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   }
 
   /**
    * Get the current photo directory path
    */
   getPhotoDirectory(): string {
-    return this.config.photoDirectory || getDefaultPhotoStorageConfig().photoDirectory!;
+    return (
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!
+    );
   }
 
   /**
    * Ensure the photo directory exists, creating it if necessary
    */
   private ensureDirectoryExists(): void {
-    const photoDirectory = this.config.photoDirectory || getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory =
+      this.config.photoDirectory ||
+      getDefaultPhotoStorageConfig().photoDirectory!;
     if (!fs.existsSync(photoDirectory)) {
       try {
         fs.mkdirSync(photoDirectory, { recursive: true });
@@ -135,7 +184,7 @@ export class PhotoStorageService {
         throw new Error(
           `Failed to create photo directory ${photoDirectory}: ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
     }

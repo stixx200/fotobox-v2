@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { SettingsStore, CameraStore } from '../store';
 import { CollageService } from '../services/collage.service';
 import { CameraLiveViewComponent } from '../components/camera-live-view/camera-live-view.component';
@@ -22,6 +23,7 @@ import { CameraLiveViewComponent } from '../components/camera-live-view/camera-l
     CommonModule,
     MatCardModule,
     MatIconModule,
+    MatButtonModule,
     RouterModule,
     CameraLiveViewComponent,
   ],
@@ -62,6 +64,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.escapeTimer) {
       clearTimeout(this.escapeTimer);
     }
+  }
+
+  goToGallery(): void {
+    this.router.navigate(['/gallery']);
   }
 
   // Get active layouts from settings

@@ -1,0 +1,60 @@
+<div class="gallery-container">
+  <!-- Toolbar -->
+  <div class="gallery-toolbar">
+    <button mat-icon-button (click)="goBack()" aria-label="Zurück">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2>Galerie</h2>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="gallery-loading">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading() && photos().length === 0) {
+    <div class="gallery-empty">
+      <mat-icon>photo_library</mat-icon>
+      <p>Noch keine Fotos vorhanden.</p>
+    </div>
+  }
+
+  <!-- Thumbnail grid -->
+  @if (!loading() && photos().length > 0) {
+    <div class="gallery-grid">
+      @for (photo of photos(); track photo.id) {
+        <div class="gallery-thumb" (click)="select(photo)">
+          <img [src]="photoUrl(photo)" [alt]="photo.id" loading="lazy" />
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Fullscreen detail overlay -->
+  @if (selected(); as photo) {
+    <div class="gallery-detail" (click)="closeDetail()">
+      <img
+        [src]="selectedUrl()"
+        [alt]="photo.id"
+        (click)="$event.stopPropagation()"
+      />
+      <div class="gallery-detail-actions" (click)="$event.stopPropagation()">
+        <button mat-raised-button color="primary" (click)="print()">
+          <mat-icon>print</mat-icon>
+          Drucken
+        </button>
+        <button mat-raised-button color="warn" (click)="deleteSelected()">
+          <mat-icon>delete</mat-icon>
+          Löschen
+        </button>
+        <button mat-raised-button (click)="closeDetail()">
+          <mat-icon>close</mat-icon>
+          Schließen
+        </button>
+      </div>
+    </div>
+  }
+</div>
