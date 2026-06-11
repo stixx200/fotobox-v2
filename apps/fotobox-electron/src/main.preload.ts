@@ -16,7 +16,6 @@ contextBridge.exposeInMainWorld('electron', {
   platform: process.platform,
   openDirectoryDialog: () => ipcRenderer.invoke('open-directory-dialog'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  printPhoto: (photoUrl: string) =>
-    ipcRenderer.invoke('print-photo', photoUrl),
+  printPhoto: (photoUrl: string) => ipcRenderer.invoke('print-photo', photoUrl),
   quit: (code?: number) => ipcRenderer.send('quit', code),
 });

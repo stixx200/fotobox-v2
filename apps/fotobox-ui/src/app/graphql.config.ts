@@ -1,4 +1,10 @@
-import { ApolloClientOptions, InMemoryCache, split, ApolloLink, HttpLink } from '@apollo/client/core';
+import {
+  ApolloClientOptions,
+  InMemoryCache,
+  split,
+  ApolloLink,
+  HttpLink,
+} from '@apollo/client/core';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { onError } from '@apollo/client/link/error';
@@ -30,7 +36,7 @@ export function createApolloOptions() {
           console.log('WebSocket closed');
         },
       },
-    })
+    }),
   );
 
   // Error handling link
@@ -40,7 +46,7 @@ export function createApolloOptions() {
       graphQLErrors.forEach((error: GraphQLError) => {
         console.error(
           `[GraphQL error]: Message: ${error.message}, Location: ${JSON.stringify(error.locations)}, Path: ${error.path}`,
-          error.extensions
+          error.extensions,
         );
       });
     }
@@ -64,8 +70,8 @@ export function createApolloOptions() {
         definition.operation === 'subscription'
       );
     },
-    ws,  // Use WebSocket for subscriptions
-    http // Use HTTP for queries and mutations
+    ws, // Use WebSocket for subscriptions
+    http, // Use HTTP for queries and mutations
   );
 
   // Combine error link with split link

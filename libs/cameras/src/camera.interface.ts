@@ -1,6 +1,33 @@
 import { Observable } from 'rxjs';
 
 /**
+ * Where a camera is operated.
+ * - `server`: driven by the backend (Sony, gphoto2, demo, ...).
+ * - `client`: driven in the browser (webcam via getUserMedia). The server only
+ *   receives the resulting photo via the upload API.
+ */
+export type CameraLocation = 'server' | 'client';
+
+/**
+ * Optional feature flags advertised per camera so the UI can adapt.
+ */
+export interface CameraCapabilities {
+  /** Whether the camera can provide a live preview stream. */
+  liveView: boolean;
+}
+
+/**
+ * Static description of a selectable camera source, independent of an
+ * initialized instance. Used to advertise available cameras to clients.
+ */
+export interface CameraDescriptor {
+  driver: string;
+  location: CameraLocation;
+  capabilities: CameraCapabilities;
+  available: boolean;
+}
+
+/**
  * Base interface for all camera implementations
  */
 export interface CameraInterface {

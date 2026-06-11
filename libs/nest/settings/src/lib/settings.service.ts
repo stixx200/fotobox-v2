@@ -65,7 +65,9 @@ export class SettingsService {
   private async saveSettings(): Promise<void> {
     try {
       const settingsArray = Array.from(this.settings.values());
-      logger.info(`Saving ${settingsArray.length} settings to ${this.settingsFilePath}`);
+      logger.info(
+        `Saving ${settingsArray.length} settings to ${this.settingsFilePath}`,
+      );
       logger.debug('Settings data:', JSON.stringify(settingsArray, null, 2));
       await fs.writeFile(
         this.settingsFilePath,

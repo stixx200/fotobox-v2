@@ -1,4 +1,10 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, ObjectType } from '@nestjs/graphql';
+
+@ObjectType()
+export class CameraCapabilities {
+  @Field(() => Boolean)
+  liveView!: boolean;
+}
 
 @ObjectType()
 export class CameraInfo {
@@ -10,12 +16,28 @@ export class CameraInfo {
 
   @Field(() => Boolean)
   available!: boolean;
+
+  @Field(() => String, {
+    description: "Where the camera runs: 'server' or 'client'.",
+  })
+  location!: string;
+
+  @Field(() => CameraCapabilities)
+  capabilities!: CameraCapabilities;
 }
 
 @ObjectType()
 export class CameraList {
   @Field(() => [CameraInfo])
   cameras!: CameraInfo[];
+}
+
+@InputType()
+export class UploadPhotoInput {
+  @Field(() => String, {
+    description: 'Base64-encoded JPEG image data (with or without data URI).',
+  })
+  imageData!: string;
 }
 
 @ObjectType()

@@ -1,12 +1,14 @@
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { OnModuleDestroy } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
+import { WEBCAM_DRIVER } from '@fotobox/cameras';
 import { CameraService } from './cameras.service';
 import {
   CameraInfo,
   CameraList,
   Picture,
   LiveViewFrame,
+  UploadPhotoInput,
 } from './models/camera.model';
 import { GenericMutationResult } from '@fotobox/nest-graphql';
 import { getLogger } from '@fotobox/logging';
@@ -63,16 +65,25 @@ export class CameraResolver implements OnModuleDestroy {
 
     try {
       await this.cameraService.initializeCamera(driver);
-      this.pictureTakenSubscription = this.cameraService
-        .getPictureTaken$()
-        .subscribe((pictureData) => {
-          const picture: Picture = {
-            id: pictureData.photoId,
-            timestamp: pictureData.timestamp,
-            path: pictureData.path,
-          };
-          pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
-        });
+
+      // Stop any previous server picture subscription.
+      this.pictureTakenSubscription?.unsubscribe();
+      this.pictureTakenSubscription = null;
+
+      // The webcam (client) camera uploads photos via uploadPhoto; there is no
+      // server-side picture stream to subscribe to.
+      if (driver.toLowerCase() !== WEBCAM_DRIVER) {
+        this.pictureTakenSubscription = this.cameraService
+          .getPictureTaken$()
+          .subscribe((pictureData) => {
+            const picture: Picture = {
+              id: pictureData.photoId,
+              timestamp: pictureData.timestamp,
+              path: pictureData.path,
+            };
+            pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
+          });
+      }
       return {
         success: true,
         message: `Camera initialized with driver: ${driver}`,
@@ -95,6 +106,26 @@ export class CameraResolver implements OnModuleDestroy {
 
     await this.cameraService.takePicture();
     return { success: true };
+  }
+
+  @Mutation(() => Picture, {
+    description:
+      'Upload a photo captured by a client camera (e.g. the browser webcam).',
+  })
+  async uploadPhoto(@Args('input') input: UploadPhotoInput): Promise<Picture> {
+    logger.debug('Receiving uploaded photo from client');
+
+    const saved = this.cameraService.savePhoto(input.imageData);
+    const picture: Picture = {
+      id: saved.photoId,
+      timestamp: saved.timestamp,
+      path: saved.path,
+    };
+
+    // Broadcast so subscribers react uniformly regardless of camera source.
+    pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
+
+    return picture;
   }
 
   @Mutation(() => GenericMutationResult, {

@@ -11,6 +11,10 @@ const GET_AVAILABLE_CAMERAS = gql`
         driver
         status
         available
+        location
+        capabilities {
+          liveView
+        }
       }
     }
   }
@@ -22,6 +26,10 @@ const GET_CAMERA_STATUS = gql`
       driver
       status
       available
+      location
+      capabilities {
+        liveView
+      }
     }
   }
 `;
@@ -74,10 +82,28 @@ const PICTURE_TAKEN = gql`
   }
 `;
 
+const UPLOAD_PHOTO = gql`
+  mutation UploadPhoto($input: UploadPhotoInput!) {
+    uploadPhoto(input: $input) {
+      id
+      path
+      timestamp
+    }
+  }
+`;
+
+export type CameraLocation = 'server' | 'client';
+
+export interface CameraCapabilities {
+  liveView: boolean;
+}
+
 export interface CameraInfo {
   driver: string;
   status: string;
   available: boolean;
+  location: CameraLocation;
+  capabilities: CameraCapabilities;
 }
 
 export interface Picture {
@@ -141,6 +167,19 @@ export class CameraService {
         `,
       })
       .pipe(map((result) => result.data!.takePicture));
+  }
+
+  /**
+   * Upload a photo captured by a client camera (browser webcam) to the server.
+   * The server saves it and broadcasts a pictureTaken event.
+   */
+  uploadPhoto(imageData: string): Observable<Picture> {
+    return this.apollo
+      .mutate<{ uploadPhoto: Picture }>({
+        mutation: UPLOAD_PHOTO,
+        variables: { input: { imageData } },
+      })
+      .pipe(map((result) => result.data!.uploadPhoto));
   }
 
   startLiveView(): Observable<MutationResult> {

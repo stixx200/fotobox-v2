@@ -1,6 +1,10 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { getLogger } from '@fotobox/logging';
-import { CameraFactory, CameraInterface } from '@fotobox/cameras';
+import {
+  CameraFactory,
+  CameraInterface,
+  WEBCAM_DRIVER,
+} from '@fotobox/cameras';
 import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
 import { CameraInfo } from './models/camera.model';
 import { Subscription, Subject, map, Observable, ReplaySubject } from 'rxjs';
@@ -16,6 +20,8 @@ export interface PhotoSavedEvent {
 @Injectable()
 export class CameraService implements OnModuleDestroy {
   private currentCamera: CameraInterface | null = null;
+  /** Set when a browser-driven (client) camera such as the webcam is active. */
+  private clientDriver: string | null = null;
   private liveViewSubscription: Subscription | null = null;
   private liveViewSubject = new ReplaySubject<string>(1);
   private liveViewSubscriptionCount = 0;
@@ -25,24 +31,42 @@ export class CameraService implements OnModuleDestroy {
   async getAvailableCameras(): Promise<CameraInfo[]> {
     logger.debug('Fetching available cameras');
 
-    // Get all available camera drivers from the factory
-    const drivers = CameraFactory.getAvailableDrivers();
+    const activeDriver = this.getCurrentDriver();
 
-    return drivers.map((driver) => ({
-      driver,
-      status: this.currentCamera?.driver === driver ? 'active' : 'available',
-      available: true,
+    return CameraFactory.describeCameras().map((descriptor) => ({
+      driver: descriptor.driver,
+      location: descriptor.location,
+      capabilities: descriptor.capabilities,
+      available: descriptor.available,
+      status:
+        descriptor.driver === activeDriver
+          ? 'active'
+          : descriptor.available
+            ? 'available'
+            : 'unavailable',
     }));
   }
 
   async getCameraStatus(): Promise<CameraInfo> {
     logger.debug('Fetching camera status');
 
+    if (this.clientDriver) {
+      return {
+        driver: this.clientDriver,
+        status: 'active',
+        available: true,
+        location: 'client',
+        capabilities: { liveView: true },
+      };
+    }
+
     if (!this.currentCamera) {
       return {
         driver: 'none',
         status: 'not initialized',
         available: false,
+        location: 'server',
+        capabilities: { liveView: false },
       };
     }
 
@@ -50,15 +74,25 @@ export class CameraService implements OnModuleDestroy {
       driver: this.currentCamera.driver,
       status: this.currentCamera.isAvailable() ? 'active' : 'error',
       available: this.currentCamera.isAvailable(),
+      location: 'server',
+      capabilities: { liveView: true },
     };
   }
 
   async initializeCamera(driver: string): Promise<boolean> {
     logger.info(`Initializing camera with driver: ${driver}`);
 
-    // Deinitialize current camera if exists
+    // Deinitialize current server camera if one exists.
     if (this.currentCamera) {
       await this.deinitializeCamera();
+    }
+    this.clientDriver = null;
+
+    // The webcam is driven by the browser; there is no server instance.
+    if (driver.toLowerCase() === WEBCAM_DRIVER) {
+      this.clientDriver = WEBCAM_DRIVER;
+      logger.info('Webcam (client) camera selected; no server instance.');
+      return true;
     }
 
     // Create and initialize new camera
@@ -67,6 +101,14 @@ export class CameraService implements OnModuleDestroy {
 
     logger.info(`Camera ${driver} initialized successfully`);
     return true;
+  }
+
+  /**
+   * Persist an uploaded photo (e.g. from the browser webcam) and return its
+   * saved-event descriptor so callers can broadcast a pictureTaken event.
+   */
+  savePhoto(imageData: string): PhotoSavedEvent {
+    return this.handleCapturedPicture(imageData);
   }
 
   /**
@@ -117,6 +159,7 @@ export class CameraService implements OnModuleDestroy {
 
   async deinitializeCamera(): Promise<void> {
     this.stopLiveViewInternal();
+    this.clientDriver = null;
     if (this.currentCamera) {
       logger.info(`Deinitializing camera: ${this.currentCamera.driver}`);
       await this.currentCamera.deinit();
@@ -206,10 +249,10 @@ export class CameraService implements OnModuleDestroy {
   }
 
   /**
-   * Get the current driver name
+   * Get the current driver name (server camera or active client driver)
    */
   getCurrentDriver(): string | null {
-    return this.currentCamera?.driver ?? null;
+    return this.currentCamera?.driver ?? this.clientDriver ?? null;
   }
 
   /**

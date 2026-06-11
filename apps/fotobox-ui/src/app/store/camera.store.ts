@@ -48,6 +48,9 @@ export class CameraStore extends signalStore(
     availableCameraNames: computed(() =>
       state.availableCameras().map((camera) => camera.driver),
     ),
+    isClientCamera: computed(
+      () => state.currentCamera()?.location === 'client',
+    ),
   })),
   withMethods((store, cameraService = inject(CameraService)) => ({
     loadAvailableCameras: rxMethod<void>(
@@ -238,6 +241,29 @@ export class CameraStore extends signalStore(
     clearLiveFrame: () => {
       patchState(store, { lastLiveFrame: null });
     },
+
+    /**
+     * Upload a frame captured by the browser webcam (client camera) to the
+     * server. The server saves it and broadcasts a pictureTaken event, so the
+     * lastPicture is set both here and via the subscription.
+     */
+    uploadPhoto: rxMethod<string>(
+      pipe(
+        tap(() => patchState(store, { isLoading: true, error: null })),
+        switchMap((imageData) =>
+          cameraService.uploadPhoto(imageData).pipe(
+            tap((picture) => {
+              patchState(store, { lastPicture: picture, isLoading: false });
+            }),
+            catchError((error) => {
+              const errorMessage = error?.message || 'Failed to upload photo';
+              patchState(store, { error: errorMessage, isLoading: false });
+              return of(null);
+            }),
+          ),
+        ),
+      ),
+    ),
 
     subscribeToPictures: rxMethod<void>(
       pipe(
