@@ -6,6 +6,7 @@ import {
   getTemplates,
 } from '@fotobox/collage-maker';
 import { ConfigService } from '@nestjs/config';
+import fs from 'fs';
 import { BehaviorSubject, catchError, of, switchMap } from 'rxjs';
 import { FotoboxError } from '@fotobox/error';
 import { getLogger } from '@fotobox/logging';
@@ -50,7 +51,25 @@ export class CollageMakerService {
   constructor(private config: ConfigService) {
     this.photoDirectory = this.config.getOrThrow('photoDirectory');
     this.templateDirectory = this.config.get('templateDirectory');
-    this.builtInDirectory = path.join(process.cwd(), 'collage-templates');
+    this.builtInDirectory = this.resolveBuiltInTemplateDirectory();
+  }
+
+  private resolveBuiltInTemplateDirectory(): string {
+    const configuredDirectory = this.config.get<string>(
+      'builtInTemplateDirectory',
+    );
+    const candidates = [
+      configuredDirectory,
+      path.join(process.cwd(), 'collage-templates'),
+      path.join(process.cwd(), 'dist/apps/fotobox-api/collage-templates'),
+      path.join(process.cwd(), 'dist/apps/fotobox-electron/collage-templates'),
+    ].filter((candidate): candidate is string => !!candidate);
+
+    const existingDirectory = candidates.find((candidate) =>
+      fs.existsSync(candidate),
+    );
+
+    return existingDirectory ?? candidates[0] ?? path.join(process.cwd(), 'collage-templates');
   }
 
   /**
@@ -132,6 +151,20 @@ export class CollageMakerService {
     }
     const maker = new CollageMaker({ photoDir: this.photoDirectory });
     return cache.photos.length >= maker.getPhotoCount(cache.template);
+  }
+
+  /**
+   * Render the partial collage as it stands now (photos taken so far +
+   * questionmark placeholders for empty slots). Returns null when no collage
+   * is in progress.
+   */
+  public async generateCurrentPreview(): Promise<Buffer | null> {
+    const cache = this.cache$.value;
+    if (cache === null) {
+      return null;
+    }
+    const maker = new CollageMaker({ photoDir: this.photoDirectory });
+    return maker.createCollage(cache.template, cache.photos);
   }
 
   /**

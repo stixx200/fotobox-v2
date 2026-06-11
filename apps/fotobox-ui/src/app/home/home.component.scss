@@ -18,6 +18,20 @@
   justify-content: center;
 }
 
+// Invisible tap zone – 80×80 px in the upper-left corner.
+// data-taps attribute is set only to help with automated tests; the element
+// has no visible indicator so users never see it.
+.escape-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  z-index: 20;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .layout-tiles {
   position: relative;
   z-index: 1;

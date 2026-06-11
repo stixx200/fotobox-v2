@@ -10,6 +10,15 @@
     </div>
   }
 
+  <!-- Intermediate collage preview: shows template with ? placeholders filling
+       empty slots; updated after every captured photo. Hidden while the
+       countdown / capture is in progress so the user sees the live camera. -->
+  @if (!collagePhoto() && !capturing() && previewSrc(); as src) {
+    <div class="collage-preview-fullscreen">
+      <img [src]="src" alt="Collage Vorschau" />
+    </div>
+  }
+
   <!-- Finished collage view -->
   @if (collagePhoto(); as src) {
     <app-photo-view
@@ -18,25 +27,6 @@
       (print)="print()"
       (back)="exitToHome()"
     ></app-photo-view>
-  }
-
-  <!-- Photo grid showing taken photos -->
-  @if (!collagePhoto() && photos().length > 0) {
-    <div class="collage-preview">
-      <div class="photo-grid">
-        @for (photo of photos(); track $index; let i = $index) {
-          <div class="grid-item">
-            <img [src]="photo" [alt]="'Foto ' + (i + 1)" />
-            <div class="photo-number">{{ i + 1 }}</div>
-          </div>
-        }
-        @for (slot of emptySlots(); track $index; let i = $index) {
-          <div class="grid-item empty">
-            <div class="photo-number">{{ photos().length + i + 1 }}</div>
-          </div>
-        }
-      </div>
-    </div>
   }
 
   <!-- Countdown -->

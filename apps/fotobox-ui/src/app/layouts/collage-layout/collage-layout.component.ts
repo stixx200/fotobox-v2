@@ -39,9 +39,11 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
 
-  /** Display URLs of the photos captured so far. */
+  /** Display URLs of the photos captured so far (kept for count / isCollageComplete). */
   readonly photos = signal<string[]>([]);
   readonly requiredPhotos = signal<number>(4);
+  /** Base64 data-URL of the partial collage rendered by the backend (? placeholders for empty slots). */
+  readonly previewSrc = signal<string | null>(null);
   readonly collagePhoto = signal<string | null>(null);
   readonly capturing = signal(false);
   readonly building = signal(false);
@@ -59,20 +61,20 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     () => this.photos().length >= this.requiredPhotos(),
   );
 
-  readonly emptySlots = computed(() => {
-    const remaining = this.requiredPhotos() - this.photos().length;
-    return remaining > 0
-      ? Array(remaining)
-          .fill(0)
-          .map((_, i) => i)
-      : [];
-  });
-
   readonly topMessage = computed(() => {
     if (this.building()) {
       return 'Collage wird erstellt...';
     }
-    return `Foto ${this.photos().length + 1} von ${this.requiredPhotos()} - Berühren um Foto zu machen`;
+    const taken = this.photos().length;
+    const total = this.requiredPhotos();
+    if (taken >= total) {
+      return 'Collage wird erstellt...';
+    }
+    const next = taken + 1;
+    if (this.previewSrc() && !this.capturing()) {
+      return `Foto ${next} von ${total} aufgenommen - Berühren für nächstes Foto`;
+    }
+    return `Foto ${next} von ${total} - Berühren um Foto zu machen`;
   });
 
   constructor() {
@@ -111,8 +113,11 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
         },
       });
 
-    // Start a fresh collage on the backend.
-    this.collageService.startCollage(this.templateId).subscribe();
+    // Start a fresh collage on the backend, then load the initial preview
+    // (shows the template with questionmark placeholders in all slots).
+    this.collageService.startCollage(this.templateId).subscribe({
+      next: () => this.loadCollagePreview(),
+    });
   }
 
   ngOnDestroy(): void {
@@ -188,12 +193,25 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     // The collage maker expects a filename relative to the photo directory.
     const filename = path.split('/').pop() ?? path;
 
+    // Track the count so isCollageComplete() updates correctly.
     this.photos.update((photos) => [...photos, getPhotoUrl(path)]);
 
     this.collageService.addPhotoToCollage(filename).subscribe({
       next: () => {
+        // Refresh the preview so the user sees the new photo in the template.
+        this.loadCollagePreview();
         if (this.isCollageComplete()) {
           this.finalizeCollage();
+        }
+      },
+    });
+  }
+
+  private loadCollagePreview(): void {
+    this.collageService.getCollagePreview().subscribe({
+      next: (src) => {
+        if (src) {
+          this.previewSrc.set(src);
         }
       },
     });
@@ -225,6 +243,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private reset(): void {
     this.countdownRef()?.abort();
     this.photos.set([]);
+    this.previewSrc.set(null);
     this.collagePhoto.set(null);
     this.capturing.set(false);
     this.building.set(false);

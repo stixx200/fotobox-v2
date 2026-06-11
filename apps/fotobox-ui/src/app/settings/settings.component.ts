@@ -411,15 +411,24 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
     try {
       const result = await window.electron.openDirectoryDialog();
-      if (result && typeof result === 'object' && 'filePaths' in result) {
-        const dialogResult = result as {
-          canceled: boolean;
-          filePaths: string[];
-        };
-        if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
-          const selectedPath = dialogResult.filePaths[0];
-          this.settingsForm.patchValue({ [fieldName]: selectedPath });
-        }
+      const selectedPath =
+        typeof result === 'string'
+          ? result
+          : result && typeof result === 'object' && 'filePaths' in result
+            ? (() => {
+                const dialogResult = result as {
+                  canceled: boolean;
+                  filePaths: string[];
+                };
+                return dialogResult.canceled
+                  ? null
+                  : dialogResult.filePaths[0] ?? null;
+              })()
+            : null;
+
+      if (selectedPath) {
+        this.settingsForm.patchValue({ [fieldName]: selectedPath });
+        this.cdr.markForCheck();
       }
     } catch (error) {
       console.error('Error opening directory picker:', error);

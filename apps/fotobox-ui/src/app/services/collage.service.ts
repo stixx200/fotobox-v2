@@ -67,6 +67,12 @@ const RESET_COLLAGE = gql`
   }
 `;
 
+const GET_COLLAGE_PREVIEW = gql`
+  query CollagePreview {
+    collagePreview
+  }
+`;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -210,5 +216,19 @@ export class CollageService {
         mutation: RESET_COLLAGE,
       })
       .pipe(map((result) => result.data?.resetCollage.success ?? false));
+  }
+
+  /**
+   * Render the current partial collage (photos taken so far + questionmarks
+   * for empty slots) and return it as a base64 JPEG data URL.
+   * Returns null when no collage is in progress.
+   */
+  getCollagePreview(): Observable<string | null> {
+    return this.apollo
+      .query<{ collagePreview: string | null }>({
+        query: GET_COLLAGE_PREVIEW,
+        fetchPolicy: 'no-cache',
+      })
+      .pipe(map((result) => result.data?.collagePreview ?? null));
   }
 }

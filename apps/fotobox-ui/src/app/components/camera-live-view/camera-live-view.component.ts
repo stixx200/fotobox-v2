@@ -51,26 +51,6 @@ export class CameraLiveViewComponent implements OnDestroy {
   private webcamStarted = false;
 
   constructor() {
-    // Server camera: ensure the live view is started once a camera is ready.
-    effect(() => {
-      if (this.isClient()) {
-        return;
-      }
-      const camera = this.cameraStore.currentCamera();
-      const isReady = !!camera && camera.available && camera.driver !== 'none';
-      if (
-        isReady &&
-        !this.cameraStore.isLiveViewActive() &&
-        !this.serverLiveViewRequested
-      ) {
-        this.serverLiveViewRequested = true;
-        this.statusMessage.set(
-          `Live-Ansicht (${camera!.driver}) wird gestartet …`,
-        );
-        this.cameraStore.startLiveView();
-      }
-    });
-
     // Server camera: (un)subscribe to live frames as the stream toggles.
     effect(() => {
       if (this.isClient()) {

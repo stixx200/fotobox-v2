@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   inject,
   computed,
   signal,
@@ -27,11 +28,41 @@ import { CameraLiveViewComponent } from '../components/camera-live-view/camera-l
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   private readonly settingsStore = inject(SettingsStore);
   private readonly collageService = inject(CollageService);
   private readonly router = inject(Router);
   private readonly cameraStore = inject(CameraStore);
+
+  private readonly ESCAPE_TAPS_REQUIRED = 5;
+  private escapeTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly escapeTapCount = signal(0);
+
+  onEscapeTap(): void {
+    const next = this.escapeTapCount() + 1;
+    this.escapeTapCount.set(next);
+
+    // Reset counter after 3 seconds of inactivity.
+    if (this.escapeTimer) {
+      clearTimeout(this.escapeTimer);
+    }
+    this.escapeTimer = setTimeout(() => {
+      this.escapeTapCount.set(0);
+    }, 3000);
+
+    if (next >= this.ESCAPE_TAPS_REQUIRED) {
+      clearTimeout(this.escapeTimer!);
+      this.escapeTimer = null;
+      this.escapeTapCount.set(0);
+      this.router.navigate(['/settings']);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.escapeTimer) {
+      clearTimeout(this.escapeTimer);
+    }
+  }
 
   // Get active layouts from settings
   readonly settings = this.settingsStore.settings;

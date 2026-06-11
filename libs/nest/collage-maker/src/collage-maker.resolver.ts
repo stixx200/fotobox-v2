@@ -83,6 +83,27 @@ export class CollageMakerResolver {
     ];
   }
 
+  @Query(() => String, {
+    nullable: true,
+    description:
+      'Render the current partial collage as a base64 JPEG (questionmarks fill empty slots)',
+  })
+  async collagePreview(): Promise<string | null> {
+    logger.debug('Generating current collage preview');
+    try {
+      const buffer = await this.collageMakerService.generateCurrentPreview();
+      if (!buffer) {
+        return null;
+      }
+      return `data:image/jpeg;base64,${buffer.toString('base64')}`;
+    } catch (error) {
+      logger.error('Failed to generate collage preview', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  }
+
   @Query(() => CollageStatus, {
     nullable: true,
     description: 'Get current collage status',

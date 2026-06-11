@@ -4,6 +4,13 @@
     <app-camera-live-view></app-camera-live-view>
   </div>
 
+  <!-- Hidden 5-tap escape zone: navigates to settings without any visible UI. -->
+  <div
+    class="escape-zone"
+    (click)="onEscapeTap(); $event.stopPropagation()"
+    [attr.data-taps]="escapeTapCount() || null"
+  ></div>
+
   <!-- Layout selection tiles -->
   <div class="layout-tiles">
     @for (layout of activeLayouts(); track layout; let i = $index) {
