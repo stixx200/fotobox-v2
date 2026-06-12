@@ -1,0 +1,99 @@
+{
+  "SETTINGS": {
+    "TITLE": "Fotobox Einstellungen",
+    "LOADING": "Laden...",
+    "START": "Fotobox starten",
+    "USE_PRINTER": "Drucker aktivieren",
+    "SHUTTER_TIMEOUT": "Auslösezeit",
+    "PRINTER": "Drucker",
+    "NO_PRINTER": "Keine Drucker verfügbar",
+    "PHOTO_DIRECTORY": "Speicherort für Fotos",
+    "COLLAGE_DIRECTORY": "Ordner Collage-Vorlagen",
+    "COLLAGE_DIRECTORY_ERROR": "Fehler beim Laden der Collage-Vorlagen",
+    "LAYOUTS": "Layouts (max. 3)",
+    "CAMERA": "Kamera",
+    "NO_CAMERA": "Keine Kameras verfügbar",
+    "SAVING": "Speichern läuft...",
+    "SAVE": "Einstellungen speichern",
+    "RESETTING": "Wird zurückgesetzt...",
+    "RESET": "Einstellungen zurücksetzen",
+    "LANGUAGE": "Sprache",
+    "LANG_DE": "Deutsch",
+    "LANG_EN": "English",
+    "VERSION": "Version: {{version}}",
+    "GALLERY_PIN": "Galerie-PIN",
+    "GALLERY_PIN_HINT": "4 Ziffern. Leer lassen für freien Galerie-Zugang",
+    "GALLERY_PIN_INVALID": "PIN muss genau 4 Ziffern haben",
+    "STARTING": "Wird gestartet...",
+    "START_FAILED": "Fotobox konnte nicht gestartet werden. Kamera- und Backend-Logs prüfen."
+  },
+  "SPLASH": {
+    "CONNECTING": "Verbindung zum Backend...",
+    "API_UNAVAILABLE": "Keine Verbindung zum Backend. Stelle sicher, dass die Fotobox-App läuft.",
+    "RETRY": "Erneut versuchen"
+  },
+  "DEBUG": {
+    "TITLE": "Debug",
+    "BACK_TO_SETTINGS": "Zurück zu Einstellungen",
+    "VIEW_LOGS": "Logs anzeigen",
+    "APP_INFO": "Anwendungsinfo",
+    "API_URL": "API-URL",
+    "APP_VERSION": "App-Version",
+    "CAMERA": "Kamera",
+    "LIVE_VIEW": "Live-Ansicht",
+    "CAMERA_ERROR": "Kamera-Fehler",
+    "RELOAD_CAMERA": "Kamerastatus neu laden",
+    "LEVEL_FILTER": "Log-Level",
+    "LEVEL_ALL": "Alle Level",
+    "SERVER_LOGS": "Server-Logs",
+    "CLIENT_LOGS": "Client-Logs",
+    "REFRESH": "Aktualisieren",
+    "CLEAR_SERVER_LOGS": "Server-Logs löschen",
+    "CLEAR_CLIENT_LOGS": "Client-Logs löschen",
+    "NO_LOGS": "Noch keine Log-Einträge."
+  },
+  "SINGLE": {
+    "PROMPT": "Berühren um ein Foto zu machen",
+    "CANCEL": "Abbrechen"
+  },
+  "COLLAGE": {
+    "BUILDING": "Collage wird erstellt...",
+    "PHOTO_TAKEN": "Foto {{next}} von {{total}} aufgenommen – Berühren für nächstes Foto",
+    "PHOTO_PROMPT": "Foto {{next}} von {{total}} – Berühren um Foto zu machen",
+    "USE_PHOTO": "Dieses Foto verwenden?",
+    "ACCEPT": "Ja, verwenden",
+    "RETAKE": "Nein, nochmal",
+    "PREVIEW_ALT": "Collage Vorschau",
+    "CANCEL": "Abbrechen"
+  },
+  "GALLERY": {
+    "TITLE": "Galerie",
+    "BACK": "Zurück",
+    "OPEN": "Galerie öffnen",
+    "EMPTY": "Noch keine Fotos vorhanden.",
+    "PRINT": "Drucken",
+    "DELETE": "Löschen",
+    "DELETE_CONFIRM": "Dieses Foto löschen?",
+    "DELETE_CONFIRM_ACTION": "Endgültig löschen",
+    "CANCEL": "Abbrechen",
+    "CLOSE": "Schließen",
+    "BACK_TO_GALLERY": "Zurück zur Galerie",
+    "ENTER_PIN": "Galerie-PIN eingeben",
+    "PIN": "4-stellige PIN",
+    "UNLOCK": "Entsperren",
+    "WRONG_PIN": "Falsche PIN"
+  },
+  "PHOTO_VIEW": {
+    "ALT": "Aufgenommenes Foto",
+    "PRINT": "Drucken",
+    "BACK": "Zurück"
+  },
+  "HOME": {
+    "SINGLE_LAYOUT": "Einzelnes Foto",
+    "CHOOSE_LAYOUT": "Layout auswählen",
+    "TAP_TO_START": "Tippen zum Starten"
+  },
+  "COUNTDOWN": {
+    "SMILE": "Lächeln! 😊"
+  }
+}

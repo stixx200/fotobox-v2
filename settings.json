@@ -26,5 +26,9 @@
   {
     "key": "camera",
     "value": "\"demo\""
+  },
+  {
+    "key": "galleryPassword",
+    "value": "\"\""
   }
 ]

@@ -10,9 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CameraStore } from '../../store/camera.store';
-import { CameraService } from '../../services/camera.service';
 import { WebcamService } from '../../services/webcam.service';
-import { Subscription } from 'rxjs';
 
 /**
  * Shows the live camera preview. Supports two sources:
@@ -30,7 +28,6 @@ import { Subscription } from 'rxjs';
 })
 export class CameraLiveViewComponent implements OnDestroy {
   private readonly cameraStore = inject(CameraStore);
-  private readonly cameraService = inject(CameraService);
   private readonly webcam = inject(WebcamService);
 
   /** The `<video>` element used for the webcam preview (client camera only). */
@@ -38,7 +35,8 @@ export class CameraLiveViewComponent implements OnDestroy {
     viewChild<ElementRef<HTMLVideoElement>>('videoEl');
 
   readonly isClient = this.cameraStore.isClientCamera;
-  readonly liveFrame = signal<string | null>(null);
+  /** Latest frame — reads directly from the store so no spinner on layout switch. */
+  readonly liveFrame = computed(() => this.cameraStore.lastLiveFrame()?.data ?? null);
 
   private readonly localError = signal<string | null>(null);
   readonly error = computed(
@@ -46,24 +44,9 @@ export class CameraLiveViewComponent implements OnDestroy {
   );
   readonly statusMessage = signal('Kamera wird gestartet …');
 
-  private liveViewSubscription?: Subscription;
-  private serverLiveViewRequested = false;
   private webcamStarted = false;
 
   constructor() {
-    // Server camera: (un)subscribe to live frames as the stream toggles.
-    effect(() => {
-      if (this.isClient()) {
-        this.unsubscribeFrames();
-        return;
-      }
-      if (this.cameraStore.isLiveViewActive()) {
-        this.subscribeFrames();
-      } else {
-        this.unsubscribeFrames();
-      }
-    });
-
     // Client webcam: start the preview once the video element is available.
     effect(() => {
       if (!this.isClient()) {
@@ -100,9 +83,7 @@ export class CameraLiveViewComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Keep the live view running in the background; only release our frame
-    // subscription so other views can resume without re-initializing.
-    this.unsubscribeFrames();
+    // Live-view subscription is managed by the store; nothing to tear down here.
   }
 
   private async startWebcam(element: HTMLVideoElement): Promise<void> {
@@ -118,27 +99,5 @@ export class CameraLiveViewComponent implements OnDestroy {
           : 'Webcam konnte nicht gestartet werden',
       );
     }
-  }
-
-  private subscribeFrames(): void {
-    if (this.liveViewSubscription && !this.liveViewSubscription.closed) {
-      return;
-    }
-    this.liveViewSubscription = this.cameraService
-      .subscribeLiveView()
-      .subscribe({
-        next: (frame) => this.liveFrame.set(frame.data),
-        error: (error) =>
-          this.localError.set(
-            error instanceof Error
-              ? error.message
-              : 'Live-Ansicht fehlgeschlagen',
-          ),
-      });
-  }
-
-  private unsubscribeFrames(): void {
-    this.liveViewSubscription?.unsubscribe();
-    this.liveViewSubscription = undefined;
   }
 }

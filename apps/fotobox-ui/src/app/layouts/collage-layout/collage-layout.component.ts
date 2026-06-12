@@ -17,6 +17,16 @@ import { PhotoViewComponent } from '../../components/photo-view/photo-view.compo
 import { CollageService } from '../../services/collage.service';
 import { getPhotoUrl } from '../../api-config';
 import { PrintService } from '../../services/print.service';
+import { LayoutNavigationService } from '../../services/layout-navigation.service';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
+
+interface ReviewPhoto {
+  url: string;
+  path: string;
+}
 
 @Component({
   selector: 'app-collage-layout',
@@ -26,6 +36,10 @@ import { PrintService } from '../../services/print.service';
     CameraLiveViewComponent,
     CountdownComponent,
     PhotoViewComponent,
+    MatButtonModule,
+    MatIconModule,
+    TranslatePipe,
+    SettingsEscapeZoneComponent,
   ],
   templateUrl: './collage-layout.component.html',
   styleUrl: './collage-layout.component.scss',
@@ -37,6 +51,8 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly cameraStore = inject(CameraStore);
   private readonly collageService = inject(CollageService);
   private readonly printService = inject(PrintService);
+  private readonly layoutNavigation = inject(LayoutNavigationService);
+  private readonly translateService = inject(TranslateService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -49,13 +65,16 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   readonly collagePhoto = signal<string | null>(null);
   readonly capturing = signal(false);
   readonly building = signal(false);
+  readonly flashing = signal(false);
+  /** Photo awaiting user confirmation before it is added to the collage. */
+  readonly reviewPhoto = signal<ReviewPhoto | null>(null);
 
   private templateId = 'Collage';
   private collageDirectory?: string;
 
   /** True while we expect a freshly captured photo to arrive in the store. */
   private awaitingPicture = false;
-  private lastProcessedPath: string | null = null;
+  private lastProcessedPictureId: string | null = null;
 
   readonly showPrint = computed(() => this.usePrinter());
 
@@ -65,18 +84,27 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
 
   readonly topMessage = computed(() => {
     if (this.building()) {
-      return 'Collage wird erstellt...';
+      return this.translateService.instant('COLLAGE.BUILDING');
     }
     const taken = this.photos().length;
     const total = this.requiredPhotos();
     if (taken >= total) {
-      return 'Collage wird erstellt...';
+      return this.translateService.instant('COLLAGE.BUILDING');
     }
     const next = taken + 1;
-    if (this.previewSrc() && !this.capturing()) {
-      return `Foto ${next} von ${total} aufgenommen - Berühren für nächstes Foto`;
+    if (this.reviewPhoto()) {
+      return this.translateService.instant('COLLAGE.USE_PHOTO');
     }
-    return `Foto ${next} von ${total} - Berühren um Foto zu machen`;
+    if (this.previewSrc() && !this.capturing()) {
+      return this.translateService.instant('COLLAGE.PHOTO_TAKEN', {
+        next,
+        total,
+      });
+    }
+    return this.translateService.instant('COLLAGE.PHOTO_PROMPT', {
+      next,
+      total,
+    });
   });
 
   constructor() {
@@ -86,11 +114,15 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
       if (
         picture &&
         this.awaitingPicture &&
-        picture.path !== this.lastProcessedPath
+        picture.id !== this.lastProcessedPictureId
       ) {
-        this.lastProcessedPath = picture.path;
+        this.lastProcessedPictureId = picture.id;
         this.awaitingPicture = false;
-        this.onPhotoCaptured(picture.path);
+        this.capturing.set(false);
+        this.reviewPhoto.set({
+          url: getPhotoUrl(picture.path),
+          path: picture.path,
+        });
       }
     });
   }
@@ -164,6 +196,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
       this.collagePhoto() ||
       this.building() ||
       this.capturing() ||
+      this.reviewPhoto() ||
       this.countdownRef()?.isRunning ||
       this.isCollageComplete()
     ) {
@@ -172,8 +205,23 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.countdownRef()?.start(this.shutterTimeout());
   }
 
+  acceptReviewedPhoto(): void {
+    const photo = this.reviewPhoto();
+    if (!photo) {
+      return;
+    }
+    this.reviewPhoto.set(null);
+    this.onPhotoCaptured(photo.path);
+  }
+
+  rejectReviewedPhoto(): void {
+    this.reviewPhoto.set(null);
+  }
+
   onCountdownComplete(): void {
     this.capturing.set(true);
+    this.flashing.set(true);
+    setTimeout(() => this.flashing.set(false), 420);
     this.awaitingPicture = true;
 
     if (this.cameraStore.isClientCamera()) {
@@ -190,8 +238,6 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   }
 
   private onPhotoCaptured(path: string): void {
-    this.capturing.set(false);
-
     // The collage maker expects a filename relative to the photo directory.
     const filename = path.split('/').pop() ?? path;
 
@@ -233,8 +279,11 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   }
 
   get isOnlyLayoutActive(): boolean {
-    const layouts = this.settingsStore.activeLayouts();
-    return layouts.length === 1 && layouts[0] === 'Collage';
+    return this.layoutNavigation.hasSingleLayoutOnly();
+  }
+
+  goToGallery(): void {
+    void this.router.navigate(['/gallery']);
   }
 
   print(): void {
@@ -252,11 +301,12 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.capturing.set(false);
     this.building.set(false);
     this.awaitingPicture = false;
+    this.reviewPhoto.set(null);
   }
 
   exitToHome(): void {
     this.collageService.resetCollage().subscribe();
     this.reset();
-    this.router.navigate(['/home']);
+    void this.layoutNavigation.navigateToEntryPoint();
   }
 }

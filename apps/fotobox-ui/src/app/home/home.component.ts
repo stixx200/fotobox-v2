@@ -1,70 +1,37 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  inject,
-  computed,
-  signal,
-  effect,
-} from '@angular/core';
+import { Component, OnInit, inject, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SettingsStore, CameraStore } from '../store';
 import { CollageService } from '../services/collage.service';
+import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { CameraLiveViewComponent } from '../components/camera-live-view/camera-live-view.component';
+import { SettingsEscapeZoneComponent } from '../components/settings-escape-zone/settings-escape-zone.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
     MatIconModule,
     MatButtonModule,
     RouterModule,
     CameraLiveViewComponent,
+    TranslatePipe,
+    SettingsEscapeZoneComponent,
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit {
   private readonly settingsStore = inject(SettingsStore);
   private readonly collageService = inject(CollageService);
   private readonly router = inject(Router);
+  private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly cameraStore = inject(CameraStore);
-
-  private readonly ESCAPE_TAPS_REQUIRED = 5;
-  private escapeTimer: ReturnType<typeof setTimeout> | null = null;
-  readonly escapeTapCount = signal(0);
-
-  onEscapeTap(): void {
-    const next = this.escapeTapCount() + 1;
-    this.escapeTapCount.set(next);
-
-    // Reset counter after 3 seconds of inactivity.
-    if (this.escapeTimer) {
-      clearTimeout(this.escapeTimer);
-    }
-    this.escapeTimer = setTimeout(() => {
-      this.escapeTapCount.set(0);
-    }, 3000);
-
-    if (next >= this.ESCAPE_TAPS_REQUIRED) {
-      clearTimeout(this.escapeTimer!);
-      this.escapeTimer = null;
-      this.escapeTapCount.set(0);
-      this.router.navigate(['/settings']);
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (this.escapeTimer) {
-      clearTimeout(this.escapeTimer);
-    }
-  }
+  private readonly translateService = inject(TranslateService);
 
   goToGallery(): void {
     this.router.navigate(['/gallery']);
@@ -98,24 +65,21 @@ export class HomeComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
-    // Watch for changes in active layouts and load previews
     effect(() => {
       const layouts = this.activeLayouts();
       if (layouts.length > 0) {
         this.loadLayoutPreviews();
       }
+
+      // Skip selection when settings load after the home route is already active.
+      if (layouts.length === 1 && this.router.url.startsWith('/home')) {
+        void this.layoutNavigation.navigateToLayout(layouts[0]);
+      }
     });
   }
 
   ngOnInit() {
-    // Check if camera is loaded, redirect to settings if not
     this.validateCameraAndRedirect();
-
-    // Auto-navigate to layout if only one is active
-    const layouts = this.activeLayouts();
-    if (layouts.length === 1) {
-      this.navigateToLayout(layouts[0]);
-    }
   }
 
   private validateCameraAndRedirect(): void {
@@ -165,14 +129,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   navigateToLayout(layout: string) {
-    if (layout === 'Einzelbild') {
-      this.router.navigate(['/layouts/single']);
-    } else {
-      // For custom collages, navigate to collage layout
-      this.router.navigate(['/layouts/collage'], {
-        queryParams: { template: layout },
-      });
-    }
+    void this.layoutNavigation.navigateToLayout(layout);
   }
 
   getLayoutIcon(layout: string): string {
@@ -180,7 +137,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   getLayoutDescription(layout: string): string {
-    return layout === 'Einzelbild' ? 'Einzelnes Foto' : layout;
+    return layout === 'Einzelbild'
+      ? this.translateService.instant('HOME.SINGLE_LAYOUT')
+      : layout;
   }
 
   getLayoutPreview(layout: string): string | null {

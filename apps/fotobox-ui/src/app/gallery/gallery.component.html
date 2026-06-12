@@ -1,60 +1,146 @@
-<div class="gallery-container">
-  <!-- Toolbar -->
-  <div class="gallery-toolbar">
-    <button mat-icon-button (click)="goBack()" aria-label="Zurück">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <h2>Galerie</h2>
-  </div>
+@if (requiresPassword() && !unlocked()) {
+  <div class="gallery-pin-gate">
+    <div class="gallery-pin-card">
+      <mat-icon class="gallery-pin-icon">lock</mat-icon>
+      <h2>{{ 'GALLERY.ENTER_PIN' | translate }}</h2>
 
-  <!-- Loading -->
-  @if (loading()) {
-    <div class="gallery-loading">
-      <mat-spinner diameter="48"></mat-spinner>
-    </div>
-  }
+      <mat-form-field class="gallery-pin-field" floatLabel="always">
+        <mat-label>{{ 'GALLERY.PIN' | translate }}</mat-label>
+        <input
+          matInput
+          type="password"
+          class="gallery-pin-input"
+          [ngModel]="pinInput()"
+          (ngModelChange)="onPinInput($event)"
+          [attr.maxlength]="pinLength"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          autocomplete="off"
+        />
+      </mat-form-field>
 
-  <!-- Empty state -->
-  @if (!loading() && photos().length === 0) {
-    <div class="gallery-empty">
-      <mat-icon>photo_library</mat-icon>
-      <p>Noch keine Fotos vorhanden.</p>
-    </div>
-  }
-
-  <!-- Thumbnail grid -->
-  @if (!loading() && photos().length > 0) {
-    <div class="gallery-grid">
-      @for (photo of photos(); track photo.id) {
-        <div class="gallery-thumb" (click)="select(photo)">
-          <img [src]="photoUrl(photo)" [alt]="photo.id" loading="lazy" />
-        </div>
+      @if (pinError()) {
+        <p class="gallery-pin-error">
+          {{ 'GALLERY.WRONG_PIN' | translate }}
+        </p>
       }
-    </div>
-  }
 
-  <!-- Fullscreen detail overlay -->
-  @if (selected(); as photo) {
-    <div class="gallery-detail" (click)="closeDetail()">
-      <img
-        [src]="selectedUrl()"
-        [alt]="photo.id"
-        (click)="$event.stopPropagation()"
-      />
-      <div class="gallery-detail-actions" (click)="$event.stopPropagation()">
-        <button mat-raised-button color="primary" (click)="print()">
-          <mat-icon>print</mat-icon>
-          Drucken
+      <div class="gallery-pin-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="pinInput().length !== pinLength"
+          (click)="submitPin()"
+        >
+          {{ 'GALLERY.UNLOCK' | translate }}
         </button>
-        <button mat-raised-button color="warn" (click)="deleteSelected()">
-          <mat-icon>delete</mat-icon>
-          Löschen
-        </button>
-        <button mat-raised-button (click)="closeDetail()">
-          <mat-icon>close</mat-icon>
-          Schließen
+        <button mat-stroked-button (click)="goBack()">
+          {{ 'GALLERY.BACK' | translate }}
         </button>
       </div>
     </div>
-  }
-</div>
+  </div>
+} @else {
+  <div class="gallery-container">
+    <div class="gallery-toolbar">
+      <button
+        mat-icon-button
+        (click)="goBack()"
+        [attr.aria-label]="'GALLERY.BACK' | translate"
+      >
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2>{{ 'GALLERY.TITLE' | translate }}</h2>
+    </div>
+
+    @if (loading()) {
+      <div class="gallery-loading">
+        <mat-spinner diameter="48"></mat-spinner>
+      </div>
+    }
+
+    @if (!loading() && photos().length === 0) {
+      <div class="gallery-empty">
+        <mat-icon>photo_library</mat-icon>
+        <p>{{ 'GALLERY.EMPTY' | translate }}</p>
+      </div>
+    }
+
+    @if (!loading() && photos().length > 0) {
+      <div class="gallery-grid">
+        @for (photo of photos(); track photo.id) {
+          <div class="gallery-thumb" (click)="select(photo)">
+            <img [src]="photoUrl(photo)" [alt]="photo.id" loading="lazy" />
+          </div>
+        }
+      </div>
+    }
+
+    @if (selected(); as photo) {
+      <div class="gallery-detail" (click)="closeDetail()">
+        <div class="gallery-detail-toolbar" (click)="$event.stopPropagation()">
+          <button
+            mat-icon-button
+            class="gallery-detail-back"
+            (click)="closeDetail()"
+            [attr.aria-label]="'GALLERY.BACK_TO_GALLERY' | translate"
+          >
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+
+          @if (!deleteConfirmPending()) {
+            <button
+              mat-icon-button
+              class="gallery-detail-delete"
+              (click)="requestDelete()"
+              [attr.aria-label]="'GALLERY.DELETE' | translate"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          }
+        </div>
+
+        <div
+          class="gallery-detail-image-wrap"
+          (click)="$event.stopPropagation()"
+        >
+          <img [src]="selectedUrl()" [alt]="photo.id" />
+        </div>
+
+        <div class="gallery-detail-footer" (click)="$event.stopPropagation()">
+          @if (deleteConfirmPending()) {
+            <div class="gallery-delete-confirm">
+              <p>{{ 'GALLERY.DELETE_CONFIRM' | translate }}</p>
+              <div class="gallery-delete-confirm-actions">
+                <button mat-stroked-button (click)="cancelDelete()">
+                  {{ 'GALLERY.CANCEL' | translate }}
+                </button>
+                <button mat-raised-button color="warn" (click)="confirmDelete()">
+                  {{ 'GALLERY.DELETE_CONFIRM_ACTION' | translate }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="gallery-detail-actions">
+              <button
+                mat-raised-button
+                color="primary"
+                class="gallery-detail-primary-action"
+                (click)="closeDetail()"
+              >
+                <mat-icon>arrow_back</mat-icon>
+                {{ 'GALLERY.BACK_TO_GALLERY' | translate }}
+              </button>
+              @if (showPrint()) {
+                <button mat-stroked-button (click)="print()">
+                  <mat-icon>print</mat-icon>
+                  {{ 'GALLERY.PRINT' | translate }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

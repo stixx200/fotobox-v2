@@ -54,13 +54,11 @@ export class SettingsStore extends signalStore(
     loadSettings: rxMethod<void>(
       pipe(
         tap(() => {
-          console.log('SettingsStore: Starting to load settings');
           patchState(store, { isLoading: true, error: null });
         }),
         switchMap(() =>
           settingsService.getAllSettings().pipe(
             tap((settings) => {
-              console.log('SettingsStore: Loaded settings:', settings);
               patchState(store, { settings, isLoading: false });
             }),
             catchError((error) => {
@@ -155,20 +153,12 @@ export class SettingsStore extends signalStore(
     resetSettings: rxMethod<void>(
       pipe(
         tap(() => {
-          console.log('Store: resetSettings called, setting loading state');
           patchState(store, { isLoading: true, error: null });
         }),
         switchMap(() =>
           settingsService.resetSettings().pipe(
-            tap((result) =>
-              console.log('Store: resetSettings mutation result:', result),
-            ),
             switchMap(() => settingsService.getAllSettings()),
             tap((settings) => {
-              console.log(
-                'Store: getAllSettings after reset returned:',
-                settings,
-              );
               patchState(store, { settings, isLoading: false });
             }),
             catchError((error) => {
@@ -188,7 +178,6 @@ export class SettingsStore extends signalStore(
 ) {
   constructor() {
     super();
-    console.log('SettingsStore: Constructor called, loading settings');
     // Auto-load settings on initialization
     this.loadSettings();
   }

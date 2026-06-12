@@ -1,9 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { filter } from 'rxjs';
 import { ApiHealthService } from './services/api-health.service';
 import { SplashScreenComponent } from './splash-screen.component';
 import { CameraStore } from './store/camera.store';
+import { IdleService } from './services/idle.service';
+import { ClientLogService } from './services/client-log.service';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   standalone: true,
@@ -14,29 +18,56 @@ import { CameraStore } from './store/camera.store';
 })
 export class AppComponent implements OnInit {
   title = 'fotobox-ui';
-  isApiReady = false;
+  readonly isApiReady = signal(false);
+  readonly apiError = signal<string | null>(null);
+  readonly showRouter = signal(false);
+  private readonly router = inject(Router);
   private readonly cameraStore = inject(CameraStore);
+  private readonly clientLogService = inject(ClientLogService);
+  private readonly translateService = inject(TranslateService);
+  // Activating the idle service here starts the idle timer for the whole app.
+  private readonly _idle = inject(IdleService);
 
   constructor(private apiHealthService: ApiHealthService) {}
 
   ngOnInit() {
+    this.updateShowRouter();
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => this.updateShowRouter());
+    this.waitForApi();
+  }
+
+  private updateShowRouter(): void {
+    const onDebugPage = this.router.url.includes('/debug');
+    this.showRouter.set(this.isApiReady() || onDebugPage);
+  }
+
+  retryApi(): void {
     this.waitForApi();
   }
 
   private async waitForApi() {
+    this.apiError.set(null);
     try {
       const isReady = await this.apiHealthService.waitForApiReady();
-      this.isApiReady = isReady;
-
-      if (!isReady) {
-        console.error('Failed to connect to backend API');
-        // Retry after delay
-        setTimeout(() => this.waitForApi(), 2000);
+      if (isReady) {
+        this.isApiReady.set(true);
+        this.apiError.set(null);
+        this.updateShowRouter();
+        return;
       }
+
+      const message = this.translateService.instant('SPLASH.API_UNAVAILABLE');
+      this.apiError.set(message);
+      this.clientLogService.error('Backend API unreachable', message);
     } catch (error) {
-      console.error('Error waiting for API:', error);
-      // Retry after delay
-      setTimeout(() => this.waitForApi(), 2000);
+      const message =
+        error instanceof Error
+          ? error.message
+          : this.translateService.instant('SPLASH.API_UNAVAILABLE');
+      this.apiError.set(message);
+      this.clientLogService.error('Error waiting for API', error);
     }
   }
 
@@ -45,8 +76,6 @@ export class AppComponent implements OnInit {
    * Camera state will be maintained throughout navigation
    */
   initializeCamera() {
-    console.log('[App] Initializing camera on user request');
-
     // Load available cameras and status
     this.cameraStore.loadAvailableCameras();
     this.cameraStore.loadCameraStatus();
@@ -54,31 +83,23 @@ export class AppComponent implements OnInit {
     // Wait a bit for status to load, then initialize demo camera if needed
     setTimeout(() => {
       const currentCamera = this.cameraStore.currentCamera();
-      console.log('[App] Current camera status:', currentCamera);
 
       if (
         !currentCamera ||
         currentCamera.driver === 'none' ||
         !currentCamera.available
       ) {
-        console.log('[App] No camera initialized, initializing demo camera');
         this.cameraStore.initializeCamera('demo');
 
         // Start live view after initialization
         setTimeout(() => {
-          console.log('[App] Starting live view after camera initialization');
           this.cameraStore.startLiveView();
         }, 1000);
       } else {
-        console.log('[App] Camera already initialized:', currentCamera.driver);
-
         // Check if live view is active, if not start it
         const isLiveViewActive = this.cameraStore.isLiveViewActive();
         if (!isLiveViewActive) {
-          console.log('[App] Starting live view with existing camera');
           this.cameraStore.startLiveView();
-        } else {
-          console.log('[App] Live view already active');
         }
       }
     }, 500);

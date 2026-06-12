@@ -26,6 +26,8 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/serve-static": "^5.0.4",
     "@ngrx/signals": "^21.0.1",
+    "@ngx-translate/core": "^18.0.0",
+    "@ngx-translate/http-loader": "^18.0.0",
     "@nx/devkit": "22.5.1",
     "@types/node-ssdp": "^4.0.5",
     "apollo-angular": "^13.0.0",

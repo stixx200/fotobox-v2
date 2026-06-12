@@ -1,20 +1,35 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import {
-  PhotoStorageService,
-  PhotoStorageConfig,
-} from '@fotobox/photo-storage';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { PhotoStorageService } from '@fotobox/photo-storage';
+import { SettingsService } from '@fotobox/nest-settings';
 
 @Injectable()
-export class PhotoStorageProviderService implements OnModuleInit {
+export class PhotoStorageProviderService implements OnApplicationBootstrap {
   private readonly logger = new Logger(PhotoStorageProviderService.name);
   private photoStorageService: PhotoStorageService;
 
-  constructor() {
+  constructor(private readonly settingsService: SettingsService) {
     // Initialize with default configuration
     this.photoStorageService = PhotoStorageService.getInstance();
   }
 
-  onModuleInit(): void {
+  /**
+   * Called after all modules are initialised and settings are loaded.
+   * Applies the user-configured photoDirectory (if any) so saves, lists,
+   * and serves all use the same directory.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    const setting = await this.settingsService.getSetting('photoDirectory');
+    if (setting?.value) {
+      try {
+        const parsed: unknown = JSON.parse(setting.value);
+        if (typeof parsed === 'string' && parsed.trim() !== '') {
+          this.setPhotoDirectory(parsed.trim());
+          return;
+        }
+      } catch {
+        // malformed value — fall through to default
+      }
+    }
     this.logger.log(
       `Photo storage initialized at: ${this.photoStorageService.getPhotoDirectory()}`,
     );

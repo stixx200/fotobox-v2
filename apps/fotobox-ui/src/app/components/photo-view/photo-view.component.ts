@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslatePipe } from '@ngx-translate/core';
 
 /**
  * Presentational overlay that shows a captured photo (or collage) together with
@@ -11,21 +12,25 @@ import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-photo-view',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, TranslatePipe],
   template: `
-    <div class="photo-view">
-      <img [src]="src" alt="Aufgenommenes Foto" />
+    <div class="photo-view" (click)="$event.stopPropagation()">
+      <img [src]="src" [attr.alt]="'PHOTO_VIEW.ALT' | translate" />
 
       <div class="photo-actions">
         @if (showPrint) {
-          <button mat-raised-button color="primary" (click)="print.emit()">
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="onPrint($event)"
+          >
             <mat-icon>print</mat-icon>
-            Drucken
+            {{ 'PHOTO_VIEW.PRINT' | translate }}
           </button>
         }
-        <button mat-raised-button (click)="back.emit()">
+        <button mat-raised-button (click)="onBack($event)">
           <mat-icon>{{ backIcon }}</mat-icon>
-          {{ backLabel }}
+          {{ backLabel | translate }}
         </button>
       </div>
     </div>
@@ -70,12 +75,22 @@ export class PhotoViewComponent {
   /** Whether to offer the print button. */
   @Input() showPrint = true;
 
-  /** Label for the secondary (back) button. */
-  @Input() backLabel = 'Zurück';
+  /** Label (translation key) for the secondary (back) button. */
+  @Input() backLabel = 'PHOTO_VIEW.BACK';
 
   /** Material icon for the secondary button. */
   @Input() backIcon = 'home';
 
   @Output() print = new EventEmitter<void>();
   @Output() back = new EventEmitter<void>();
+
+  onPrint(event: Event): void {
+    event.stopPropagation();
+    this.print.emit();
+  }
+
+  onBack(event: Event): void {
+    event.stopPropagation();
+    this.back.emit();
+  }
 }

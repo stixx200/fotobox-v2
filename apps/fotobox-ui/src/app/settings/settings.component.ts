@@ -23,10 +23,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { Subject, combineLatest, filter, take } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import { Subject, filter, take } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   SettingsStore,
@@ -35,6 +36,14 @@ import {
   PrinterStore,
 } from '../store';
 import { CollageService } from '../services/collage.service';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import {
+  GALLERY_PIN_LENGTH,
+  isOptionalGalleryPin,
+  sanitizeGalleryPinInput,
+} from '../services/gallery-pin.util';
+import { LayoutNavigationService } from '../services/layout-navigation.service';
+import { ClientLogService } from '../services/client-log.service';
 
 /** @title Form field with label */
 @Component({
@@ -53,7 +62,10 @@ import { CollageService } from '../services/collage.service';
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatProgressSpinnerModule,
+    TranslatePipe,
+    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -65,7 +77,40 @@ export class SettingsComponent implements OnInit, OnDestroy {
   readonly printerStore = inject(PrinterStore);
   readonly collageService = inject(CollageService);
   private readonly router = inject(Router);
+  private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translateService = inject(TranslateService);
+  private readonly clientLogService = inject(ClientLogService);
+
+  readonly currentLang = signal<string>(
+    this.translateService.currentLang() || 'de',
+  );
+  readonly availableLangs = ['de', 'en'] as const;
+
+  private readonly THEME_KEY = 'fotobox.theme';
+  readonly currentTheme = signal<'light' | 'dark'>(
+    (() => {
+      try {
+        const stored = localStorage.getItem(this.THEME_KEY);
+        if (stored === 'light' || stored === 'dark') return stored;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+      } catch {
+        return 'light';
+      }
+    })(),
+  );
+
+  toggleTheme(): void {
+    const next = this.currentTheme() === 'dark' ? 'light' : 'dark';
+    this.currentTheme.set(next);
+    try {
+      localStorage.setItem(this.THEME_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }
 
   private destroy$ = new Subject<void>();
 
@@ -83,6 +128,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   collageDirectoryError = signal<string | null>(null);
   layoutsAutoSelectionMessage = signal<string | null>(null);
   isInitializingCamera = signal(false);
+  startError = signal<string | null>(null);
   camera$ = toObservable(this.cameraStore.camera$);
 
   private readonly MAX_LAYOUTS = 3;
@@ -97,6 +143,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
       collageDirectory: new FormControl(''),
       layouts: new FormControl<string[]>([]),
       camera: new FormControl(''),
+      galleryPassword: new FormControl('', {
+        validators: [
+          (control) =>
+            isOptionalGalleryPin(String(control.value ?? ''))
+              ? null
+              : { galleryPin: true },
+        ],
+      }),
     },
     {},
   );
@@ -112,17 +166,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     // Update form with loaded settings when they become available
     effect(() => {
       const settingsArray = this.settings();
-      console.log(
-        'SettingsComponent: settings changed, count:',
-        settingsArray.length,
-        'isLoading:',
-        this.settingsIsLoading(),
-      );
       if (settingsArray.length > 0) {
-        console.log(
-          'SettingsComponent: Calling updateFormWithSettings with settings:',
-          settingsArray,
-        );
         this.updateFormWithSettings();
         // Load available layouts using the loaded collageDirectory setting
         const collageDirectorySetting = settingsArray.find(
@@ -131,10 +175,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
         if (collageDirectorySetting) {
           try {
             const collageDirectory = JSON.parse(collageDirectorySetting.value);
-            console.log(
-              'SettingsComponent: Loading layouts with collageDirectory:',
-              collageDirectory,
-            );
             this.loadAvailableLayouts(collageDirectory);
           } catch (error) {
             console.error(
@@ -144,9 +184,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
             this.loadAvailableLayouts();
           }
         } else {
-          console.log(
-            'SettingsComponent: No collageDirectory setting found, loading default layouts',
-          );
           this.loadAvailableLayouts();
         }
       }
@@ -163,7 +200,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       collageDirectoryControl.valueChanges
         .pipe(takeUntil(this.destroy$))
         .subscribe((value) => {
-          console.log('collageDirectory changed:', value);
           if (value) {
             this.loadAvailableLayouts(value);
           }
@@ -193,15 +229,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private updateFormWithSettings(): void {
     const settingsArray = this.settings();
 
-    console.log('Updating form with settings:', settingsArray);
-
     // Create a map of loaded settings
     const settingsMap = new Map<string, string>();
     settingsArray.forEach((setting) => {
       settingsMap.set(setting.key, setting.value);
     });
-
-    console.log('Settings map:', Object.fromEntries(settingsMap));
 
     // Update all form controls
     Object.keys(this.settingsForm.controls).forEach((key) => {
@@ -210,28 +242,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
         try {
           const rawValue = settingsMap.get(key)!;
           const value = JSON.parse(rawValue);
-          console.log(
-            `Setting form control ${key} to:`,
-            value,
-            '(raw:',
-            rawValue,
-            ')',
-          );
           control.setValue(value, { emitEvent: false });
-          console.log(`Form control ${key} value after set:`, control.value);
         } catch (error) {
           console.error(`Failed to parse setting ${key}:`, error);
         }
       } else {
-        console.log(`No setting found for form control ${key}`);
       }
     });
 
-    console.log('Form value after update:', this.settingsForm.value);
-
     // Trigger change detection for OnPush
     this.cdr.markForCheck();
-    console.log('Change detection marked for check');
   }
 
   ngOnDestroy(): void {
@@ -242,7 +262,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private loadAvailableLayouts(collageDirectory?: string): void {
     this.collageService.getAvailableLayoutIds(collageDirectory).subscribe({
       next: (layoutIds) => {
-        console.log('Available layouts:', layoutIds);
         this.layouts.set(layoutIds);
         this.collageDirectoryError.set(null);
       },
@@ -251,18 +270,27 @@ export class SettingsComponent implements OnInit, OnDestroy {
         // Fallback to just Einzelbild if there's an error
         this.layouts.set(['Einzelbild']);
         this.collageDirectoryError.set(
-          'Fehler beim Laden der Collage-Vorlagen',
+          this.translateService.instant('SETTINGS.COLLAGE_DIRECTORY_ERROR'),
         );
       },
     });
   }
 
-  startFotobox(): void {
-    console.log('Starting Fotobox - saving settings and initializing camera');
+  setLanguage(lang: string): void {
+    this.translateService.use(lang);
+    this.currentLang.set(lang);
+    try {
+      localStorage.setItem('fotobox.language', lang);
+    } catch {
+      /* ignore */
+    }
+  }
 
+  startFotobox(): void {
     // Save settings first
     this.saveSettings();
 
+    this.startError.set(null);
     // Mark that we're initializing
     this.isInitializingCamera.set(true);
 
@@ -271,16 +299,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private initializeCameraAndWaitForLoading(): void {
-    // Load available cameras and status
-    this.cameraStore.loadAvailableCameras();
-    this.cameraStore.loadCameraStatus();
-
-    // Get the selected camera driver from the form
     const selectedCamera = this.settingsForm.get('camera')?.value;
-    console.log('[Settings] Selected camera from form:', selectedCamera);
-
     const currentCamera = this.cameraStore.currentCamera();
-    console.log('[Settings] Current camera status:', currentCamera);
 
     if (
       !currentCamera ||
@@ -288,10 +308,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       !currentCamera.available
     ) {
       const driverToInit = selectedCamera || 'demo';
-      console.log(
-        '[Settings] No camera initialized, initializing:',
-        driverToInit,
-      );
 
       // Initialize the camera
       this.cameraStore.initializeCamera(driverToInit);
@@ -299,15 +315,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
       // Watch for camera initialization completion using observables
       this.watchForCameraInitialization(driverToInit);
     } else {
-      console.log(
-        '[Settings] Camera already initialized:',
-        currentCamera.driver,
-      );
-
       // Check if live view is active, if not start it
       const isLiveViewActive = this.cameraStore.isLiveViewActive();
       if (!isLiveViewActive) {
-        console.log('[Settings] Starting live view with existing camera');
         this.cameraStore.startLiveView();
       }
 
@@ -319,46 +329,79 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private watchForCameraInitialization(driverToInit: string): void {
     this.camera$
       .pipe(
-        filter(({ isLoading, currentCamera }) => {
+        filter(({ isLoading }) => !isLoading),
+        filter(({ currentCamera, error }) => {
           const isReady =
-            !isLoading &&
-            currentCamera &&
+            !!currentCamera &&
             currentCamera.driver === driverToInit &&
             currentCamera.available;
-
           if (isReady) {
-            console.log(
-              '[Settings] Camera initialized successfully:',
-              currentCamera,
-            );
+            return true;
           }
-
-          return !!isReady;
+          if (error) {
+            return true;
+          }
+          return (
+            currentCamera?.driver === driverToInit && !currentCamera.available
+          );
         }),
         take(1),
         takeUntil(this.destroy$),
       )
-      .subscribe(() => {
-        // Start live view
-        console.log(
-          '[Settings] Starting live view after camera initialization',
-        );
-        this.cameraStore.startLiveView();
+      .subscribe(({ currentCamera, error }) => {
+        const isReady =
+          currentCamera &&
+          currentCamera.driver === driverToInit &&
+          currentCamera.available;
 
-        // Navigate to home
+        if (!isReady) {
+          const message =
+            error || this.translateService.instant('SETTINGS.START_FAILED');
+          this.startError.set(message);
+          this.clientLogService.error('Fotobox start failed', message);
+          this.isInitializingCamera.set(false);
+          this.cdr.markForCheck();
+          return;
+        }
+
+        this.cameraStore.startLiveView();
         this.navigateToHome();
       });
   }
 
   private navigateToHome(): void {
     this.isInitializingCamera.set(false);
-    console.log('[Settings] Navigating to home');
-    this.router.navigate(['/home']).catch((err) => {
-      console.error('Navigation to home failed:', err);
+
+    // Prefer the form value — saveSettings may still be persisting to the store.
+    const formLayouts = this.settingsForm.get('layouts')?.value;
+    if (formLayouts?.length === 1) {
+      void this.layoutNavigation.navigateToLayout(formLayouts[0]);
+      return;
+    }
+
+    this.layoutNavigation.navigateToEntryPoint().catch((err) => {
+      console.error('Navigation after start failed:', err);
     });
   }
 
+  readonly galleryPinLength = GALLERY_PIN_LENGTH;
+
+  onGalleryPinInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const sanitized = sanitizeGalleryPinInput(input.value);
+    if (sanitized !== input.value) {
+      input.value = sanitized;
+    }
+    this.settingsForm.controls.galleryPassword.setValue(sanitized);
+  }
+
   saveSettings(): void {
+    if (this.settingsForm.controls.galleryPassword.invalid) {
+      this.settingsForm.controls.galleryPassword.markAsTouched();
+      this.cdr.markForCheck();
+      return;
+    }
+
     const formValue = this.settingsForm.value;
 
     // Clear previous message

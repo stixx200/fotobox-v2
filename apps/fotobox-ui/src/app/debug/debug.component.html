@@ -1,0 +1,115 @@
+<div class="debug-page">
+  <header class="debug-header">
+    <div class="debug-header__title">
+      <mat-icon>bug_report</mat-icon>
+      <h1>{{ 'DEBUG.TITLE' | translate }}</h1>
+    </div>
+    <a mat-stroked-button routerLink="/settings">
+      <mat-icon>arrow_back</mat-icon>
+      {{ 'DEBUG.BACK_TO_SETTINGS' | translate }}
+    </a>
+  </header>
+
+  <section class="debug-section">
+    <h2>{{ 'DEBUG.APP_INFO' | translate }}</h2>
+    <dl class="info-grid">
+      <dt>{{ 'DEBUG.API_URL' | translate }}</dt>
+      <dd><code>{{ apiUrl }}</code></dd>
+      <dt>{{ 'DEBUG.APP_VERSION' | translate }}</dt>
+      <dd>{{ appVersion() ?? '—' }}</dd>
+      <dt>{{ 'DEBUG.CAMERA' | translate }}</dt>
+      <dd>
+        @if (currentCamera(); as camera) {
+          {{ camera.driver }} ({{ camera.available ? 'available' : 'unavailable' }})
+        } @else {
+          —
+        }
+      </dd>
+      <dt>{{ 'DEBUG.LIVE_VIEW' | translate }}</dt>
+      <dd>{{ isLiveViewActive() ? 'active' : 'inactive' }}</dd>
+      @if (cameraError(); as error) {
+        <dt>{{ 'DEBUG.CAMERA_ERROR' | translate }}</dt>
+        <dd class="text-error">{{ error }}</dd>
+      }
+    </dl>
+    <div class="debug-actions">
+      <button mat-stroked-button (click)="reloadCameraStatus()">
+        <mat-icon>refresh</mat-icon>
+        {{ 'DEBUG.RELOAD_CAMERA' | translate }}
+      </button>
+    </div>
+  </section>
+
+  <section class="debug-toolbar">
+    <mat-form-field appearance="outline" class="level-filter">
+      <mat-label>{{ 'DEBUG.LEVEL_FILTER' | translate }}</mat-label>
+      <mat-select
+        [value]="levelFilter()"
+        (selectionChange)="levelFilter.set($event.value)"
+      >
+        <mat-option value="all">{{ 'DEBUG.LEVEL_ALL' | translate }}</mat-option>
+        <mat-option value="error">error</mat-option>
+        <mat-option value="warn">warn</mat-option>
+        <mat-option value="info">info</mat-option>
+        <mat-option value="debug">debug</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </section>
+
+  <section class="debug-section">
+    <div class="section-header">
+      <h2>{{ 'DEBUG.SERVER_LOGS' | translate }}</h2>
+      <div class="section-actions">
+        <button mat-icon-button (click)="refreshServerLogs()" [attr.aria-label]="'DEBUG.REFRESH' | translate">
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <button mat-stroked-button (click)="clearServerLogs()">
+          {{ 'DEBUG.CLEAR_SERVER_LOGS' | translate }}
+        </button>
+      </div>
+    </div>
+    @if (serverLogsError(); as error) {
+      <div class="log-error-banner">{{ error }}</div>
+    }
+    <div class="log-viewer">
+      @for (entry of filteredServerLogs(); track entry.timestamp + entry.message) {
+        <div class="log-line">
+          <span class="log-time">{{ entry.timestamp }}</span>
+          <span [class]="levelClass(entry.level)">{{ entry.level }}</span>
+          @if (entry.context) {
+            <span class="log-context">[{{ entry.context }}]</span>
+          }
+          <span class="log-message">{{ entry.message }}</span>
+          @if (entry.metaJson) {
+            <pre class="log-meta">{{ entry.metaJson }}</pre>
+          }
+        </div>
+      } @empty {
+        <p class="log-empty">{{ 'DEBUG.NO_LOGS' | translate }}</p>
+      }
+    </div>
+  </section>
+
+  <section class="debug-section">
+    <div class="section-header">
+      <h2>{{ 'DEBUG.CLIENT_LOGS' | translate }}</h2>
+      <button mat-stroked-button (click)="clearClientLogs()">
+        {{ 'DEBUG.CLEAR_CLIENT_LOGS' | translate }}
+      </button>
+    </div>
+    <div class="log-viewer">
+      @for (entry of filteredClientLogs(); track entry.timestamp + entry.message) {
+        <div class="log-line">
+          <span class="log-time">{{ entry.timestamp }}</span>
+          <span [class]="levelClass(entry.level)">{{ entry.level }}</span>
+          <span class="log-message">{{ entry.message }}</span>
+          @if (entry.detail) {
+            <pre class="log-meta">{{ entry.detail }}</pre>
+          }
+        </div>
+      } @empty {
+        <p class="log-empty">{{ 'DEBUG.NO_LOGS' | translate }}</p>
+      }
+    </div>
+  </section>
+</div>

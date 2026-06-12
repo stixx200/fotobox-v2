@@ -217,7 +217,10 @@ export class CameraService implements OnModuleDestroy {
    * Stop live view subscription with reference counting
    */
   stopLiveView(): void {
-    this.liveViewSubscriptionCount--;
+    this.liveViewSubscriptionCount = Math.max(
+      0,
+      this.liveViewSubscriptionCount - 1,
+    );
     logger.debug(
       `Live view subscription count: ${this.liveViewSubscriptionCount}`,
     );
@@ -237,6 +240,14 @@ export class CameraService implements OnModuleDestroy {
       this.liveViewSubscription.unsubscribe();
       this.liveViewSubscription = null;
     }
+
+    const camera = this.currentCamera;
+    if (camera) {
+      void camera.stopLiveView().catch((error) => {
+        logger.error('Error stopping camera live view:', error);
+      });
+    }
+
     this.liveViewSubscriptionCount = 0;
     this.liveViewSubject = new ReplaySubject<string>(1);
   }

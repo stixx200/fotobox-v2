@@ -1,0 +1,99 @@
+{
+  "SETTINGS": {
+    "TITLE": "Fotobox Settings",
+    "LOADING": "Loading...",
+    "START": "Start Fotobox",
+    "USE_PRINTER": "Enable printer",
+    "SHUTTER_TIMEOUT": "Shutter delay",
+    "PRINTER": "Printer",
+    "NO_PRINTER": "No printers available",
+    "PHOTO_DIRECTORY": "Photo storage folder",
+    "COLLAGE_DIRECTORY": "Collage templates folder",
+    "COLLAGE_DIRECTORY_ERROR": "Error loading collage templates",
+    "LAYOUTS": "Layouts (max. 3)",
+    "CAMERA": "Camera",
+    "NO_CAMERA": "No cameras available",
+    "SAVING": "Saving...",
+    "SAVE": "Save settings",
+    "RESETTING": "Resetting...",
+    "RESET": "Reset settings",
+    "LANGUAGE": "Language",
+    "LANG_DE": "Deutsch",
+    "LANG_EN": "English",
+    "VERSION": "Version: {{version}}",
+    "GALLERY_PIN": "Gallery PIN",
+    "GALLERY_PIN_HINT": "4 digits. Leave empty to allow open gallery access",
+    "GALLERY_PIN_INVALID": "PIN must be exactly 4 digits",
+    "STARTING": "Starting...",
+    "START_FAILED": "Could not start the fotobox. Check camera and backend logs."
+  },
+  "SPLASH": {
+    "CONNECTING": "Connecting to backend...",
+    "API_UNAVAILABLE": "Could not connect to the backend. Make sure the fotobox app is running.",
+    "RETRY": "Retry"
+  },
+  "DEBUG": {
+    "TITLE": "Debug",
+    "BACK_TO_SETTINGS": "Back to settings",
+    "VIEW_LOGS": "View logs",
+    "APP_INFO": "Application info",
+    "API_URL": "API URL",
+    "APP_VERSION": "App version",
+    "CAMERA": "Camera",
+    "LIVE_VIEW": "Live view",
+    "CAMERA_ERROR": "Camera error",
+    "RELOAD_CAMERA": "Reload camera status",
+    "LEVEL_FILTER": "Log level",
+    "LEVEL_ALL": "All levels",
+    "SERVER_LOGS": "Server logs",
+    "CLIENT_LOGS": "Client logs",
+    "REFRESH": "Refresh",
+    "CLEAR_SERVER_LOGS": "Clear server logs",
+    "CLEAR_CLIENT_LOGS": "Clear client logs",
+    "NO_LOGS": "No log entries yet."
+  },
+  "SINGLE": {
+    "PROMPT": "Touch to take a photo",
+    "CANCEL": "Cancel"
+  },
+  "COLLAGE": {
+    "BUILDING": "Creating collage...",
+    "PHOTO_TAKEN": "Photo {{next}} of {{total}} taken – touch to take next photo",
+    "PHOTO_PROMPT": "Photo {{next}} of {{total}} – touch to take a photo",
+    "USE_PHOTO": "Use this photo?",
+    "ACCEPT": "Yes, use it",
+    "RETAKE": "No, try again",
+    "PREVIEW_ALT": "Collage preview",
+    "CANCEL": "Cancel"
+  },
+  "GALLERY": {
+    "TITLE": "Gallery",
+    "BACK": "Back",
+    "OPEN": "Open gallery",
+    "EMPTY": "No photos yet.",
+    "PRINT": "Print",
+    "DELETE": "Delete",
+    "DELETE_CONFIRM": "Delete this photo?",
+    "DELETE_CONFIRM_ACTION": "Delete permanently",
+    "CANCEL": "Cancel",
+    "CLOSE": "Close",
+    "BACK_TO_GALLERY": "Back to gallery",
+    "ENTER_PIN": "Enter gallery PIN",
+    "PIN": "4-digit PIN",
+    "UNLOCK": "Unlock",
+    "WRONG_PIN": "Incorrect PIN"
+  },
+  "PHOTO_VIEW": {
+    "ALT": "Captured photo",
+    "PRINT": "Print",
+    "BACK": "Back"
+  },
+  "HOME": {
+    "SINGLE_LAYOUT": "Single photo",
+    "CHOOSE_LAYOUT": "Choose a layout",
+    "TAP_TO_START": "Tap to start"
+  },
+  "COUNTDOWN": {
+    "SMILE": "Smile! 😊"
+  }
+}

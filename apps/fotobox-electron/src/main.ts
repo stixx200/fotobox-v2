@@ -56,15 +56,22 @@ async function startEmbeddedApi(): Promise<void> {
 
 async function createWindow(): Promise<void> {
   const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
+  const isProd = !process.env.FOTOBOX_DEV_SERVER;
 
   mainWindow = new BrowserWindow({
     width: workAreaSize.width || 1280,
     height: workAreaSize.height || 720,
     show: false,
+    // Kiosk mode in production keeps the app fullscreen on Windows and
+    // prevents the user from exiting with Escape or Alt+F4.
+    kiosk: isProd,
     fullscreen: true,
+    autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
       backgroundThrottling: false,
+      // Disable dev tools in production to keep the kiosk clean.
+      devTools: !isProd,
       preload: join(__dirname, 'main.preload.js'),
       additionalArguments: [`--fotobox-api-url=${resolveApiUrl()}`],
     },

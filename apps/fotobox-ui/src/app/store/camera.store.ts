@@ -8,7 +8,7 @@ import {
   withHooks,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, catchError, of } from 'rxjs';
+import { pipe, tap, switchMap, catchError, of, EMPTY, distinctUntilChanged } from 'rxjs';
 import {
   CameraService,
   CameraInfo,
@@ -106,21 +106,15 @@ export class CameraStore extends signalStore(
     initializeCamera: rxMethod<string>(
       pipe(
         tap((driver) => {
-          console.log('[CameraStore] Initializing camera with driver:', driver);
           patchState(store, { isLoading: true, error: null });
         }),
         switchMap((driver) =>
           cameraService.initializeCamera(driver).pipe(
             switchMap((result) => {
-              console.log('[CameraStore] Initialize camera result:', result);
               if (result.success) {
                 // Fetch camera status after initialization
                 return cameraService.getCameraStatus().pipe(
                   tap((camera) => {
-                    console.log(
-                      '[CameraStore] Camera status after init:',
-                      camera,
-                    );
                     patchState(store, {
                       currentCamera: camera,
                       isLoading: false,
@@ -156,9 +150,8 @@ export class CameraStore extends signalStore(
         tap(() => patchState(store, { isLoading: true, error: null })),
         switchMap(() =>
           cameraService.takePicture().pipe(
-            tap((result) => {
-              console.log('[CameraStore] Take picture result:', result);
-              patchState(store, { isLoading: false });
+            tap((picture) => {
+              patchState(store, { lastPicture: picture, isLoading: false });
             }),
             catchError((error) => {
               const errorMessage = error?.message || 'Failed to take picture';
@@ -179,7 +172,6 @@ export class CameraStore extends signalStore(
         switchMap(() =>
           cameraService.startLiveView().pipe(
             tap((result) => {
-              console.log('[CameraStore] Start live view result:', result);
               if (result.success) {
                 patchState(store, {
                   isLiveViewActive: true,
@@ -265,13 +257,33 @@ export class CameraStore extends signalStore(
       ),
     ),
 
+    /**
+     * Keeps the live-view WebSocket subscription alive at the store level so
+     * individual components don't manage it — prevents the spinner flash when
+     * navigating between layouts. Call with true to start, false to stop.
+     */
+    subscribeToLiveFrames: rxMethod<boolean>(
+      pipe(
+        distinctUntilChanged(),
+        switchMap((active) => {
+          if (!active) {
+            patchState(store, { lastLiveFrame: null });
+            return EMPTY;
+          }
+          return cameraService.subscribeLiveView().pipe(
+            tap((frame) => patchState(store, { lastLiveFrame: frame })),
+            catchError(() => EMPTY),
+          );
+        }),
+      ),
+    ),
+
     subscribeToPictures: rxMethod<void>(
       pipe(
         tap(() => console.log('[CameraStore] Subscribing to pictures')),
         switchMap(() =>
           cameraService.subscribePictureTaken().pipe(
             tap((picture) => {
-              console.log('[CameraStore] Received picture:', picture);
               patchState(store, { lastPicture: picture });
             }),
             catchError((error) => {
@@ -285,7 +297,7 @@ export class CameraStore extends signalStore(
   })),
   withHooks({
     onInit(store) {
-      // Subscribe to pictures when the store is initialized
+      // Subscribe to pictures whenever a server camera becomes active.
       effect(() => {
         const currentCamera = store.currentCamera();
         if (
@@ -293,11 +305,14 @@ export class CameraStore extends signalStore(
           currentCamera.available &&
           currentCamera.driver !== 'none'
         ) {
-          console.log(
-            '[CameraStore] Camera available, subscribing to pictures',
-          );
           store.subscribeToPictures();
         }
+      });
+
+      // Keep the live-view WebSocket in sync with isLiveViewActive.
+      // Store-level subscription survives route changes — no spinner on layout switch.
+      effect(() => {
+        store.subscribeToLiveFrames(store.isLiveViewActive());
       });
     },
   }),

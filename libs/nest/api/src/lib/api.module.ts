@@ -10,6 +10,7 @@ import { CamerasApiModule } from '@fotobox/nest-cameras-api';
 import { PrinterApiModule } from '@fotobox/nest-printer-api';
 import { CollageMakerModule } from '@fotobox/nest-collage-maker';
 import { AppServiceModule } from '@fotobox/nest-app-service';
+import { NestPhotoStorageModule } from '@fotobox/nest-photo-storage';
 import { getDefaultConfig } from './api.config';
 import { PhotosController } from './photos.controller';
 
@@ -32,6 +33,7 @@ const logger = getLogger('ApiModule');
     GraphqlModule,
     CollageMakerModule,
     SettingsModule,
+    NestPhotoStorageModule,
     CamerasApiModule,
     PrinterApiModule,
     AppServiceModule,

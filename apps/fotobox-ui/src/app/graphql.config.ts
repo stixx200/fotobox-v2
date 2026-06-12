@@ -30,10 +30,8 @@ export function createApolloOptions() {
           console.error('WebSocket error:', error);
         },
         connected: () => {
-          console.log('WebSocket connected');
         },
         closed: () => {
-          console.log('WebSocket closed');
         },
       },
     }),

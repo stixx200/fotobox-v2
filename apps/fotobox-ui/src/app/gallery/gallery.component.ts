@@ -1,33 +1,78 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { GalleryService, PhotoInfo } from '../services/gallery.service';
+import { GalleryAccessService } from '../services/gallery-access.service';
+import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { PrintService } from '../services/print.service';
+import { SettingsStore } from '../store';
 import { getPhotoUrl } from '../api-config';
-
+import { TranslatePipe } from '@ngx-translate/core';
+import {
+  GALLERY_PIN_LENGTH,
+  sanitizeGalleryPinInput,
+} from '../services/gallery-pin.util';
 @Component({
   selector: 'app-gallery',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    TranslatePipe,
   ],
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss',
 })
-export class GalleryComponent {
+export class GalleryComponent implements OnDestroy {
   private readonly galleryService = inject(GalleryService);
+  private readonly galleryAccess = inject(GalleryAccessService);
   private readonly printService = inject(PrintService);
+  private readonly settingsStore = inject(SettingsStore);
   private readonly router = inject(Router);
+  private readonly layoutNavigation = inject(LayoutNavigationService);
 
-  readonly loading = signal(true);
+  readonly unlocked = this.galleryAccess.unlocked;
+  readonly pinInput = signal('');
+  readonly pinError = signal(false);
+  readonly pinLength = GALLERY_PIN_LENGTH;
+  readonly requiresPassword = computed(() =>
+    this.galleryAccess.requiresPassword(),
+  );
+
+  readonly loading = signal(false);
   readonly photos = signal<PhotoInfo[]>([]);
   readonly selected = signal<PhotoInfo | null>(null);
+  readonly deleteConfirmPending = signal(false);
+  private photosLoaded = false;
+
+  readonly showPrint = computed(() => {
+    const setting = this.settingsStore
+      .settings()
+      .find((s) => s.key === 'usePrinter');
+    if (!setting) return true;
+    try {
+      return JSON.parse(setting.value) !== false;
+    } catch {
+      return true;
+    }
+  });
 
   readonly selectedUrl = computed(() => {
     const p = this.selected();
@@ -35,10 +80,47 @@ export class GalleryComponent {
   });
 
   constructor() {
-    this.loadPhotos();
+    if (!this.requiresPassword()) {
+      this.galleryAccess.unlock();
+      this.loadPhotos();
+    } else if (this.unlocked()) {
+      this.loadPhotos();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.galleryAccess.lock();
+  }
+
+  onPinInput(value: string): void {
+    const pin = sanitizeGalleryPinInput(value);
+    this.pinInput.set(pin);
+    this.pinError.set(false);
+
+    if (pin.length === GALLERY_PIN_LENGTH) {
+      this.submitPin();
+    }
+  }
+
+  submitPin(): void {
+    this.pinError.set(false);
+
+    if (this.galleryAccess.validate(this.pinInput())) {
+      this.pinInput.set('');
+      this.galleryAccess.unlock();
+      this.loadPhotos();
+      return;
+    }
+
+    this.pinError.set(true);
+    this.pinInput.set('');
   }
 
   private loadPhotos(): void {
+    if (this.photosLoaded) {
+      return;
+    }
+    this.photosLoaded = true;
     this.loading.set(true);
     this.galleryService.listPhotos().subscribe({
       next: (photos) => {
@@ -54,11 +136,21 @@ export class GalleryComponent {
   }
 
   select(photo: PhotoInfo): void {
+    this.deleteConfirmPending.set(false);
     this.selected.set(photo);
   }
 
   closeDetail(): void {
+    this.deleteConfirmPending.set(false);
     this.selected.set(null);
+  }
+
+  requestDelete(): void {
+    this.deleteConfirmPending.set(true);
+  }
+
+  cancelDelete(): void {
+    this.deleteConfirmPending.set(false);
   }
 
   print(): void {
@@ -68,11 +160,14 @@ export class GalleryComponent {
     }
   }
 
-  deleteSelected(): void {
+  confirmDelete(): void {
     const photo = this.selected();
-    if (!photo) return;
+    if (!photo) {
+      return;
+    }
     this.galleryService.deletePhoto(photo.id).subscribe({
       next: () => {
+        this.deleteConfirmPending.set(false);
         this.selected.set(null);
         this.photos.update((list) => list.filter((p) => p.id !== photo.id));
       },
@@ -80,6 +175,6 @@ export class GalleryComponent {
   }
 
   goBack(): void {
-    this.router.navigate(['/home']);
+    void this.layoutNavigation.navigateToEntryPoint();
   }
 }

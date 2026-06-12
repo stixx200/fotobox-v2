@@ -5,6 +5,12 @@
   "projectType": "application",
   "implicitDependencies": ["fotobox-ui"],
   "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/fotobox-electron/**/*.ts"]
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "options": {

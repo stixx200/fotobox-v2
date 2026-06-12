@@ -1,52 +1,55 @@
 <div class="home-container">
-  <!-- Live view will be shown here in the background -->
   <div class="live-view">
     <app-camera-live-view></app-camera-live-view>
   </div>
 
-  <!-- Hidden 5-tap escape zone: navigates to settings without any visible UI. -->
-  <div
-    class="escape-zone"
-    (click)="onEscapeTap(); $event.stopPropagation()"
-    [attr.data-taps]="escapeTapCount() || null"
-  ></div>
+  <div class="live-view-vignette" aria-hidden="true"></div>
 
-  <!-- Gallery button: visible in upper-right corner -->
+  <app-settings-escape-zone></app-settings-escape-zone>
+
   <button
     class="gallery-btn"
     mat-mini-fab
-    aria-label="Galerie öffnen"
+    [attr.aria-label]="'GALLERY.OPEN' | translate"
     (click)="goToGallery(); $event.stopPropagation()"
   >
     <mat-icon>photo_library</mat-icon>
   </button>
 
-  <!-- Layout selection tiles -->
-  <div class="layout-tiles">
-    @for (layout of activeLayouts(); track layout; let i = $index) {
-      <div [class]="'panel panel-' + (i + 1)">
-        <mat-card class="layout-card" (click)="navigateToLayout(layout)">
-          <mat-card-header>
-            <mat-card-title>
-              <h3>{{ getLayoutDescription(layout) }}</h3>
-            </mat-card-title>
-          </mat-card-header>
+  <div class="layout-dock">
+    <p class="layout-prompt">{{ 'HOME.CHOOSE_LAYOUT' | translate }}</p>
 
-          <mat-card-content>
+    <div class="layout-tiles" [class.layout-tiles--count-1]="activeLayouts().length === 1" [class.layout-tiles--count-2]="activeLayouts().length === 2">
+      @for (layout of activeLayouts(); track layout) {
+        <button
+          type="button"
+          class="layout-card"
+          (click)="navigateToLayout(layout)"
+        >
+          <div class="layout-card__preview">
             @if (getLayoutPreview(layout); as previewUrl) {
-              <div class="layout-preview">
-                <img [src]="previewUrl" [alt]="layout" />
-              </div>
+              <img
+                class="layout-card__image"
+                [src]="previewUrl"
+                [alt]="getLayoutDescription(layout)"
+              />
             } @else {
-              <div class="layout-icon">
-                <mat-icon [attr.aria-label]="layout">{{
-                  getLayoutIcon(layout)
-                }}</mat-icon>
-              </div>
+              <mat-icon class="layout-card__icon" aria-hidden="true">{{
+                getLayoutIcon(layout)
+              }}</mat-icon>
             }
-          </mat-card-content>
-        </mat-card>
-      </div>
-    }
+          </div>
+
+          <div class="layout-card__info">
+            <span class="layout-card__title">{{
+              getLayoutDescription(layout)
+            }}</span>
+            <span class="layout-card__hint">{{
+              'HOME.TAP_TO_START' | translate
+            }}</span>
+          </div>
+        </button>
+      }
+    </div>
   </div>
 </div>

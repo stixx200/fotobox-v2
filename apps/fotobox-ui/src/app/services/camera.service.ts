@@ -154,14 +154,15 @@ export class CameraService {
       .pipe(map((result) => result.data!.initializeCamera));
   }
 
-  takePicture(): Observable<MutationResult> {
+  takePicture(): Observable<Picture> {
     return this.apollo
-      .mutate<{ takePicture: MutationResult }>({
+      .mutate<{ takePicture: Picture }>({
         mutation: gql`
           mutation TakePicture {
             takePicture {
-              success
-              message
+              id
+              path
+              timestamp
             }
           }
         `,

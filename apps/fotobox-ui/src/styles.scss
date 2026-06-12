@@ -37,4 +37,124 @@ body {
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+  // Suppress tap highlight on kiosk touch screens.
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+// ---------- Snackbar styles ----------
+.snack-error .mdc-snackbar__surface {
+  background: #c62828 !important;
+  color: #fff !important;
+}
+.snack-info .mdc-snackbar__surface {
+  background: #1565c0 !important;
+  color: #fff !important;
+}
+
+// ---------- Capture-flash keyframe ----------
+// Used by layout components as a brief white overlay after the shutter fires.
+@keyframes capture-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.capture-flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  z-index: 100;
+  animation: capture-flash 0.4s ease-out forwards;
+}
+
+// ── Settings page: dark-mode Material component overrides ─────────────────────
+// The main Material theme is applied at html level (light). When the settings
+// page switches to dark mode we override the M3 system tokens on the page root
+// so every Material component inside inherits the dark palette automatically.
+// Tokens reference: https://material.angular.dev/guide/system-variables
+.settings-page:not([data-theme='light']) {
+  // Surface / background tones
+  --mat-sys-surface:                    #1c2128;
+  --mat-sys-surface-variant:            rgba(255, 255, 255, 0.06);
+  --mat-sys-surface-container:          #1c2128;
+  --mat-sys-surface-container-highest:  rgba(255, 255, 255, 0.06);
+
+  // Text / foreground tones
+  --mat-sys-on-surface:                 #e6edf3;
+  --mat-sys-on-surface-variant:         #8b949e;
+
+  // Primary accent
+  --mat-sys-primary:                    #79b8ff;
+  --mat-sys-on-primary:                 #0d1117;
+  --mat-sys-primary-container:          rgba(121, 184, 255, 0.15);
+  --mat-sys-on-primary-container:       #79b8ff;
+
+  // Error
+  --mat-sys-error:                      #ff7b72;
+  --mat-sys-on-error:                   #0d1117;
+
+  // Outline
+  --mat-sys-outline:                    rgba(255, 255, 255, 0.28);
+  --mat-sys-outline-variant:            rgba(255, 255, 255, 0.16);
+
+  // ── MDC text-field component tokens (filled, the Material default) ──────
+  --mdc-filled-text-field-container-color:              rgba(255, 255, 255, 0.06);
+  --mdc-filled-text-field-hover-container-color:        rgba(255, 255, 255, 0.1);
+  --mdc-filled-text-field-input-text-color:             #e6edf3;
+  --mdc-filled-text-field-disabled-input-text-color:    #8b949e;
+  --mdc-filled-text-field-input-text-placeholder-color: #8b949e;
+  --mdc-filled-text-field-label-text-color:             #8b949e;
+  --mdc-filled-text-field-hover-label-text-color:       #e6edf3;
+  --mdc-filled-text-field-focus-label-text-color:       #79b8ff;
+  --mdc-filled-text-field-active-indicator-color:       rgba(255, 255, 255, 0.28);
+  --mdc-filled-text-field-hover-active-indicator-color: rgba(255, 255, 255, 0.5);
+  --mdc-filled-text-field-focus-active-indicator-color: #79b8ff;
+  --mdc-filled-text-field-caret-color:                  #79b8ff;
+
+  // ── MDC text-field component tokens (outlined) ───────────────────────────
+  --mdc-outlined-text-field-input-text-color:           #e6edf3;
+  --mdc-outlined-text-field-disabled-input-text-color:  #8b949e;
+  --mdc-outlined-text-field-label-text-color:           #8b949e;
+  --mdc-outlined-text-field-focus-label-text-color:     #79b8ff;
+  --mdc-outlined-text-field-caret-color:                #79b8ff;
+  --mdc-outlined-text-field-outline-color:              rgba(255, 255, 255, 0.25);
+  --mdc-outlined-text-field-hover-outline-color:        rgba(255, 255, 255, 0.45);
+  --mdc-outlined-text-field-focus-outline-color:        #79b8ff;
+
+  // ── Select ───────────────────────────────────────────────────────────────
+  --mat-select-trigger-text-color:          #e6edf3;
+  --mat-select-placeholder-text-color:      #8b949e;
+  --mat-select-enabled-arrow-color:         #8b949e;
+  --mat-select-focused-arrow-color:         #79b8ff;
+  --mat-select-invalid-arrow-color:         #ff7b72;
+  --mat-select-panel-background-color:      #1c2128;
+  --mat-option-label-text-color:            #e6edf3;
+  --mat-option-hover-state-layer-color:     rgba(255, 255, 255, 0.06);
+  --mat-option-focus-state-layer-color:     rgba(255, 255, 255, 0.08);
+  --mat-option-selected-state-label-text-color: #79b8ff;
+  --mat-option-selected-state-layer-color:  rgba(121, 184, 255, 0.12);
+
+  // ── Checkbox ─────────────────────────────────────────────────────────────
+  --mdc-form-field-label-text-color:              #e6edf3;
+  --mdc-checkbox-unselected-icon-color:           #8b949e;
+  --mdc-checkbox-unselected-hover-icon-color:     #e6edf3;
+  --mdc-checkbox-selected-icon-color:             #79b8ff;
+  --mdc-checkbox-selected-hover-icon-color:       #a5c8ff;
+  --mdc-checkbox-selected-checkmark-color:        #0d1117;
+  --mdc-checkbox-selected-focus-state-layer-color: #79b8ff;
+  --mdc-checkbox-unselected-focus-state-layer-color: #e6edf3;
+
+  // ── Button toggle ─────────────────────────────────────────────────────────
+  --mat-standard-button-toggle-text-color:                      #e6edf3;
+  --mat-standard-button-toggle-background-color:                #1c2128;
+  --mat-standard-button-toggle-selected-state-text-color:       #79b8ff;
+  --mat-standard-button-toggle-selected-state-background-color: rgba(121, 184, 255, 0.12);
+  --mat-standard-button-toggle-divider-color:                   rgba(255, 255, 255, 0.12);
+  --mat-standard-button-toggle-hover-state-layer-opacity:       0.08;
+  --mat-standard-button-toggle-state-layer-color:               #e6edf3;
 }

@@ -12,7 +12,13 @@ import {
 } from './models/camera.model';
 import { GenericMutationResult } from '@fotobox/nest-graphql';
 import { getLogger } from '@fotobox/logging';
-import { Subscription as RxSubscription } from 'rxjs';
+import {
+  firstValueFrom,
+  Subject,
+  Subscription as RxSubscription,
+  timeout,
+  TimeoutError,
+} from 'rxjs';
 
 const logger = getLogger('CameraResolver');
 const pubSub = new PubSub();
@@ -24,6 +30,8 @@ const PICTURE_TAKEN_TOPIC = 'pictureTaken';
 export class CameraResolver implements OnModuleDestroy {
   private pictureTakenSubscription: RxSubscription | null = null;
   private liveViewSubscription: RxSubscription | null = null;
+  /** Emits each time a picture has been saved; used to resolve takePicture mutations. */
+  private readonly pictureReady$ = new Subject<Picture>();
 
   constructor(private readonly cameraService: CameraService) {}
 
@@ -81,6 +89,7 @@ export class CameraResolver implements OnModuleDestroy {
               timestamp: pictureData.timestamp,
               path: pictureData.path,
             };
+            this.pictureReady$.next(picture);
             pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
           });
       }
@@ -98,14 +107,26 @@ export class CameraResolver implements OnModuleDestroy {
     }
   }
 
-  @Mutation(() => GenericMutationResult, {
+  @Mutation(() => Picture, {
     description: 'Take a picture with the camera',
   })
-  async takePicture(): Promise<GenericMutationResult> {
+  async takePicture(): Promise<Picture> {
     logger.debug('Taking picture');
 
+    // Subscribe to the next picture BEFORE triggering the shutter so the
+    // event is never missed, even for synchronous cameras.
+    const picturePending = firstValueFrom(
+      this.pictureReady$.pipe(timeout(30_000)),
+    );
     await this.cameraService.takePicture();
-    return { success: true };
+    try {
+      return await picturePending;
+    } catch (err) {
+      if (err instanceof TimeoutError) {
+        throw new Error('Camera did not respond within 30 s');
+      }
+      throw err;
+    }
   }
 
   @Mutation(() => Picture, {
@@ -143,9 +164,12 @@ export class CameraResolver implements OnModuleDestroy {
         };
       }
 
-      // Stop any existing live view subscription
-      this.liveViewSubscription?.unsubscribe();
-      this.liveViewSubscription = null;
+      // Stop any existing live view subscription and balance the service ref count.
+      if (this.liveViewSubscription) {
+        this.liveViewSubscription.unsubscribe();
+        this.liveViewSubscription = null;
+        this.cameraService.stopLiveView();
+      }
 
       // Subscribe to camera's live view through the service (with reference counting)
       this.liveViewSubscription = this.cameraService.startLiveView().subscribe({

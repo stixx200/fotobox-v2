@@ -14,25 +14,43 @@ const logger = getLogger('collage-maker.maker');
  * In development, images are at libs/collage-maker/src/images/
  */
 function resolveAssetPath(filename: string): string {
-  // Production path (relative to bundled main.js in dist/apps/fotobox-electron/)
-  const productionPath = path.resolve(__dirname, 'images', filename);
-  if (fs.existsSync(productionPath)) {
-    return productionPath;
+  const candidates = [
+    path.resolve(__dirname, 'images', filename),
+    path.resolve(
+      process.cwd(),
+      'dist/apps/fotobox-electron/images',
+      filename,
+    ),
+    path.resolve(__dirname, '../images', filename),
+    path.resolve(process.cwd(), 'libs/collage-maker/src/images', filename),
+  ];
+
+  let dir = __dirname;
+  for (let depth = 0; depth < 8; depth++) {
+    candidates.push(
+      path.join(dir, 'libs/collage-maker/src/images', filename),
+    );
+    candidates.push(
+      path.join(dir, 'dist/apps/fotobox-electron/images', filename),
+    );
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      break;
+    }
+    dir = parent;
   }
 
-  // Development path (relative to libs/collage-maker/src/lib/)
-  const developmentPath = path.resolve(__dirname, '../images', filename);
-  if (fs.existsSync(developmentPath)) {
-    return developmentPath;
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
   }
 
-  // Fall back to production path even if it doesn't exist (will fail with clear error)
   logger.error('Asset not found in production or development paths', {
-    productionPath,
-    developmentPath,
     filename,
+    candidates,
   });
-  return productionPath;
+  return candidates[0];
 }
 
 const questionmarkPhoto = resolveAssetPath('questionmark.png');

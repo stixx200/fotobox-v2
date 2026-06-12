@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 
 /**
  * Full-screen countdown overlay used before capturing a photo.
@@ -18,12 +19,16 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-countdown',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     @if (value() !== null) {
       <div class="countdown-overlay">
         <div class="countdown-number" [class.smile]="value() === 0">
-          {{ value() === 0 ? 'Lächeln!' : value() }}
+          @if (value() === 0) {
+            {{ 'COUNTDOWN.SMILE' | translate }}
+          } @else {
+            {{ value() }}
+          }
         </div>
       </div>
     }

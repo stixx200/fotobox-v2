@@ -1,8 +1,8 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import { Observable, Subject } from 'rxjs';
 import { getLogger } from '@fotobox/logging';
 import { CameraInterface } from '../camera.interface';
+import { resolveRuntimeAsset } from '../resolve-runtime-asset';
 
 const logger = getLogger('camera.demo');
 
@@ -21,20 +21,20 @@ export class DemoCamera implements CameraInterface {
 
   constructor() {
     this.takePicture = this.takePicture.bind(this);
-    // Load images - they will be in demo-camera folder in dist
-    try {
-      this.giraffe = fs.readFileSync(
-        path.join(__dirname, 'demo-camera', 'giraffe.jpg'),
-      );
-      this.rabbit = fs.readFileSync(
-        path.join(__dirname, 'demo-camera', 'rabbit.jpg'),
-      );
-    } catch (error) {
-      // Fallback: try loading from the source directory (for development)
-      logger.warn('Could not load from dist, trying source directory', error);
-      this.giraffe = fs.readFileSync(path.join(__dirname, 'giraffe.jpg'));
-      this.rabbit = fs.readFileSync(path.join(__dirname, 'rabbit.jpg'));
-    }
+    this.giraffe = fs.readFileSync(
+      resolveRuntimeAsset({
+        bundleRelativeDir: 'demo-camera',
+        filename: 'giraffe.jpg',
+        sourceRelativePath: 'libs/cameras/src/demo/giraffe.jpg',
+      }),
+    );
+    this.rabbit = fs.readFileSync(
+      resolveRuntimeAsset({
+        bundleRelativeDir: 'demo-camera',
+        filename: 'rabbit.jpg',
+        sourceRelativePath: 'libs/cameras/src/demo/rabbit.jpg',
+      }),
+    );
     this.currentPicture = this.rabbit;
   }
 
@@ -74,6 +74,12 @@ export class DemoCamera implements CameraInterface {
    */
   observeLiveView(): Observable<string> {
     logger.info('Observe live view');
+
+    if (this.liveViewTimer) {
+      clearInterval(this.liveViewTimer);
+      this.liveViewTimer = null;
+    }
+
     this.liveViewTimer = setInterval(() => {
       if (this.currentPicture === this.rabbit) {
         this.currentPicture = this.giraffe;

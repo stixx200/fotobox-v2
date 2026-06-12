@@ -1,19 +1,24 @@
 import * as winston from 'winston';
 import * as Transport from 'winston-transport';
+import { LogBufferTransport } from './log-buffer.transport';
+
+export { getRecentLogs, clearLogBuffer, type LogRecord } from './log-buffer';
 
 export function close() {
   getConsoleTransport().close?.();
   getFileTransport().close?.();
+  getBufferTransport().close?.();
 }
 
 export function getLogger(context?: string) {
   const consoleTransport = getConsoleTransport();
   const fileTransport = getFileTransport();
+  const bufferTransport = getBufferTransport();
 
   return winston.createLogger({
     level: 'info',
     format: winston.format.json(),
-    transports: [consoleTransport, fileTransport],
+    transports: [consoleTransport, fileTransport, bufferTransport],
     defaultMeta: { context },
   });
 }
@@ -48,4 +53,11 @@ function getFileTransport(): Transport {
     );
   }
   return transports.get('file')!;
+}
+
+function getBufferTransport(): Transport {
+  if (!transports.has('buffer')) {
+    transports.set('buffer', new LogBufferTransport());
+  }
+  return transports.get('buffer')!;
 }
