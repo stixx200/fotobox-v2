@@ -27,7 +27,8 @@
           }
         ],
         "styles": ["apps/fotobox-ui/src/styles.scss"],
-        "scripts": []
+        "scripts": [],
+        "allowedCommonJsDependencies": ["qrcode", "dijkstrajs"]
       },
       "configurations": {
         "production": {
@@ -35,12 +36,12 @@
             {
               "type": "initial",
               "maximumWarning": "500kb",
-              "maximumError": "1mb"
+              "maximumError": "1.1mb"
             },
             {
               "type": "anyComponentStyle",
               "maximumWarning": "4kb",
-              "maximumError": "8kb"
+              "maximumError": "10kb"
             }
           ],
           "outputHashing": "all"

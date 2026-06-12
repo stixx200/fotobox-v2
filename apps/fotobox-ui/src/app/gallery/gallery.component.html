@@ -137,9 +137,23 @@
                   {{ 'GALLERY.PRINT' | translate }}
                 </button>
               }
+              @if (showShare()) {
+                <button mat-stroked-button (click)="share()">
+                  <mat-icon>qr_code_2</mat-icon>
+                  {{ 'GALLERY.SHARE' | translate }}
+                </button>
+              }
             </div>
           }
         </div>
+
+        @if (activeShareLink(); as link) {
+          <app-share-qr-overlay
+            [shareUrl]="link.url"
+            [expiresAt]="link.expiresAt"
+            (closed)="closeShare()"
+          ></app-share-qr-overlay>
+        }
       </div>
     }
   </div>

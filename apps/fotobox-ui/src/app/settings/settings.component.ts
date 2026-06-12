@@ -44,6 +44,7 @@ import {
 } from '../services/gallery-pin.util';
 import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { ClientLogService } from '../services/client-log.service';
+import { ShareService } from '../services/share.service';
 
 /** @title Form field with label */
 @Component({
@@ -81,6 +82,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translateService = inject(TranslateService);
   private readonly clientLogService = inject(ClientLogService);
+  private readonly shareService = inject(ShareService);
 
   readonly currentLang = signal<string>(
     this.translateService.currentLang() || 'de',
@@ -133,11 +135,17 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   private readonly MAX_LAYOUTS = 3;
   maxLayoutsReached = signal(false);
+  readonly detectedShareBaseUrl = signal('');
 
   readonly settingsForm = new FormGroup(
     {
       shutterTimeout: new FormControl(5),
       usePrinter: new FormControl(true),
+      useShare: new FormControl(false),
+      shareBaseUrl: new FormControl(''),
+      shareTokenExpiryHours: new FormControl(24, {
+        validators: [Validators.min(1)],
+      }),
       printerName: new FormControl('printer1'),
       photoDirectory: new FormControl(''),
       collageDirectory: new FormControl(''),
@@ -193,6 +201,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Load available printers from backend
     this.printerStore.loadAvailablePrinters();
+    this.shareService.getDetectedShareBaseUrl().subscribe({
+      next: (url) => {
+        this.detectedShareBaseUrl.set(url);
+        this.cdr.markForCheck();
+      },
+    });
 
     // Watch for collageDirectory changes and reload available layouts
     const collageDirectoryControl = this.settingsForm.get('collageDirectory');

@@ -6,8 +6,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 /**
  * Presentational overlay that shows a captured photo (or collage) together with
- * print / back actions. The host decides whether printing is offered and what
- * the back action does.
+ * print / share / back actions. The host decides which actions are offered and
+ * what the back action does.
  */
 @Component({
   selector: 'app-photo-view',
@@ -26,6 +26,12 @@ import { TranslatePipe } from '@ngx-translate/core';
           >
             <mat-icon>print</mat-icon>
             {{ 'PHOTO_VIEW.PRINT' | translate }}
+          </button>
+        }
+        @if (showShare) {
+          <button mat-raised-button (click)="onShare($event)">
+            <mat-icon>qr_code_2</mat-icon>
+            {{ 'PHOTO_VIEW.SHARE' | translate }}
           </button>
         }
         <button mat-raised-button (click)="onBack($event)">
@@ -75,6 +81,9 @@ export class PhotoViewComponent {
   /** Whether to offer the print button. */
   @Input() showPrint = true;
 
+  /** Whether to offer the share button. */
+  @Input() showShare = false;
+
   /** Label (translation key) for the secondary (back) button. */
   @Input() backLabel = 'PHOTO_VIEW.BACK';
 
@@ -82,11 +91,17 @@ export class PhotoViewComponent {
   @Input() backIcon = 'home';
 
   @Output() print = new EventEmitter<void>();
+  @Output() share = new EventEmitter<void>();
   @Output() back = new EventEmitter<void>();
 
   onPrint(event: Event): void {
     event.stopPropagation();
     this.print.emit();
+  }
+
+  onShare(event: Event): void {
+    event.stopPropagation();
+    this.share.emit();
   }
 
   onBack(event: Event): void {

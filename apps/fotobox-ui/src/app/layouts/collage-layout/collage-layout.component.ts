@@ -17,7 +17,10 @@ import { PhotoViewComponent } from '../../components/photo-view/photo-view.compo
 import { CollageService } from '../../services/collage.service';
 import { getPhotoUrl } from '../../api-config';
 import { PrintService } from '../../services/print.service';
+import { ShareService, ShareLink } from '../../services/share.service';
+import { NotificationService } from '../../services/notification.service';
 import { LayoutNavigationService } from '../../services/layout-navigation.service';
+import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -40,6 +43,7 @@ interface ReviewPhoto {
     MatIconModule,
     TranslatePipe,
     SettingsEscapeZoneComponent,
+    ShareQrOverlayComponent,
   ],
   templateUrl: './collage-layout.component.html',
   styleUrl: './collage-layout.component.scss',
@@ -51,6 +55,8 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly cameraStore = inject(CameraStore);
   private readonly collageService = inject(CollageService);
   private readonly printService = inject(PrintService);
+  private readonly shareService = inject(ShareService);
+  private readonly notificationService = inject(NotificationService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly translateService = inject(TranslateService);
 
@@ -77,6 +83,8 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private lastProcessedPictureId: string | null = null;
 
   readonly showPrint = computed(() => this.usePrinter());
+  readonly showShare = computed(() => this.useShare());
+  readonly activeShareLink = signal<ShareLink | null>(null);
 
   readonly isCollageComplete = computed(
     () => this.photos().length >= this.requiredPhotos(),
@@ -187,6 +195,10 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     return this.readSetting<boolean>('usePrinter') !== false;
   }
 
+  private useShare(): boolean {
+    return this.readSetting<boolean>('useShare') === true;
+  }
+
   private shutterTimeout(): number {
     return this.readSetting<number>('shutterTimeout') ?? 3;
   }
@@ -291,6 +303,24 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     if (url) {
       this.printService.printPhoto(url);
     }
+  }
+
+  share(): void {
+    const url = this.collagePhoto();
+    if (!url) {
+      return;
+    }
+    this.shareService.createShareLink(url).subscribe({
+      next: (link) => this.activeShareLink.set(link),
+      error: () =>
+        this.notificationService.error(
+          this.translateService.instant('SHARE.ERROR'),
+        ),
+    });
+  }
+
+  closeShare(): void {
+    this.activeShareLink.set(null);
   }
 
   private reset(): void {

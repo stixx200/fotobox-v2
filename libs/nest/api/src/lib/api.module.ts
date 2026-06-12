@@ -11,6 +11,7 @@ import { PrinterApiModule } from '@fotobox/nest-printer-api';
 import { CollageMakerModule } from '@fotobox/nest-collage-maker';
 import { AppServiceModule } from '@fotobox/nest-app-service';
 import { NestPhotoStorageModule } from '@fotobox/nest-photo-storage';
+import { ShareApiModule } from '@fotobox/nest-share-api';
 import { getDefaultConfig } from './api.config';
 import { PhotosController } from './photos.controller';
 
@@ -37,6 +38,7 @@ const logger = getLogger('ApiModule');
     CamerasApiModule,
     PrinterApiModule,
     AppServiceModule,
+    ShareApiModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,

@@ -175,6 +175,64 @@
       </div>
     </div>
 
+    <!-- Sharing card -->
+    <div class="settings-card settings-card--full">
+      <div class="card-header">
+        <mat-icon>qr_code_2</mat-icon>
+        <span>{{ 'SETTINGS.SHARE_TITLE' | translate }}</span>
+      </div>
+      <div class="card-body share-settings-body">
+        <mat-checkbox class="share-enable-checkbox" formControlName="useShare">{{
+          'SETTINGS.USE_SHARE' | translate
+        }}</mat-checkbox>
+
+        @if (settingsForm.controls.useShare.value) {
+          <div class="share-settings-details">
+            <div>
+              <p class="settings-hint">
+                {{ 'SETTINGS.SHARE_DETECTED_URL' | translate }}
+              </p>
+              <p class="settings-detected-url">{{ detectedShareBaseUrl() }}</p>
+            </div>
+
+            <div class="share-field-group">
+              <mat-form-field floatLabel="always" subscriptSizing="dynamic">
+                <mat-label>{{ 'SETTINGS.SHARE_BASE_URL' | translate }}</mat-label>
+                <input
+                  matInput
+                  formControlName="shareBaseUrl"
+                  [placeholder]="
+                    'SETTINGS.SHARE_BASE_URL_PLACEHOLDER' | translate
+                  "
+                />
+              </mat-form-field>
+              <p class="settings-field-hint">
+                {{ 'SETTINGS.SHARE_BASE_URL_HINT' | translate }}
+              </p>
+            </div>
+
+            <div class="share-field-group share-field-group--compact">
+              <mat-form-field floatLabel="always" subscriptSizing="dynamic">
+                <mat-label>{{ 'SETTINGS.SHARE_TOKEN_EXPIRY' | translate }}</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  formControlName="shareTokenExpiryHours"
+                />
+                <span matTextSuffix>{{
+                  'SETTINGS.SHARE_TOKEN_EXPIRY_SUFFIX' | translate
+                }}</span>
+              </mat-form-field>
+              <p class="settings-field-hint">
+                {{ 'SETTINGS.SHARE_TOKEN_EXPIRY_HINT' | translate }}
+              </p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- Gallery access card -->
     <div class="settings-card settings-card--accent">
       <div class="card-header">

@@ -60,9 +60,18 @@
     <app-photo-view
       [src]="src"
       [showPrint]="showPrint()"
+      [showShare]="showShare()"
       (print)="print()"
+      (share)="share()"
       (back)="exitToHome()"
     ></app-photo-view>
+    @if (activeShareLink(); as link) {
+      <app-share-qr-overlay
+        [shareUrl]="link.url"
+        [expiresAt]="link.expiresAt"
+        (closed)="closeShare()"
+      ></app-share-qr-overlay>
+    }
   }
 
   <!-- Countdown -->

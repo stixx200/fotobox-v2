@@ -30,5 +30,17 @@
   {
     "key": "galleryPassword",
     "value": "\"\""
+  },
+  {
+    "key": "useShare",
+    "value": "false"
+  },
+  {
+    "key": "shareBaseUrl",
+    "value": "\"\""
+  },
+  {
+    "key": "shareTokenExpiryHours",
+    "value": "24"
   }
 ]

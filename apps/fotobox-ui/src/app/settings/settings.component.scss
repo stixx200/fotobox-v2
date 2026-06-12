@@ -319,7 +319,7 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 12px;
 
     mat-form-field {
       width: 100%;
@@ -327,7 +327,6 @@
 
     mat-checkbox {
       color: var(--sp-text);
-      margin-bottom: 12px;
     }
 
     &--row {
@@ -462,6 +461,71 @@
   .settings-card .card-header {
     padding: 10px 16px;
   }
+}
+
+.share-settings-body {
+  gap: 0;
+}
+
+.share-enable-checkbox {
+  display: block;
+  margin-bottom: 0;
+
+  ::ng-deep .mdc-label {
+    white-space: normal;
+    line-height: 1.45;
+  }
+}
+
+.share-settings-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--sp-card-border);
+}
+
+.share-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+
+  mat-form-field {
+    margin: 0;
+  }
+
+  &--compact {
+    max-width: 14rem;
+  }
+}
+
+.settings-hint {
+  margin: 0 0 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--sp-text-secondary);
+}
+
+.settings-detected-url {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.375rem;
+  background: var(--sp-accent-subtle);
+  color: var(--sp-accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.settings-field-hint {
+  margin: 0;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--sp-text-secondary);
 }
 
 // Prevent iOS zoom on form focus (requires >= 16px input font size).

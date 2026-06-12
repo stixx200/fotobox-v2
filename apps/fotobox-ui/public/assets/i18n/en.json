@@ -25,7 +25,16 @@
     "GALLERY_PIN_HINT": "4 digits. Leave empty to allow open gallery access",
     "GALLERY_PIN_INVALID": "PIN must be exactly 4 digits",
     "STARTING": "Starting...",
-    "START_FAILED": "Could not start the fotobox. Check camera and backend logs."
+    "START_FAILED": "Could not start the fotobox. Check camera and backend logs.",
+    "SHARE_TITLE": "Photo sharing",
+    "USE_SHARE": "Let guests download photos via QR code",
+    "SHARE_DETECTED_URL": "Address for guests (auto-detected)",
+    "SHARE_BASE_URL": "Custom address (only if needed)",
+    "SHARE_BASE_URL_PLACEHOLDER": "e.g. http://192.168.1.10:3000",
+    "SHARE_BASE_URL_HINT": "Usually leave empty. Only change if auto-detection is wrong. Phones and photobox must be on the same Wi‑Fi.",
+    "SHARE_TOKEN_EXPIRY": "Download link valid for",
+    "SHARE_TOKEN_EXPIRY_SUFFIX": "hrs",
+    "SHARE_TOKEN_EXPIRY_HINT": "After that, a new QR code is required."
   },
   "SPLASH": {
     "CONNECTING": "Connecting to backend...",
@@ -72,6 +81,7 @@
     "OPEN": "Open gallery",
     "EMPTY": "No photos yet.",
     "PRINT": "Print",
+    "SHARE": "Share",
     "DELETE": "Delete",
     "DELETE_CONFIRM": "Delete this photo?",
     "DELETE_CONFIRM_ACTION": "Delete permanently",
@@ -86,7 +96,17 @@
   "PHOTO_VIEW": {
     "ALT": "Captured photo",
     "PRINT": "Print",
+    "SHARE": "Share",
     "BACK": "Back"
+  },
+  "SHARE": {
+    "TITLE": "Share photo",
+    "SCAN_HINT": "Scan the QR code with your phone to download the photo",
+    "QR_ALT": "QR code for photo download",
+    "EXPIRES": "Link valid until {{date}}",
+    "DONE": "Done",
+    "QR_ERROR": "Could not generate QR code",
+    "ERROR": "Could not create share link. Check sharing settings and network."
   },
   "HOME": {
     "SINGLE_LAYOUT": "Single photo",

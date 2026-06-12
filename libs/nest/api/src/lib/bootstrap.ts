@@ -2,9 +2,33 @@ import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { getLogger } from '@fotobox/logging';
 import { WinstonLoggerService } from '@fotobox/nest-logger';
+import * as os from 'os';
 import { ApiModule } from './api.module';
+import {
+  isLanApiRestrictionEnabled,
+  lanAccessMiddleware,
+} from './lan-access.middleware';
 
 const logger = getLogger('fotobox-api');
+
+function isLoopbackHost(host: string): boolean {
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+}
+
+function listLanIpv4Addresses(): string[] {
+  const addresses: string[] = [];
+  for (const addrs of Object.values(os.networkInterfaces())) {
+    if (!addrs) {
+      continue;
+    }
+    for (const addr of addrs) {
+      if (addr.family === 'IPv4' && !addr.internal) {
+        addresses.push(addr.address);
+      }
+    }
+  }
+  return addresses;
+}
 
 export interface BootstrapApiOptions {
   /** Port to listen on. Defaults to `process.env.PORT` or 3000. */
@@ -28,6 +52,13 @@ export async function bootstrapApiServer(
   // to reach the API.
   app.enableCors();
 
+  if (isLanApiRestrictionEnabled()) {
+    app.use(lanAccessMiddleware);
+    logger.info(
+      'LAN access restricted to /api/share/* — set FOTOBOX_ALLOW_LAN_API=1 for full LAN API (tablet mode).',
+    );
+  }
+
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix, { exclude: ['graphql'] });
 
@@ -38,6 +69,25 @@ export async function bootstrapApiServer(
   logger.info(
     `🚀 Fotobox API is running on: http://${host}:${port}/${globalPrefix} (GraphQL at /graphql)`,
   );
+
+  if (isLoopbackHost(host)) {
+    logger.warn(
+      'API is bound to localhost only — guest phones on the LAN cannot open QR share links.',
+    );
+  } else {
+    const lanAddresses = listLanIpv4Addresses();
+    if (lanAddresses.length > 0) {
+      for (const ip of lanAddresses) {
+        logger.info(
+          `LAN access (share links): http://${ip}:${port}/${globalPrefix}/share/…`,
+        );
+      }
+    } else {
+      logger.warn(
+        'No LAN IPv4 address detected — check Wi‑Fi and share settings.',
+      );
+    }
+  }
 
   return app;
 }

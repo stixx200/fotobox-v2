@@ -17,7 +17,11 @@ import { GalleryService, PhotoInfo } from '../services/gallery.service';
 import { GalleryAccessService } from '../services/gallery-access.service';
 import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { PrintService } from '../services/print.service';
+import { ShareService, ShareLink } from '../services/share.service';
+import { NotificationService } from '../services/notification.service';
 import { SettingsStore } from '../store';
+import { ShareQrOverlayComponent } from '../components/share-qr-overlay/share-qr-overlay.component';
+import { TranslateService } from '@ngx-translate/core';
 import { getPhotoUrl } from '../api-config';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
@@ -36,6 +40,7 @@ import {
     MatFormFieldModule,
     MatInputModule,
     TranslatePipe,
+    ShareQrOverlayComponent,
   ],
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss',
@@ -44,6 +49,9 @@ export class GalleryComponent implements OnDestroy {
   private readonly galleryService = inject(GalleryService);
   private readonly galleryAccess = inject(GalleryAccessService);
   private readonly printService = inject(PrintService);
+  private readonly shareService = inject(ShareService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly translateService = inject(TranslateService);
   private readonly settingsStore = inject(SettingsStore);
   private readonly router = inject(Router);
   private readonly layoutNavigation = inject(LayoutNavigationService);
@@ -73,6 +81,20 @@ export class GalleryComponent implements OnDestroy {
       return true;
     }
   });
+
+  readonly showShare = computed(() => {
+    const setting = this.settingsStore
+      .settings()
+      .find((s) => s.key === 'useShare');
+    if (!setting) return false;
+    try {
+      return JSON.parse(setting.value) === true;
+    } catch {
+      return false;
+    }
+  });
+
+  readonly activeShareLink = signal<ShareLink | null>(null);
 
   readonly selectedUrl = computed(() => {
     const p = this.selected();
@@ -158,6 +180,24 @@ export class GalleryComponent implements OnDestroy {
     if (url) {
       this.printService.printPhoto(url);
     }
+  }
+
+  share(): void {
+    const url = this.selectedUrl();
+    if (!url) {
+      return;
+    }
+    this.shareService.createShareLink(url).subscribe({
+      next: (link) => this.activeShareLink.set(link),
+      error: () =>
+        this.notificationService.error(
+          this.translateService.instant('SHARE.ERROR'),
+        ),
+    });
+  }
+
+  closeShare(): void {
+    this.activeShareLink.set(null);
   }
 
   confirmDelete(): void {

@@ -12,14 +12,17 @@ import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { SettingsStore, CameraStore } from '../../store';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { CameraLiveViewComponent } from '../../components/camera-live-view/camera-live-view.component';
 import { CountdownComponent } from '../../components/countdown/countdown.component';
 import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
 import { getPhotoUrl } from '../../api-config';
 import { PrintService } from '../../services/print.service';
+import { ShareService, ShareLink } from '../../services/share.service';
+import { NotificationService } from '../../services/notification.service';
 import { LayoutNavigationService } from '../../services/layout-navigation.service';
 import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
+import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
 
 @Component({
   selector: 'app-single-layout',
@@ -33,6 +36,7 @@ import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zo
     PhotoViewComponent,
     TranslatePipe,
     SettingsEscapeZoneComponent,
+    ShareQrOverlayComponent,
   ],
   templateUrl: './single-layout.component.html',
   styleUrl: './single-layout.component.scss',
@@ -42,6 +46,9 @@ export class SingleLayoutComponent implements OnInit {
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
   private readonly printService = inject(PrintService);
+  private readonly shareService = inject(ShareService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly translateService = inject(TranslateService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
@@ -56,6 +63,8 @@ export class SingleLayoutComponent implements OnInit {
   private lastProcessedPictureId: string | null = null;
 
   readonly showPrint = computed(() => this.usePrinter());
+  readonly showShare = computed(() => this.useShare());
+  readonly activeShareLink = signal<ShareLink | null>(null);
 
   constructor() {
     // Display the photo once a freshly captured one arrives in the store.
@@ -90,16 +99,22 @@ export class SingleLayoutComponent implements OnInit {
   }
 
   private usePrinter(): boolean {
-    const setting = this.settingsStore
-      .settings()
-      .find((s) => s.key === 'usePrinter');
+    return this.readBooleanSetting('usePrinter', true);
+  }
+
+  private useShare(): boolean {
+    return this.readBooleanSetting('useShare', false);
+  }
+
+  private readBooleanSetting(key: string, defaultValue: boolean): boolean {
+    const setting = this.settingsStore.settings().find((s) => s.key === key);
     if (!setting) {
-      return true;
+      return defaultValue;
     }
     try {
-      return JSON.parse(setting.value) !== false;
+      return JSON.parse(setting.value) === true;
     } catch {
-      return true;
+      return defaultValue;
     }
   }
 
@@ -156,6 +171,24 @@ export class SingleLayoutComponent implements OnInit {
     if (url) {
       this.printService.printPhoto(url);
     }
+  }
+
+  share(): void {
+    const url = this.photo();
+    if (!url) {
+      return;
+    }
+    this.shareService.createShareLink(url).subscribe({
+      next: (link) => this.activeShareLink.set(link),
+      error: () =>
+        this.notificationService.error(
+          this.translateService.instant('SHARE.ERROR'),
+        ),
+    });
+  }
+
+  closeShare(): void {
+    this.activeShareLink.set(null);
   }
 
   onPhotoDismissed(): void {

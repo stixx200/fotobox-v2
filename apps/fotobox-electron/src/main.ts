@@ -51,7 +51,9 @@ async function startEmbeddedApi(): Promise<void> {
     );
   }
 
-  apiApp = await bootstrapApiServer({ port: DEFAULT_PORT, host: '127.0.0.1' });
+  // Bind on all interfaces so guest phones (QR share) and tablets on the LAN
+  // can reach the API. The kiosk UI still talks to localhost via preload.
+  apiApp = await bootstrapApiServer({ port: DEFAULT_PORT, host: '0.0.0.0' });
 }
 
 async function createWindow(): Promise<void> {
