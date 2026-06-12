@@ -7,14 +7,16 @@
 
   <app-settings-escape-zone></app-settings-escape-zone>
 
-  <button
-    class="gallery-btn"
-    mat-mini-fab
-    [attr.aria-label]="'GALLERY.OPEN' | translate"
-    (click)="goToGallery(); $event.stopPropagation()"
-  >
-    <mat-icon>photo_library</mat-icon>
-  </button>
+  @if (showGalleryButton()) {
+    <button
+      class="gallery-btn"
+      mat-mini-fab
+      [attr.aria-label]="'GALLERY.OPEN' | translate"
+      (click)="goToGallery(); $event.stopPropagation()"
+    >
+      <mat-icon>photo_library</mat-icon>
+    </button>
+  }
 
   <div class="layout-dock">
     <p class="layout-prompt">{{ 'HOME.CHOOSE_LAYOUT' | translate }}</p>

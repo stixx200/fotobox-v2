@@ -5,5 +5,13 @@
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project printer-api --web",
-  "targets": {}
+  "targets": {
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{workspaceRoot}/coverage/libs/nest/printer-api"],
+      "options": {
+        "configFile": "libs/nest/printer-api/vite.config.ts"
+      }
+    }
+  }
 }

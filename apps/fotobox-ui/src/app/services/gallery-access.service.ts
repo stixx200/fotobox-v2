@@ -27,6 +27,21 @@ export class GalleryAccessService {
     }
   }
 
+  /** Whether the gallery entry button is shown and the route is reachable. */
+  isGalleryEnabled(): boolean {
+    const setting = this.settingsStore
+      .settings()
+      .find((s) => s.key === 'showGalleryButton');
+    if (!setting) {
+      return false;
+    }
+    try {
+      return JSON.parse(setting.value) === true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Gallery is locked only when a valid 4-digit PIN is configured. */
   requiresPassword(): boolean {
     return isGalleryPin(this.configuredPassword());

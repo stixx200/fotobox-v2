@@ -21,6 +21,7 @@ import { ShareService, ShareLink } from '../../services/share.service';
 import { NotificationService } from '../../services/notification.service';
 import { LayoutNavigationService } from '../../services/layout-navigation.service';
 import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
+import { GalleryAccessService } from '../../services/gallery-access.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -59,6 +60,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly notificationService = inject(NotificationService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly translateService = inject(TranslateService);
+  private readonly galleryAccess = inject(GalleryAccessService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -84,6 +86,10 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
 
   readonly showPrint = computed(() => this.usePrinter());
   readonly showShare = computed(() => this.useShare());
+  readonly showGalleryButton = computed(() => {
+    this.settingsStore.settings();
+    return this.galleryAccess.isGalleryEnabled();
+  });
   readonly activeShareLink = signal<ShareLink | null>(null);
 
   readonly isCollageComplete = computed(
@@ -300,9 +306,11 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
 
   print(): void {
     const url = this.collagePhoto();
-    if (url) {
-      this.printService.printPhoto(url);
+    if (!url) {
+      return;
     }
+    this.printService.printPhoto(url);
+    this.exitToHome();
   }
 
   share(): void {

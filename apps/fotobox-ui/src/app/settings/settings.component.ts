@@ -27,7 +27,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, filter, take } from 'rxjs';
+import { Subject, filter, merge, take } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   SettingsStore,
@@ -38,7 +38,7 @@ import {
 import { CollageService } from '../services/collage.service';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
-  GALLERY_PIN_LENGTH,
+  GALLERY_LENGTH,
   isOptionalGalleryPin,
   sanitizeGalleryPinInput,
 } from '../services/gallery-pin.util';
@@ -127,6 +127,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   // Layouts signal - starts with Einzelbild only, updated dynamically
   layouts = signal<string[]>(['Einzelbild']);
+  readonly layoutPreviews = signal<Map<string, string>>(new Map());
+  readonly layoutPreview = signal<{
+    layout: string;
+    url: string;
+  } | null>(null);
   collageDirectoryError = signal<string | null>(null);
   layoutsAutoSelectionMessage = signal<string | null>(null);
   isInitializingCamera = signal(false);
@@ -136,6 +141,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly MAX_LAYOUTS = 3;
   maxLayoutsReached = signal(false);
   readonly detectedShareBaseUrl = signal('');
+  readonly shareExpanded = signal(false);
+  readonly galleryExpanded = signal(false);
+  readonly hasUnsavedChanges = signal(false);
+
+  private savedFormSnapshot: string | null = null;
 
   readonly settingsForm = new FormGroup(
     {
@@ -147,6 +157,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         validators: [Validators.min(1)],
       }),
       printerName: new FormControl('printer1'),
+      showPrintDialog: new FormControl(false),
       photoDirectory: new FormControl(''),
       collageDirectory: new FormControl(''),
       layouts: new FormControl<string[]>([]),
@@ -159,6 +170,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
               : { galleryPin: true },
         ],
       }),
+      showGalleryButton: new FormControl(false),
     },
     {},
   );
@@ -221,6 +233,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
 
     // Watch layouts changes and update maxLayoutsReached signal
+    this.settingsForm.controls.useShare.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.cdr.markForCheck());
+
+    this.settingsForm.controls.galleryPassword.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.cdr.markForCheck());
+
+    this.settingsForm.controls.showGalleryButton.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((enabled) => {
+        if (!enabled) {
+          this.galleryExpanded.set(false);
+        }
+        this.cdr.markForCheck();
+      });
+
     const layoutsControl = this.settingsForm.get('layouts');
     if (layoutsControl) {
       layoutsControl.valueChanges
@@ -238,6 +267,30 @@ export class SettingsComponent implements OnInit, OnDestroy {
         ),
       );
     }
+
+    merge(this.settingsForm.valueChanges, this.settingsForm.statusChanges)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.syncDirtyState());
+  }
+
+  private captureFormSnapshot(): string {
+    return JSON.stringify(this.settingsForm.getRawValue());
+  }
+
+  private updateSavedSnapshot(): void {
+    this.savedFormSnapshot = this.captureFormSnapshot();
+    this.hasUnsavedChanges.set(false);
+  }
+
+  private syncDirtyState(): void {
+    if (this.savedFormSnapshot === null) {
+      this.hasUnsavedChanges.set(false);
+      return;
+    }
+
+    const dirty = this.captureFormSnapshot() !== this.savedFormSnapshot;
+    this.hasUnsavedChanges.set(dirty);
+    this.cdr.markForCheck();
   }
 
   private updateFormWithSettings(): void {
@@ -264,8 +317,53 @@ export class SettingsComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.syncExpertPanelsFromForm();
+    this.updateSavedSnapshot();
+
     // Trigger change detection for OnPush
     this.cdr.markForCheck();
+  }
+
+  toggleShareExpanded(): void {
+    this.shareExpanded.update((v) => !v);
+  }
+
+  toggleGalleryExpanded(): void {
+    this.galleryExpanded.update((v) => !v);
+  }
+
+  shareStatusLabel(): string {
+    return this.settingsForm.controls.useShare.value
+      ? this.translateService.instant('SETTINGS.SHARE_STATUS_ON')
+      : this.translateService.instant('SETTINGS.SHARE_STATUS_OFF');
+  }
+
+  galleryStatusLabel(): string {
+    if (this.settingsForm.controls.showGalleryButton.value === false) {
+      return this.translateService.instant('SETTINGS.GALLERY_STATUS_HIDDEN');
+    }
+    const pin = String(this.settingsForm.controls.galleryPassword.value ?? '');
+    return pin.length > 0
+      ? this.translateService.instant('SETTINGS.GALLERY_STATUS_PIN')
+      : this.translateService.instant('SETTINGS.GALLERY_STATUS_OPEN');
+  }
+
+  private syncExpertPanelsFromForm(): void {
+    if (this.settingsForm.controls.useShare.value) {
+      this.shareExpanded.set(true);
+    }
+
+    const galleryEnabled =
+      this.settingsForm.controls.showGalleryButton.value === true;
+    if (!galleryEnabled) {
+      this.galleryExpanded.set(false);
+      return;
+    }
+
+    const pin = String(this.settingsForm.controls.galleryPassword.value ?? '');
+    if (pin.length > 0) {
+      this.galleryExpanded.set(true);
+    }
   }
 
   ngOnDestroy(): void {
@@ -274,20 +372,97 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private loadAvailableLayouts(collageDirectory?: string): void {
+    this.layoutPreview.set(null);
     this.collageService.getAvailableLayoutIds(collageDirectory).subscribe({
       next: (layoutIds) => {
         this.layouts.set(layoutIds);
         this.collageDirectoryError.set(null);
+        this.layoutPreviews.set(new Map());
+        this.loadLayoutPreviews(layoutIds, collageDirectory);
       },
       error: (error) => {
         console.error('Error loading available layouts:', error);
         // Fallback to just Einzelbild if there's an error
-        this.layouts.set(['Einzelbild']);
+        const fallbackLayouts = ['Einzelbild'];
+        this.layouts.set(fallbackLayouts);
+        this.layoutPreviews.set(new Map());
+        this.loadLayoutPreviews(fallbackLayouts, collageDirectory);
         this.collageDirectoryError.set(
           this.translateService.instant('SETTINGS.COLLAGE_DIRECTORY_ERROR'),
         );
       },
     });
+  }
+
+  getLayoutPreview(layout: string): string | null {
+    return this.layoutPreviews().get(layout) ?? null;
+  }
+
+  showLayoutPreview(layout: string): void {
+    const url = this.getLayoutPreview(layout);
+    this.layoutPreview.set({ layout, url: url ?? '' });
+    this.cdr.markForCheck();
+  }
+
+  onLayoutsSelectOpened(): void {
+    const selected = this.settingsForm.get('layouts')?.value ?? [];
+    const firstSelected = selected[0];
+    const layoutToPreview = firstSelected ?? this.layouts()[0];
+    if (layoutToPreview) {
+      this.showLayoutPreview(layoutToPreview);
+    }
+  }
+
+  onLayoutsSelectClosed(): void {
+    this.layoutPreview.set(null);
+    this.cdr.markForCheck();
+  }
+
+  /** On touch devices, tap the preview pane to step through layouts. */
+  cycleLayoutPreview(): void {
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      return;
+    }
+
+    const layouts = this.layouts();
+    if (layouts.length === 0) {
+      return;
+    }
+
+    const currentLayout = this.layoutPreview()?.layout;
+    const currentIndex = currentLayout ? layouts.indexOf(currentLayout) : -1;
+    const nextLayout = layouts[(currentIndex + 1) % layouts.length];
+    this.showLayoutPreview(nextLayout);
+  }
+
+  private loadLayoutPreviews(
+    layoutIds: string[],
+    collageDirectory?: string,
+  ): void {
+    const directory =
+      collageDirectory ||
+      this.settingsForm.get('collageDirectory')?.value ||
+      undefined;
+
+    for (const layout of layoutIds) {
+      this.collageService.getLayoutPreview(layout, directory).subscribe({
+        next: (previewUrl) => {
+          this.layoutPreviews.update((previews) => {
+            const next = new Map(previews);
+            next.set(layout, previewUrl);
+            return next;
+          });
+          const current = this.layoutPreview();
+          if (current?.layout === layout && !current.url) {
+            this.layoutPreview.set({ layout, url: previewUrl });
+          }
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error(`Error loading preview for ${layout}:`, error);
+        },
+      });
+    }
   }
 
   setLanguage(lang: string): void {
@@ -398,7 +573,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
-  readonly galleryPinLength = GALLERY_PIN_LENGTH;
+  readonly galleryPinLength = GALLERY_LENGTH;
 
   onGalleryPinInput(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -407,6 +582,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       input.value = sanitized;
     }
     this.settingsForm.controls.galleryPassword.setValue(sanitized);
+    this.cdr.markForCheck();
   }
 
   saveSettings(): void {

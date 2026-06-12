@@ -9,6 +9,7 @@ import { CollageService } from '../services/collage.service';
 import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { CameraLiveViewComponent } from '../components/camera-live-view/camera-live-view.component';
 import { SettingsEscapeZoneComponent } from '../components/settings-escape-zone/settings-escape-zone.component';
+import { GalleryAccessService } from '../services/gallery-access.service';
 
 @Component({
   selector: 'app-home',
@@ -32,6 +33,12 @@ export class HomeComponent implements OnInit {
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly cameraStore = inject(CameraStore);
   private readonly translateService = inject(TranslateService);
+  private readonly galleryAccess = inject(GalleryAccessService);
+
+  readonly showGalleryButton = computed(() => {
+    this.settings();
+    return this.galleryAccess.isGalleryEnabled();
+  });
 
   goToGallery(): void {
     this.router.navigate(['/gallery']);

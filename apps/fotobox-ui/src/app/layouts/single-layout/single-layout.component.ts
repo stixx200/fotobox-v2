@@ -23,6 +23,7 @@ import { NotificationService } from '../../services/notification.service';
 import { LayoutNavigationService } from '../../services/layout-navigation.service';
 import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
 import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
+import { GalleryAccessService } from '../../services/gallery-access.service';
 
 @Component({
   selector: 'app-single-layout',
@@ -50,6 +51,7 @@ export class SingleLayoutComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly translateService = inject(TranslateService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
+  private readonly galleryAccess = inject(GalleryAccessService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -64,6 +66,10 @@ export class SingleLayoutComponent implements OnInit {
 
   readonly showPrint = computed(() => this.usePrinter());
   readonly showShare = computed(() => this.useShare());
+  readonly showGalleryButton = computed(() => {
+    this.settingsStore.settings();
+    return this.galleryAccess.isGalleryEnabled();
+  });
   readonly activeShareLink = signal<ShareLink | null>(null);
 
   constructor() {
@@ -168,9 +174,11 @@ export class SingleLayoutComponent implements OnInit {
 
   print(): void {
     const url = this.photo();
-    if (url) {
-      this.printService.printPhoto(url);
+    if (!url) {
+      return;
     }
+    this.printService.printPhoto(url);
+    this.onPhotoDismissed();
   }
 
   share(): void {

@@ -1,10 +1,4 @@
-import {
-  Component,
-  inject,
-  signal,
-  computed,
-  OnDestroy,
-} from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -25,7 +19,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { getPhotoUrl } from '../api-config';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
-  GALLERY_PIN_LENGTH,
+  GALLERY_LENGTH,
   sanitizeGalleryPinInput,
 } from '../services/gallery-pin.util';
 @Component({
@@ -59,7 +53,7 @@ export class GalleryComponent implements OnDestroy {
   readonly unlocked = this.galleryAccess.unlocked;
   readonly pinInput = signal('');
   readonly pinError = signal(false);
-  readonly pinLength = GALLERY_PIN_LENGTH;
+  readonly pinLength = GALLERY_LENGTH;
   readonly requiresPassword = computed(() =>
     this.galleryAccess.requiresPassword(),
   );
@@ -102,6 +96,11 @@ export class GalleryComponent implements OnDestroy {
   });
 
   constructor() {
+    if (!this.galleryAccess.isGalleryEnabled()) {
+      void this.layoutNavigation.navigateToEntryPoint();
+      return;
+    }
+
     if (!this.requiresPassword()) {
       this.galleryAccess.unlock();
       this.loadPhotos();
@@ -119,7 +118,7 @@ export class GalleryComponent implements OnDestroy {
     this.pinInput.set(pin);
     this.pinError.set(false);
 
-    if (pin.length === GALLERY_PIN_LENGTH) {
+    if (pin.length === GALLERY_LENGTH) {
       this.submitPin();
     }
   }
@@ -177,9 +176,11 @@ export class GalleryComponent implements OnDestroy {
 
   print(): void {
     const url = this.selectedUrl();
-    if (url) {
-      this.printService.printPhoto(url);
+    if (!url) {
+      return;
     }
+    this.printService.printPhoto(url);
+    this.closeDetail();
   }
 
   share(): void {

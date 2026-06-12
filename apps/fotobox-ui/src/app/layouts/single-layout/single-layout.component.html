@@ -1,14 +1,16 @@
 <div class="layout-container" (click)="takePicture()">
   @if (isOnlyLayoutActive) {
     <app-settings-escape-zone></app-settings-escape-zone>
-    <button
-      class="gallery-btn"
-      mat-mini-fab
-      [attr.aria-label]="'GALLERY.OPEN' | translate"
-      (click)="goToGallery(); $event.stopPropagation()"
-    >
-      <mat-icon>photo_library</mat-icon>
-    </button>
+    @if (showGalleryButton()) {
+      <button
+        class="gallery-btn"
+        mat-mini-fab
+        [attr.aria-label]="'GALLERY.OPEN' | translate"
+        (click)="goToGallery(); $event.stopPropagation()"
+      >
+        <mat-icon>photo_library</mat-icon>
+      </button>
+    }
   }
 
   <div class="live-view" [class.photo-mode]="photo()">
