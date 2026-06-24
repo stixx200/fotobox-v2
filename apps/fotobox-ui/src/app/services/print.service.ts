@@ -1,5 +1,8 @@
 import { Injectable, inject } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { SettingsStore } from '../store';
+import { ClientLogService } from './client-log.service';
+import { NotificationService } from './notification.service';
 
 export interface PrintPhotoOptions {
   /** OS printer name from settings. Uses the system default when omitted. */
@@ -13,6 +16,9 @@ export interface PrintPhotoOptions {
 @Injectable({ providedIn: 'root' })
 export class PrintService {
   private readonly settingsStore = inject(SettingsStore);
+  private readonly notificationService = inject(NotificationService);
+  private readonly clientLogService = inject(ClientLogService);
+  private readonly translateService = inject(TranslateService);
 
   /**
    * Print a single photo.
@@ -21,8 +27,10 @@ export class PrintService {
    *   `showPrintDialog` is enabled in settings.
    * - In a plain browser: opens a minimal print page; the dialog cannot be
    *   suppressed due to browser security restrictions.
+   *
+   * @returns `true` when printing succeeded or was handed off to the browser.
    */
-  printPhoto(photoUrl: string): void {
+  async printPhoto(photoUrl: string): Promise<boolean> {
     const options: PrintPhotoOptions = {
       printerName: this.getStringSetting('printerName'),
       silent: !this.getBooleanSetting('showPrintDialog', false),
@@ -30,13 +38,32 @@ export class PrintService {
     };
 
     if (typeof window !== 'undefined' && window.electron?.printPhoto) {
-      window.electron.printPhoto(photoUrl, options).catch((err) => {
-        console.error('Electron print failed:', err);
-      });
-      return;
+      try {
+        const result = await window.electron.printPhoto(photoUrl, options);
+        if (!result.success) {
+          this.reportPrintFailure(result.reason);
+          return false;
+        }
+        return true;
+      } catch (error) {
+        this.reportPrintFailure(error);
+        return false;
+      }
     }
 
-    this.printInBrowser(photoUrl);
+    const opened = this.printInBrowser(photoUrl);
+    if (!opened) {
+      this.reportPrintFailure('Popup blocked');
+      return false;
+    }
+    return true;
+  }
+
+  private reportPrintFailure(detail?: unknown): void {
+    this.notificationService.error(
+      this.translateService.instant('PRINT.ERROR'),
+    );
+    this.clientLogService.error('Photo print failed', detail);
   }
 
   private getStringSetting(key: string): string | undefined {
@@ -73,10 +100,10 @@ export class PrintService {
     }
   }
 
-  private printInBrowser(photoUrl: string): void {
+  private printInBrowser(photoUrl: string): boolean {
     const win = window.open('', '_blank');
     if (!win) {
-      return;
+      return false;
     }
 
     win.document.write(`<!DOCTYPE html>
@@ -108,5 +135,6 @@ export class PrintService {
 </body>
 </html>`);
     win.document.close();
+    return true;
   }
 }

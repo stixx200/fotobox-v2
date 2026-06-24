@@ -7,6 +7,8 @@
     "SHUTTER_TIMEOUT": "Auslösezeit",
     "PRINTER": "Drucker",
     "NO_PRINTER": "Keine Drucker verfügbar",
+    "PRINTER_LOADING": "Drucker werden geladen…",
+    "PRINTER_ERROR": "Drucker konnten nicht geladen werden",
     "SHOW_PRINT_DIALOG": "Druckdialog zum Testen anzeigen",
     "SHOW_PRINT_DIALOG_HINT": "Wenn deaktiviert, wird direkt auf den gewählten Drucker gedruckt (ohne Dialog).",
     "PHOTO_DIRECTORY": "Speicherort für Fotos",
@@ -114,6 +116,9 @@
     "PRINT": "Drucken",
     "SHARE": "Teilen",
     "BACK": "Zurück"
+  },
+  "PRINT": {
+    "ERROR": "Foto konnte nicht gedruckt werden. Druckereinstellungen und Druckerbereitschaft prüfen."
   },
   "SHARE": {
     "TITLE": "Foto teilen",

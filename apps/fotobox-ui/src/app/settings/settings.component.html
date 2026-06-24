@@ -161,6 +161,20 @@
       <div class="card-header">
         <mat-icon>print</mat-icon>
         <span>{{ 'SETTINGS.USE_PRINTER' | translate }}</span>
+        <button
+          type="button"
+          mat-icon-button
+          class="card-header__action"
+          [disabled]="printersLoading()"
+          (click)="refreshPrinters()"
+          [attr.aria-label]="'DEBUG.REFRESH' | translate"
+        >
+          @if (printersLoading()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            <mat-icon>refresh</mat-icon>
+          }
+        </button>
       </div>
       <div class="card-body">
         <mat-checkbox formControlName="usePrinter">{{
@@ -168,13 +182,23 @@
         }}</mat-checkbox>
 
         @if (settingsForm.controls.usePrinter.value) {
+          @if (printersError(); as error) {
+            <p class="settings-field-hint settings-field-hint--error">
+              {{ 'SETTINGS.PRINTER_ERROR' | translate }}: {{ error }}
+            </p>
+          }
           <mat-form-field floatLabel="always">
             <mat-label>{{ 'SETTINGS.PRINTER' | translate }}</mat-label>
             <mat-select required formControlName="printerName">
+              @if (printersLoading() && availablePrinterNames().length === 0) {
+                <mat-option disabled>{{
+                  'SETTINGS.PRINTER_LOADING' | translate
+                }}</mat-option>
+              }
               @for (printer of availablePrinterNames(); track printer) {
                 <mat-option [value]="printer">{{ printer }}</mat-option>
               }
-              @if (availablePrinterNames().length === 0) {
+              @if (!printersLoading() && availablePrinterNames().length === 0) {
                 <mat-option disabled>{{
                   'SETTINGS.NO_PRINTER' | translate
                 }}</mat-option>

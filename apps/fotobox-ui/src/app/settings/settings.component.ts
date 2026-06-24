@@ -127,6 +127,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   readonly availableCameras = this.cameraStore.availableCameras;
   readonly availableCameraNames = this.cameraStore.availableCameraNames;
   readonly availablePrinterNames = this.printerStore.printerNames;
+  readonly printersLoading = this.printerStore.isLoading;
+  readonly printersError = this.printerStore.error;
   readonly appVersion = this.appMetadataStore.version;
 
   // Layouts signal - starts with Einzelbild only, updated dynamically
@@ -161,7 +163,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       shareTokenExpiryHours: new FormControl(24, {
         validators: [Validators.min(1)],
       }),
-      printerName: new FormControl('printer1'),
+      printerName: new FormControl(''),
       showPrintDialog: new FormControl(false),
       photoDirectory: new FormControl(''),
       collageDirectory: new FormControl(''),
@@ -211,6 +213,26 @@ export class SettingsComponent implements OnInit, OnDestroy {
         } else {
           this.loadAvailableLayouts();
         }
+      }
+    });
+
+    effect(() => {
+      const names = this.availablePrinterNames();
+      if (names.length === 0) {
+        return;
+      }
+
+      const control = this.settingsForm.controls.printerName;
+      const current = String(control.value ?? '').trim();
+      if (current && names.includes(current)) {
+        return;
+      }
+
+      const preferred = this.printerStore.defaultPrinter() ?? names[0];
+      if (preferred && preferred !== control.value) {
+        control.setValue(preferred, { emitEvent: false });
+        this.syncDirtyState();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -373,6 +395,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  refreshPrinters(): void {
+    this.printerStore.loadAvailablePrinters();
   }
 
   refreshTemplates(): void {

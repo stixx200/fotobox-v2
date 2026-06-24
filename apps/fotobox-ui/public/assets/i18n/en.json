@@ -7,6 +7,8 @@
     "SHUTTER_TIMEOUT": "Shutter delay",
     "PRINTER": "Printer",
     "NO_PRINTER": "No printers available",
+    "PRINTER_LOADING": "Loading printers…",
+    "PRINTER_ERROR": "Could not load printers",
     "SHOW_PRINT_DIALOG": "Show print dialog for testing",
     "SHOW_PRINT_DIALOG_HINT": "When disabled, photos print directly to the selected printer without a dialog.",
     "PHOTO_DIRECTORY": "Photo storage folder",
@@ -114,6 +116,9 @@
     "PRINT": "Print",
     "SHARE": "Share",
     "BACK": "Back"
+  },
+  "PRINT": {
+    "ERROR": "Could not print photo. Check printer settings and that the printer is ready."
   },
   "SHARE": {
     "TITLE": "Share photo",

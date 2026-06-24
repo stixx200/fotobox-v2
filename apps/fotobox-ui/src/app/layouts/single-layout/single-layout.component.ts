@@ -172,13 +172,15 @@ export class SingleLayoutComponent implements OnInit {
     void this.router.navigate(['/gallery']);
   }
 
-  print(): void {
+  async print(): Promise<void> {
     const url = this.photo();
     if (!url) {
       return;
     }
-    this.printService.printPhoto(url);
-    this.onPhotoDismissed();
+    const success = await this.printService.printPhoto(url);
+    if (success) {
+      this.onPhotoDismissed();
+    }
   }
 
   share(): void {

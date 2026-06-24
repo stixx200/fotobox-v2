@@ -51,6 +51,10 @@ describe('SettingsComponent', () => {
           provide: PrinterStore,
           useValue: {
             printerNames: signal([]),
+            isLoading: signal(false),
+            error: signal(null),
+            defaultPrinter: signal(null),
+            loadAvailablePrinters: () => undefined,
           },
         },
         {

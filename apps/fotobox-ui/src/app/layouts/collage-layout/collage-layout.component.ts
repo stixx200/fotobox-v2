@@ -311,13 +311,15 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/gallery']);
   }
 
-  print(): void {
+  async print(): Promise<void> {
     const url = this.collagePhoto();
     if (!url) {
       return;
     }
-    this.printService.printPhoto(url);
-    this.exitToHome();
+    const success = await this.printService.printPhoto(url);
+    if (success) {
+      this.exitToHome();
+    }
   }
 
   share(): void {

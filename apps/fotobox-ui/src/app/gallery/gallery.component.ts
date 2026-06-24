@@ -174,13 +174,15 @@ export class GalleryComponent implements OnDestroy {
     this.deleteConfirmPending.set(false);
   }
 
-  print(): void {
+  async print(): Promise<void> {
     const url = this.selectedUrl();
     if (!url) {
       return;
     }
-    this.printService.printPhoto(url);
-    this.closeDetail();
+    const success = await this.printService.printPhoto(url);
+    if (success) {
+      this.closeDetail();
+    }
   }
 
   share(): void {
