@@ -1,15 +1,29 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { PubSub } from 'graphql-subscriptions';
 import { getLogger } from '@fotobox/logging';
+import { FotoboxError } from '@fotobox/error';
 import {
   CameraFactory,
   CameraInterface,
   WEBCAM_DRIVER,
 } from '@fotobox/cameras';
 import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
-import { CameraInfo } from './models/camera.model';
-import { Subscription, Subject, map, Observable, ReplaySubject } from 'rxjs';
+import { CameraInfo, LiveViewFrame, Picture } from './models/camera.model';
+import {
+  firstValueFrom,
+  map,
+  Observable,
+  ReplaySubject,
+  Subject,
+  Subscription,
+  timeout,
+  TimeoutError,
+} from 'rxjs';
 
 const logger = getLogger('CameraService');
+
+const LIVE_VIEW_TOPIC = 'liveView';
+const PICTURE_TAKEN_TOPIC = 'pictureTaken';
 
 export interface PhotoSavedEvent {
   photoId: string;
@@ -20,13 +34,18 @@ export interface PhotoSavedEvent {
 @Injectable()
 export class CameraService implements OnModuleDestroy {
   private currentCamera: CameraInterface | null = null;
-  /** Set when a browser-driven (client) camera such as the webcam is active. */
   private clientDriver: string | null = null;
   private liveViewSubscription: Subscription | null = null;
   private liveViewSubject = new ReplaySubject<string>(1);
   private liveViewSubscriptionCount = 0;
+  private readonly pictureReady$ = new Subject<Picture>();
+  private pictureTakenServerSubscription: Subscription | null = null;
+  private liveViewBroadcastSubscription: Subscription | null = null;
 
-  constructor(private photoStorage: PhotoStorageProviderService) {}
+  constructor(
+    private photoStorage: PhotoStorageProviderService,
+    private readonly pubSub: PubSub,
+  ) {}
 
   async getAvailableCameras(): Promise<CameraInfo[]> {
     logger.debug('Fetching available cameras');
@@ -82,20 +101,17 @@ export class CameraService implements OnModuleDestroy {
   async initializeCamera(driver: string): Promise<boolean> {
     logger.info(`Initializing camera with driver: ${driver}`);
 
-    // Deinitialize current server camera if one exists.
     if (this.currentCamera) {
       await this.deinitializeCamera();
     }
     this.clientDriver = null;
 
-    // The webcam is driven by the browser; there is no server instance.
     if (driver.toLowerCase() === WEBCAM_DRIVER) {
       this.clientDriver = WEBCAM_DRIVER;
       logger.info('Webcam (client) camera selected; no server instance.');
       return true;
     }
 
-    // Create and initialize new camera
     this.currentCamera = CameraFactory.createCamera(driver);
     await this.currentCamera.init();
 
@@ -103,53 +119,135 @@ export class CameraService implements OnModuleDestroy {
     return true;
   }
 
-  /**
-   * Persist an uploaded photo (e.g. from the browser webcam) and return its
-   * saved-event descriptor so callers can broadcast a pictureTaken event.
-   */
+  startPictureTakenBroadcast(driver: string): void {
+    this.pictureTakenServerSubscription?.unsubscribe();
+    this.pictureTakenServerSubscription = null;
+
+    if (driver.toLowerCase() === WEBCAM_DRIVER) {
+      return;
+    }
+
+    this.pictureTakenServerSubscription = this.getPictureTaken$().subscribe(
+      (pictureData) => {
+        const picture: Picture = {
+          id: pictureData.photoId,
+          timestamp: pictureData.timestamp,
+          path: pictureData.path,
+        };
+        this.publishPicture(picture);
+      },
+    );
+  }
+
+  publishPicture(picture: Picture): void {
+    this.pictureReady$.next(picture);
+    void this.pubSub.publish(PICTURE_TAKEN_TOPIC, { pictureTaken: picture });
+  }
+
+  getPictureReady$(): Observable<Picture> {
+    return this.pictureReady$.asObservable();
+  }
+
   savePhoto(imageData: string): PhotoSavedEvent {
     return this.handleCapturedPicture(imageData);
   }
 
-  /**
-   * Handle a captured picture by saving it to storage
-   */
+  uploadAndBroadcastPhoto(imageData: string): Picture {
+    const saved = this.savePhoto(imageData);
+    const picture: Picture = {
+      id: saved.photoId,
+      timestamp: saved.timestamp,
+      path: saved.path,
+    };
+    this.publishPicture(picture);
+    return picture;
+  }
+
+  async takePictureAndWait(): Promise<Picture> {
+    const picturePending = firstValueFrom(
+      this.pictureReady$.pipe(timeout(30_000)),
+    );
+    await this.takePicture();
+    try {
+      return await picturePending;
+    } catch (err) {
+      if (err instanceof TimeoutError) {
+        throw new FotoboxError('Camera did not respond within 30 s', {
+          code: 'MAIN.CAMERA.TIMEOUT',
+        });
+      }
+      throw err;
+    }
+  }
+
+  startLiveViewBroadcast(): void {
+    if (!this.getCurrentCamera()) {
+      throw new FotoboxError(
+        'No camera initialized. Please initialize a camera first.',
+        { code: 'MAIN.CAMERA.NOT_INITIALIZED' },
+      );
+    }
+
+    this.stopLiveViewBroadcast();
+
+    this.liveViewBroadcastSubscription = this.startLiveView().subscribe({
+      next: (base64Data) => {
+        const frame: LiveViewFrame = {
+          data: base64Data,
+          timestamp: new Date().toISOString(),
+        };
+        void this.pubSub.publish(LIVE_VIEW_TOPIC, { liveViewStream: frame });
+      },
+      error: (error) => {
+        logger.error('Error in live view stream:', error);
+      },
+    });
+  }
+
+  stopLiveViewBroadcast(): void {
+    if (this.liveViewBroadcastSubscription) {
+      this.liveViewBroadcastSubscription.unsubscribe();
+      this.liveViewBroadcastSubscription = null;
+    }
+    this.stopLiveView();
+  }
+
+  liveViewStreamIterator() {
+    return this.pubSub.asyncIterableIterator(LIVE_VIEW_TOPIC);
+  }
+
+  pictureTakenIterator() {
+    return this.pubSub.asyncIterableIterator(PICTURE_TAKEN_TOPIC);
+  }
+
   private handleCapturedPicture(pictureData: string): PhotoSavedEvent {
     const photoId = `photo-${Date.now()}`;
 
-    // Convert picture data to buffer
     let photoBuffer: Buffer;
 
-    // Check if pictureData is base64 encoded
     if (
       pictureData.startsWith('data:') ||
       pictureData.match(/^[A-Za-z0-9+/=]+$/)
     ) {
-      // Extract base64 data if it has the data URI scheme
       const base64Data = pictureData.includes(',')
         ? pictureData.split(',')[1]
         : pictureData;
       photoBuffer = Buffer.from(base64Data, 'base64');
     } else if (pictureData.startsWith('/') || pictureData.includes('.')) {
-      // It's a file path - in this case, log and skip
-      // (in production you might read the file)
       logger.debug(`Captured picture at path: ${pictureData}`);
-      throw new Error(
-        'Received picture as file path, but file handling is not implemented in this example',
+      throw new FotoboxError(
+        'Received picture as file path, but file handling is not implemented.',
+        { code: 'MAIN.CAMERA.UNSUPPORTED_PICTURE_FORMAT' },
       );
     } else {
-      // Try to treat as buffer or raw binary data
       photoBuffer = Buffer.from(pictureData);
     }
 
-    // Save photo to storage
     const filePath = this.photoStorage.savePhoto(photoId, photoBuffer);
     logger.info(`Photo saved to ${filePath}`);
 
-    // Return relative path for URL access
     const relativePath = `/api/photos/${photoId}.jpg`;
 
-    // Emit photo saved event
     return {
       photoId,
       path: relativePath,
@@ -167,10 +265,9 @@ export class CameraService implements OnModuleDestroy {
     }
   }
 
-  /**
-   * Cleanup on module destruction
-   */
   async onModuleDestroy(): Promise<void> {
+    this.pictureTakenServerSubscription?.unsubscribe();
+    this.stopLiveViewBroadcast();
     await this.deinitializeCamera();
   }
 
@@ -178,23 +275,20 @@ export class CameraService implements OnModuleDestroy {
     logger.info('Taking picture');
 
     if (!this.currentCamera) {
-      throw new Error('Camera not initialized');
+      throw new FotoboxError('Camera not initialized', {
+        code: 'MAIN.CAMERA.NOT_INITIALIZED',
+      });
     }
 
     await this.currentCamera.takePicture();
   }
 
-  /**
-   * Start live view subscription with reference counting
-   * Ensures only one subscription to the camera's live view exists
-   */
   startLiveView(): Observable<string> {
     this.liveViewSubscriptionCount++;
     logger.debug(
       `Live view subscription count: ${this.liveViewSubscriptionCount}`,
     );
 
-    // Only subscribe to camera if this is the first subscriber
     if (this.liveViewSubscriptionCount === 1 && this.currentCamera) {
       logger.debug('Starting live view stream from camera');
       this.liveViewSubscription = this.currentCamera
@@ -213,9 +307,6 @@ export class CameraService implements OnModuleDestroy {
     return this.liveViewSubject.asObservable();
   }
 
-  /**
-   * Stop live view subscription with reference counting
-   */
   stopLiveView(): void {
     this.liveViewSubscriptionCount = Math.max(
       0,
@@ -225,15 +316,11 @@ export class CameraService implements OnModuleDestroy {
       `Live view subscription count: ${this.liveViewSubscriptionCount}`,
     );
 
-    // Only unsubscribe from camera when last subscriber disconnects
     if (this.liveViewSubscriptionCount <= 0) {
       this.stopLiveViewInternal();
     }
   }
 
-  /**
-   * Internal method to stop the live view subscription
-   */
   private stopLiveViewInternal(): void {
     if (this.liveViewSubscription) {
       logger.debug('Stopping live view stream from camera');
@@ -252,32 +339,22 @@ export class CameraService implements OnModuleDestroy {
     this.liveViewSubject = new ReplaySubject<string>(1);
   }
 
-  /**
-   * Get the current camera instance for live view streaming
-   */
   getCurrentCamera(): CameraInterface | null {
     return this.currentCamera;
   }
 
-  /**
-   * Get the current driver name (server camera or active client driver)
-   */
   getCurrentDriver(): string | null {
     return this.currentCamera?.driver ?? this.clientDriver ?? null;
   }
 
-  /**
-   * Observable for saved photos
-   */
   getPictureTaken$(): Observable<PhotoSavedEvent> {
     if (!this.currentCamera) {
-      throw new Error('Camera not initialized');
+      throw new FotoboxError('Camera not initialized', {
+        code: 'MAIN.CAMERA.NOT_INITIALIZED',
+      });
     }
-    return (
-      this.currentCamera
-        .observePictures()
-        .pipe(map((pictureData) => this.handleCapturedPicture(pictureData))) ??
-      null
-    );
+    return this.currentCamera
+      .observePictures()
+      .pipe(map((pictureData) => this.handleCapturedPicture(pictureData)));
   }
 }

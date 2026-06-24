@@ -3,9 +3,23 @@
 # compiled output
 dist
 tmp
-photos
 out-tsc
+
+# workspace runtime data & test artifacts
+tmp/runtime/**
+tmp/logs/**
+tmp/playwright/**
+
+# legacy root runtime paths (migrated to tmp/)
+photos
 application.log
+settings.json
+share-tokens.json
+fotobox.db
+collage-templates
+/playwright-report
+/test-results
+/dist/.playwright
 
 # dependencies
 node_modules
@@ -54,3 +68,5 @@ vitest.config.*.timestamp*
 .nx/polygraph
 .claude/worktrees
 .claude/settings.local.json
+
+__screenshots__/

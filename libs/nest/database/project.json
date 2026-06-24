@@ -1,0 +1,29 @@
+{
+  "name": "nest-database",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nest/database/src",
+  "projectType": "library",
+  "tags": [
+    "scope:server",
+    "type:data-access",
+    "platform:node"
+  ],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "libs/nest/database/vitest.config.ts"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "drizzle-kit generate",
+        "cwd": "libs/nest/database"
+      }
+    }
+  }
+}

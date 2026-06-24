@@ -15,6 +15,8 @@ if (apiUrl) {
 contextBridge.exposeInMainWorld('electron', {
   platform: process.platform,
   openDirectoryDialog: () => ipcRenderer.invoke('open-directory-dialog'),
+  openCollageEditor: (collageDirectory?: string) =>
+    ipcRenderer.invoke('open-collage-editor', collageDirectory),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   printPhoto: (photoUrl: string, options?: Record<string, unknown>) =>
     ipcRenderer.invoke('print-photo', photoUrl, options),

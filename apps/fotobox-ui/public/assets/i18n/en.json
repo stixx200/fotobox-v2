@@ -12,6 +12,7 @@
     "PHOTO_DIRECTORY": "Photo storage folder",
     "COLLAGE_DIRECTORY": "Collage templates folder",
     "COLLAGE_DIRECTORY_ERROR": "Error loading collage templates",
+    "OPEN_COLLAGE_EDITOR": "Open template editor",
     "LAYOUTS": "Layouts (max. 3)",
     "LAYOUTS_PREVIEW_HINT": "Hover a layout in the list to preview it above",
     "LAYOUTS_PREVIEW_HINT_TOUCH": "Tap a layout to preview; tap the preview to browse layouts",

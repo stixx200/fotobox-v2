@@ -4,11 +4,17 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/fotobox-ui/src",
-  "tags": [],
+  "tags": [
+    "scope:client",
+    "type:app",
+    "platform:angular"
+  ],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": {
           "base": "dist/apps/fotobox-ui",
@@ -17,7 +23,9 @@
         "baseHref": "./",
         "index": "apps/fotobox-ui/src/index.html",
         "browser": "apps/fotobox-ui/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/fotobox-ui/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -26,9 +34,14 @@
             "input": "apps/fotobox-ui/public"
           }
         ],
-        "styles": ["apps/fotobox-ui/src/styles.scss"],
+        "styles": [
+          "apps/fotobox-ui/src/styles.scss"
+        ],
         "scripts": [],
-        "allowedCommonJsDependencies": ["qrcode", "dijkstrajs"]
+        "allowedCommonJsDependencies": [
+          "qrcode",
+          "dijkstrajs"
+        ]
       },
       "configurations": {
         "production": {
@@ -80,21 +93,9 @@
       "executor": "@nx/eslint:lint"
     },
     "test": {
-      "executor": "@nx/vitest:test",
-      "outputs": ["{options.reportsDirectory}"],
+      "executor": "@angular/build:unit-test",
       "options": {
-        "reportsDirectory": "../../coverage/apps/fotobox-ui",
-        "passWithNoTests": false
-      },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "reporters": ["default"],
-          "coverage": {
-            "provider": "v8",
-            "reporter": ["text", "lcov"]
-          }
-        }
+        "tsConfig": "apps/fotobox-ui/tsconfig.spec.json"
       }
     },
     "serve-static": {

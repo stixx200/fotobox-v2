@@ -31,7 +31,7 @@ function isLoopbackClient(ip: string): boolean {
   return ip === '127.0.0.1' || ip === '::1';
 }
 
-function isGuestShareRequest(req: Request): boolean {
+export function isGuestShareRequest(req: Request): boolean {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return false;
   }

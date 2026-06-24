@@ -29,10 +29,16 @@
       "@fotobox/nest-logger": ["libs/nest/logger/src/index.ts"],
       "@fotobox/nest-printer-api": ["libs/nest/printer-api/src/index.ts"],
       "@fotobox/nest-settings": ["libs/nest/settings/src/index.ts"],
+      "@fotobox/nest-database": ["libs/nest/database/src/index.ts"],
       "@fotobox/nest-photo-storage": ["libs/nest/photo-storage/src/index.ts"],
       "@fotobox/nest-share-api": ["libs/nest/share-api/src/index.ts"],
       "@fotobox/photo-storage": ["libs/photo-storage/src/index.ts"],
-      "@fotobox/nest-api": ["libs/nest/api/src/index.ts"]
+      "@fotobox/nest-api": ["libs/nest/api/src/index.ts"],
+      "@fotobox/collage-editor": ["libs/collage-editor/src/index.ts"],
+      "@fotobox/collage-editor/browser": ["libs/collage-editor/src/browser.ts"],
+      "@fotobox/workspace-paths": ["libs/workspace-paths/src/index.ts"],
+      "@fotobox/graphql-operations": ["libs/graphql-operations/src/index.ts"],
+      "@fotobox/frontend-core": ["libs/frontend-core/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

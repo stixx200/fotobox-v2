@@ -1,0 +1,28 @@
+{
+  "name": "fotobox-ui-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/fotobox-ui-e2e/src",
+  "implicitDependencies": ["fotobox-ui"],
+  "tags": ["scope:client", "type:e2e", "platform:angular"],
+  "targets": {
+    "e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "playwright test --config=apps/fotobox-ui-e2e/playwright.config.ts"
+      }
+    },
+    "e2e-ui": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "playwright test --config=apps/fotobox-ui-e2e/playwright.config.ts --ui"
+      }
+    },
+    "e2e-ci": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "playwright install --with-deps chromium && playwright test --config=apps/fotobox-ui-e2e/playwright.config.ts"
+      }
+    }
+  }
+}

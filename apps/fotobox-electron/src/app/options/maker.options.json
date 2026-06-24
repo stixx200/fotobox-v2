@@ -1,9 +1,18 @@
 {
   "$schema": "../../../../../node_modules/nx-electron/src/validation/maker.schema.json",
   "appId": "de.se-voelk.fotobox",
+  "productName": "Fotobox",
+  "directories": {
+    "buildResources": "apps/fotobox-electron/build"
+  },
+  "icon": "icon.png",
   "win": {
     "target": "msi",
-    "defaultArch": "x64"
+    "defaultArch": "x64",
+    "icon": "icon.ico"
+  },
+  "mac": {
+    "icon": "icon.icns"
   },
   "msi": {
     "perMachine": false

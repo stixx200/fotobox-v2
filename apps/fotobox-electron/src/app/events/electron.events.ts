@@ -5,6 +5,7 @@
  */
 import { app, ipcMain, dialog, BrowserWindow } from 'electron';
 import { getLogger } from '@fotobox/logging';
+import { openCollageEditorWindow } from '../editor-window';
 
 const logger = getLogger('electron-events');
 
@@ -34,6 +35,14 @@ export function registerElectronEvents(): void {
 
     return result.canceled ? null : result.filePaths[0];
   });
+
+  ipcMain.handle(
+    'open-collage-editor',
+    (_event, collageDirectory?: string) => {
+      openCollageEditorWindow(collageDirectory);
+      return { success: true };
+    },
+  );
 
   // Print a photo by URL using a hidden window + webContents.print.
   ipcMain.handle(

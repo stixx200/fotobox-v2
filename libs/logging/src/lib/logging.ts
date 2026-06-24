@@ -1,5 +1,8 @@
 import * as winston from 'winston';
 import * as Transport from 'winston-transport';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { getWorkspaceLogFile } from '@fotobox/workspace-paths';
 import { LogBufferTransport } from './log-buffer.transport';
 
 export { getRecentLogs, clearLogBuffer, type LogRecord } from './log-buffer';
@@ -41,10 +44,12 @@ function getConsoleTransport(): Transport {
 }
 function getFileTransport(): Transport {
   if (!transports.has('file')) {
+    const filename = getWorkspaceLogFile();
+    fs.mkdirSync(path.dirname(filename), { recursive: true });
     transports.set(
       'file',
       new winston.transports.File({
-        filename: 'application.log',
+        filename,
         format: winston.format.combine(
           winston.format.timestamp(),
           winston.format.json()

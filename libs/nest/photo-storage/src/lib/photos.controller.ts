@@ -1,9 +1,9 @@
-import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
 import { getLogger } from '@fotobox/logging';
-import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
+import { PhotoStorageProviderService } from './photo-storage-provider.service';
 
 const logger = getLogger('PhotosController');
 
@@ -19,7 +19,6 @@ export class PhotosController {
 
     const filePath = path.join(photoDirectory, filename);
 
-    // Security check: ensure the file is within the photo directory
     const resolvedPath = path.resolve(filePath);
     const resolvedPhotoDir = path.resolve(photoDirectory);
 
@@ -33,7 +32,7 @@ export class PhotosController {
       }
 
       res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
 
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);

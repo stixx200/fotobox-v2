@@ -1,0 +1,22 @@
+{
+  "name": "graphql-operations",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/graphql-operations/src",
+  "projectType": "library",
+  "tags": [
+    "scope:shared",
+    "type:data-access",
+    "platform:universal"
+  ],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graphql-codegen --config libs/graphql-operations/codegen.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

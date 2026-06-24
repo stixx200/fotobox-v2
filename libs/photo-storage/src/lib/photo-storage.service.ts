@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { FotoboxError } from '@fotobox/error';
 import {
   PhotoStorageConfig,
   getDefaultPhotoStorageConfig,
@@ -71,8 +72,9 @@ export class PhotoStorageService {
       fs.writeFileSync(filePath, photoBuffer);
       return filePath;
     } catch (error) {
-      throw new Error(
+      throw new FotoboxError(
         `Failed to save photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`,
+        { code: 'MAIN.PHOTO-STORAGE.SAVE_FAILED', info: { photoId } },
       );
     }
   }
@@ -90,12 +92,16 @@ export class PhotoStorageService {
 
     try {
       if (!fs.existsSync(filePath)) {
-        throw new Error(`Photo ${photoId} not found`);
+        throw new FotoboxError(`Photo ${photoId} not found`, {
+          code: 'MAIN.PHOTO-STORAGE.NOT_FOUND',
+          info: { photoId },
+        });
       }
       return fs.readFileSync(filePath);
     } catch (error) {
-      throw new Error(
+      throw new FotoboxError(
         `Failed to retrieve photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`,
+        { code: 'MAIN.PHOTO-STORAGE.READ_FAILED', info: { photoId } },
       );
     }
   }
@@ -127,8 +133,9 @@ export class PhotoStorageService {
         fs.unlinkSync(filePath);
       }
     } catch (error) {
-      throw new Error(
+      throw new FotoboxError(
         `Failed to delete photo ${photoId}: ${error instanceof Error ? error.message : String(error)}`,
+        { code: 'MAIN.PHOTO-STORAGE.DELETE_FAILED', info: { photoId } },
       );
     }
   }
@@ -181,10 +188,11 @@ export class PhotoStorageService {
       try {
         fs.mkdirSync(photoDirectory, { recursive: true });
       } catch (error) {
-        throw new Error(
+        throw new FotoboxError(
           `Failed to create photo directory ${photoDirectory}: ${
             error instanceof Error ? error.message : String(error)
           }`,
+          { code: 'MAIN.PHOTO-STORAGE.DIRECTORY_CREATE_FAILED', info: { photoDirectory } },
         );
       }
     }

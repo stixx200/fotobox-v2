@@ -7,6 +7,9 @@ export interface PrintPhotoOptions {
 export interface ElectronAPI {
   platform: string;
   openDirectoryDialog: () => Promise<string | null>;
+  openCollageEditor: (
+    collageDirectory?: string,
+  ) => Promise<{ success: boolean }>;
   getAppVersion: () => Promise<string>;
   printPhoto: (
     photoUrl: string,

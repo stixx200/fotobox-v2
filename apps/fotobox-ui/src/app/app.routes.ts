@@ -1,22 +1,48 @@
 import { Route } from '@angular/router';
-import { SettingsComponent } from './settings/settings.component';
-import { HomeComponent } from './home/home.component';
-import { SingleLayoutComponent } from './layouts/single-layout/single-layout.component';
-import { CollageLayoutComponent } from './layouts/collage-layout/collage-layout.component';
-import { GalleryComponent } from './gallery/gallery.component';
-import { DebugComponent } from './debug/debug.component';
 
 export const appRoutes: Route[] = [
-  { path: '', component: SettingsComponent },
-  { path: 'settings', component: SettingsComponent },
-  { path: 'home', component: HomeComponent },
-  { path: 'gallery', component: GalleryComponent },
-  { path: 'debug', component: DebugComponent },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./settings/settings.component').then((m) => m.SettingsComponent),
+  },
+  {
+    path: 'settings',
+    loadComponent: () =>
+      import('./settings/settings.component').then((m) => m.SettingsComponent),
+  },
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./home/home.component').then((m) => m.HomeComponent),
+  },
+  {
+    path: 'gallery',
+    loadComponent: () =>
+      import('./gallery/gallery.component').then((m) => m.GalleryComponent),
+  },
+  {
+    path: 'debug',
+    loadComponent: () =>
+      import('./debug/debug.component').then((m) => m.DebugComponent),
+  },
   {
     path: 'layouts',
     children: [
-      { path: 'single', component: SingleLayoutComponent },
-      { path: 'collage', component: CollageLayoutComponent },
+      {
+        path: 'single',
+        loadComponent: () =>
+          import('./layouts/single-layout/single-layout.component').then(
+            (m) => m.SingleLayoutComponent,
+          ),
+      },
+      {
+        path: 'collage',
+        loadComponent: () =>
+          import('./layouts/collage-layout/collage-layout.component').then(
+            (m) => m.CollageLayoutComponent,
+          ),
+      },
     ],
   },
 ];

@@ -3,5 +3,20 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/nest/collage-maker/src",
   "projectType": "library",
-  "tags": []
+  "tags": [
+    "scope:server",
+    "type:feature",
+    "platform:node"
+  ],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "libs/nest/collage-maker/vitest.config.ts"
+      }
+    }
+  }
 }

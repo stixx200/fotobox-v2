@@ -1,17 +1,17 @@
-import * as path from 'node:path';
+import {
+  workspacePaths,
+} from '@fotobox/workspace-paths';
 
 /**
  * Default runtime configuration for the Fotobox API.
  *
- * Paths can be overridden via environment variables so the server can run on
- * any host (Windows PC, server, Electron) independently from the UI client.
+ * `applyDefaultWorkspaceEnv()` runs in `bootstrapApiServer()` before the Nest
+ * app is created, so env-based paths are already set when this loader runs.
  */
 export const getDefaultConfig = () => {
-  const cwd = process.cwd();
   return {
-    photoDirectory: process.env.FOTOBOX_PHOTO_DIR || path.join(cwd, 'photos'),
-    templateDirectory:
-      process.env.FOTOBOX_TEMPLATE_DIR || path.join(cwd, 'collage-templates'),
-    settingsPath: process.env.FOTOBOX_SETTINGS_PATH,
+    photoDirectory: workspacePaths.photos(),
+    templateDirectory: workspacePaths.collageTemplates(),
+    settingsPath: process.env['FOTOBOX_SETTINGS_PATH'],
   };
 };

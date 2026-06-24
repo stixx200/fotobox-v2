@@ -13,6 +13,7 @@ import { getLogger } from '@fotobox/logging';
 import { SettingsService } from '@fotobox/nest-settings';
 import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
 import { Int } from '@nestjs/graphql';
+import { resolveCollageDirectory } from './template-paths';
 
 const logger = getLogger('CollageMakerResolver');
 const pubSub = new PubSub();
@@ -37,17 +38,10 @@ export class CollageMakerResolver {
     logger.debug('Fetching available layout IDs', { collageDirectory });
 
     try {
-      // Use provided collageDirectory if available, otherwise read from settings
-      let directory = collageDirectory;
-      if (!directory) {
-        const collageDirectorySetting =
-          await this.settingsService.getSetting('collageDirectory');
-        directory = collageDirectorySetting
-          ? typeof collageDirectorySetting.value === 'string'
-            ? JSON.parse(collageDirectorySetting.value)
-            : collageDirectorySetting.value
-          : undefined;
-      }
+      const directory = await resolveCollageDirectory(
+        this.settingsService,
+        collageDirectory,
+      );
 
       const templateIds =
         this.collageMakerService.getAvailableTemplateIds(directory);
@@ -63,24 +57,24 @@ export class CollageMakerResolver {
   @Query(() => [CollageTemplate], {
     description: 'Get list of available collage templates',
   })
-  async collageTemplates(): Promise<CollageTemplate[]> {
-    logger.debug('Fetching collage templates');
+  async collageTemplates(
+    @Args('collageDirectory', { nullable: true }) collageDirectory?: string,
+  ): Promise<CollageTemplate[]> {
+    logger.debug('Fetching collage templates', { collageDirectory });
 
-    // Return mock templates - in production this would read from the template directory
-    return [
-      {
-        id: 'template-1',
-        name: '2x2 Grid',
-        photoCount: 4,
-        description: 'Simple 2x2 photo grid',
-      },
-      {
-        id: 'template-2',
-        name: '3x3 Grid',
-        photoCount: 9,
-        description: 'Large 3x3 photo grid',
-      },
-    ];
+    const directory = await resolveCollageDirectory(
+      this.settingsService,
+      collageDirectory,
+    );
+
+    return this.collageMakerService.listCollageTemplates(directory).map(
+      (template) => ({
+        id: template.id,
+        name: template.id,
+        photoCount: template.spaces.length,
+        description: `${template.width}x${template.height}`,
+      }),
+    );
   }
 
   @Query(() => String, {
@@ -121,16 +115,10 @@ export class CollageMakerResolver {
     @Args('collageDirectory', { nullable: true }) collageDirectory?: string,
   ): Promise<number> {
     try {
-      let directory = collageDirectory;
-      if (!directory) {
-        const collageDirectorySetting =
-          await this.settingsService.getSetting('collageDirectory');
-        directory = collageDirectorySetting
-          ? typeof collageDirectorySetting.value === 'string'
-            ? JSON.parse(collageDirectorySetting.value)
-            : collageDirectorySetting.value
-          : undefined;
-      }
+      const directory = await resolveCollageDirectory(
+        this.settingsService,
+        collageDirectory,
+      );
       return this.collageMakerService.getRequiredPhotoCount(
         templateId,
         directory,
@@ -153,13 +141,7 @@ export class CollageMakerResolver {
     logger.info(`Starting collage with template: ${input.templateId}`);
 
     try {
-      const collageDirectorySetting =
-        await this.settingsService.getSetting('collageDirectory');
-      const directory = collageDirectorySetting
-        ? typeof collageDirectorySetting.value === 'string'
-          ? JSON.parse(collageDirectorySetting.value)
-          : collageDirectorySetting.value
-        : undefined;
+      const directory = await resolveCollageDirectory(this.settingsService);
 
       this.collageMakerService.startCollage(input.templateId, directory);
 
@@ -282,17 +264,10 @@ export class CollageMakerResolver {
     }
 
     try {
-      // Use provided collageDirectory if available, otherwise read from settings
-      let directory = collageDirectory;
-      if (!directory) {
-        const collageDirectorySetting =
-          await this.settingsService.getSetting('collageDirectory');
-        directory = collageDirectorySetting
-          ? typeof collageDirectorySetting.value === 'string'
-            ? JSON.parse(collageDirectorySetting.value)
-            : collageDirectorySetting.value
-          : undefined;
-      }
+      const directory = await resolveCollageDirectory(
+        this.settingsService,
+        collageDirectory,
+      );
 
       // Generate preview image and return as base64 data URL
       const previewBuffer = await this.collageMakerService.generatePreview(

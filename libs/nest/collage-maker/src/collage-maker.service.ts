@@ -1,16 +1,17 @@
 import { Injectable, Scope } from '@nestjs/common';
 import {
   CollageMaker,
+  previewPhotoNamesForSlots,
+  resolveCollageMakerImagesDirectory,
   resolveTemplate,
   TemplateInterface,
   getTemplates,
 } from '@fotobox/collage-maker';
 import { ConfigService } from '@nestjs/config';
-import fs from 'fs';
 import { BehaviorSubject, catchError, of, switchMap } from 'rxjs';
 import { FotoboxError } from '@fotobox/error';
 import { getLogger } from '@fotobox/logging';
-import path from 'path';
+import { resolveBuiltInTemplateDirectory } from './template-paths';
 
 const logger = getLogger('CollageMakerService');
 
@@ -51,29 +52,7 @@ export class CollageMakerService {
   constructor(private config: ConfigService) {
     this.photoDirectory = this.config.getOrThrow('photoDirectory');
     this.templateDirectory = this.config.get('templateDirectory');
-    this.builtInDirectory = this.resolveBuiltInTemplateDirectory();
-  }
-
-  private resolveBuiltInTemplateDirectory(): string {
-    const configuredDirectory = this.config.get<string>(
-      'builtInTemplateDirectory',
-    );
-    const candidates = [
-      configuredDirectory,
-      path.join(process.cwd(), 'collage-templates'),
-      path.join(process.cwd(), 'dist/apps/fotobox-api/collage-templates'),
-      path.join(process.cwd(), 'dist/apps/fotobox-electron/collage-templates'),
-    ].filter((candidate): candidate is string => !!candidate);
-
-    const existingDirectory = candidates.find((candidate) =>
-      fs.existsSync(candidate),
-    );
-
-    return (
-      existingDirectory ??
-      candidates[0] ??
-      path.join(process.cwd(), 'collage-templates')
-    );
+    this.builtInDirectory = resolveBuiltInTemplateDirectory(this.config);
   }
 
   /**
@@ -82,11 +61,19 @@ export class CollageMakerService {
    * @returns Array of template IDs
    */
   public getAvailableTemplateIds(userTemplateDirectory?: string): string[] {
+    return this.listCollageTemplates(userTemplateDirectory).map(
+      (template) => template.id,
+    );
+  }
+
+  public listCollageTemplates(
+    userTemplateDirectory?: string,
+  ): TemplateInterface[] {
     const dir = userTemplateDirectory || this.templateDirectory;
 
     try {
       const templates = getTemplates(dir, this.builtInDirectory);
-      return Object.keys(templates);
+      return Object.values(templates);
     } catch (error) {
       logger.error('Error loading templates', {
         userDirectory: dir,
@@ -114,8 +101,9 @@ export class CollageMakerService {
 
   public addPhoto(photo: string) {
     if (this.cache$.value === null) {
-      throw new Error(
+      throw new FotoboxError(
         'Collage is not initialized. Please start a collage first.',
+        { code: 'MAIN.COLLAGE-MAKER.NOT_INITIALIZED' },
       );
     }
 
@@ -211,7 +199,7 @@ export class CollageMakerService {
   }
 
   /**
-   * Generate a preview image for a template using default placeholder photos.
+   * Generate a preview image for a template using bundled example photos.
    * @param templateId The template ID to generate a preview for
    * @param templateDirectory Optional override for the template directory path
    * @returns Buffer containing the preview image
@@ -222,10 +210,11 @@ export class CollageMakerService {
   ): Promise<Buffer> {
     const dir = userTemplateDirectory || this.templateDirectory;
     const template = resolveTemplate(templateId, dir, this.builtInDirectory);
-    const maker = new CollageMaker({ photoDir: this.photoDirectory });
-
-    // Generate collage with empty photos array - will use questionmark placeholders
-    const preview = await maker.createCollage(template, []);
-    return preview;
+    const previewPhotoDir = resolveCollageMakerImagesDirectory();
+    const maker = new CollageMaker({ photoDir: previewPhotoDir });
+    const previewPhotos = previewPhotoNamesForSlots(
+      maker.getPhotoCount(template),
+    );
+    return maker.createCollage(template, previewPhotos);
   }
 }

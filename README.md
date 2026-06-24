@@ -85,11 +85,13 @@ Override defaults with environment variables:
 
 ```bash
 PORT=3999 \
-FOTOBOX_PHOTO_DIR=/tmp/photos \
-FOTOBOX_TEMPLATE_DIR=/tmp/templates \
-FOTOBOX_SETTINGS_PATH=/tmp/settings.json \
+FOTOBOX_PHOTO_DIR=tmp/runtime/fotobox/photos \
+FOTOBOX_TEMPLATE_DIR=tmp/runtime/fotobox/collage-templates \
+FOTOBOX_SETTINGS_PATH=tmp/runtime/fotobox/settings.json \
 node dist/apps/fotobox-api/main.js
 ```
+
+By default the API bootstraps these paths under `tmp/` automatically (see `tmp/README.md`).
 
 ---
 
@@ -241,7 +243,7 @@ Combines unattended boot with automatic app start:
 
 ## Configuration reference
 
-All settings are stored in `settings.json`:
+Application settings, share tokens, and photo metadata are stored in a SQLite database (`fotobox.db`). Photo JPEG files remain on disk in `photoDirectory`.
 
 | Key                | Default                | Description                                  |
 | ------------------ | ---------------------- | -------------------------------------------- |
@@ -253,13 +255,13 @@ All settings are stored in `settings.json`:
 | `shutterTimeout`   | `3`                    | Countdown seconds before the shutter fires   |
 | `layouts`          | `["Einzelbild","2x2"]` | Active layout tiles (max 3)                  |
 
-Settings file location:
+Database location:
 
 | Platform           | Path                                                           |
 | ------------------ | -------------------------------------------------------------- |
-| Windows (Electron) | `%APPDATA%\fotobox-electron\settings.json`                     |
-| macOS (Electron)   | `~/Library/Application Support/fotobox-electron/settings.json` |
-| Standalone API     | Set `FOTOBOX_SETTINGS_PATH` env variable                       |
+| Windows (Electron) | `%APPDATA%\fotobox-electron\fotobox.db`                       |
+| macOS (Electron)   | `~/Library/Application Support/fotobox-electron/fotobox.db`  |
+| Standalone API     | `tmp/runtime/fotobox/fotobox.db` or `FOTOBOX_DATABASE_PATH`    |
 
 ---
 

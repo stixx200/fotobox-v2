@@ -1,84 +1,52 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { getLogger } from '@fotobox/logging';
+import { DRIZZLE, settings, type DrizzleDb } from '@fotobox/nest-database';
 import { Setting, SettingInput } from './models/settings.model';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-// import { app } from 'electron';
 
 const logger = getLogger('SettingsService');
 
 @Injectable()
-export class SettingsService {
+export class SettingsService implements OnModuleInit {
   private settings: Map<string, Setting> = new Map();
-  private settingsFilePath: string;
 
-  constructor() {
-    this.settingsFilePath = this.resolveSettingsFilePath();
-    logger.info(`Using settings file: ${this.settingsFilePath}`);
-    this.loadSettings();
-  }
+  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
 
-  /**
-   * Resolves where to persist settings. Order of precedence:
-   * 1. FOTOBOX_SETTINGS_PATH env var (explicit file path) — used by the
-   *    standalone API server so it does not depend on Electron.
-   * 2. Electron's userData directory, when running inside Electron.
-   * 3. The current working directory as a last resort.
-   */
-  private resolveSettingsFilePath(): string {
-    const explicitPath = process.env.FOTOBOX_SETTINGS_PATH;
-    if (explicitPath) {
-      return path.isAbsolute(explicitPath)
-        ? explicitPath
-        : path.resolve(process.cwd(), explicitPath);
-    }
-    return path.join(this.getUserDataPath(), 'settings.json');
-  }
-
-  private getUserDataPath(): string {
-    try {
-      const { app } = require('electron');
-      return app?.getPath('userData') || process.cwd();
-    } catch {
-      return process.cwd();
-    }
+  async onModuleInit(): Promise<void> {
+    await this.loadSettings();
   }
 
   private async loadSettings(): Promise<void> {
-    try {
-      const data = await fs.readFile(this.settingsFilePath, 'utf-8');
-      const settingsArray: Setting[] = JSON.parse(data);
-      settingsArray.forEach((setting) => {
-        this.settings.set(setting.key, setting);
+    const rows = this.db.select().from(settings).all();
+    this.settings.clear();
+    for (const row of rows) {
+      this.settings.set(row.key, {
+        key: row.key,
+        value: row.value,
+        description: row.description ?? undefined,
       });
-      logger.info(`Loaded ${settingsArray.length} settings from file`);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        logger.info('Settings file not found, starting with empty settings');
-        await this.saveSettings();
-      } else {
-        logger.error('Error loading settings:', error);
-      }
     }
+    logger.info(`Loaded ${rows.length} settings from database`);
   }
 
-  private async saveSettings(): Promise<void> {
-    try {
-      const settingsArray = Array.from(this.settings.values());
-      logger.info(
-        `Saving ${settingsArray.length} settings to ${this.settingsFilePath}`,
-      );
-      logger.debug('Settings data:', JSON.stringify(settingsArray, null, 2));
-      await fs.writeFile(
-        this.settingsFilePath,
-        JSON.stringify(settingsArray, null, 2),
-        'utf-8',
-      );
-      logger.debug('Settings saved to file');
-    } catch (error) {
-      logger.error('Error saving settings:', error);
-      throw error;
-    }
+  private upsertSetting(setting: Setting): void {
+    const now = new Date().toISOString();
+    this.db
+      .insert(settings)
+      .values({
+        key: setting.key,
+        value: setting.value,
+        description: setting.description ?? null,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: {
+          value: setting.value,
+          description: setting.description ?? null,
+          updatedAt: now,
+        },
+      })
+      .run();
   }
 
   async getAllSettings(): Promise<Setting[]> {
@@ -87,6 +55,23 @@ export class SettingsService {
 
   async getSetting(key: string): Promise<Setting | undefined> {
     return this.settings.get(key);
+  }
+
+  /**
+   * Read a setting value parsed from its JSON-encoded storage format.
+   * Returns `fallback` when the key is missing or the value is malformed.
+   */
+  async getParsed<T>(key: string, fallback: T): Promise<T> {
+    const setting = await this.getSetting(key);
+    if (!setting?.value) {
+      return fallback;
+    }
+    try {
+      return JSON.parse(setting.value) as T;
+    } catch (error) {
+      logger.warn(`Failed to parse setting "${key}", using fallback`, error);
+      return fallback;
+    }
   }
 
   async updateSetting(input: SettingInput): Promise<Setting> {
@@ -98,7 +83,7 @@ export class SettingsService {
     };
 
     this.settings.set(input.key, setting);
-    await this.saveSettings();
+    this.upsertSetting(setting);
     logger.info(`Updated setting: ${input.key}`);
 
     return setting;
@@ -115,21 +100,19 @@ export class SettingsService {
         description: existing?.description,
       };
       this.settings.set(input.key, setting);
+      this.upsertSetting(setting);
       updatedSettings.push(setting);
     }
 
-    await this.saveSettings();
     logger.info(`Updated ${inputs.length} settings`);
 
     return updatedSettings;
   }
 
   async resetSettings(): Promise<boolean> {
-    // Clear current in-memory settings
     this.settings.clear();
-    // Reload settings from file
     await this.loadSettings();
-    logger.info('Settings reloaded from file');
+    logger.info('Settings reloaded from database');
     return true;
   }
 }

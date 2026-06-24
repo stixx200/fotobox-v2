@@ -3,7 +3,21 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/photo-storage/src",
   "projectType": "library",
-  "tags": [],
+  "tags": [
+    "scope:shared",
+    "type:data-access",
+    "platform:node"
+  ],
   "// targets": "to see all targets run: nx show project photo-storage --web",
-  "targets": {}
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "libs/photo-storage/vite.config.ts"
+      }
+    }
+  }
 }

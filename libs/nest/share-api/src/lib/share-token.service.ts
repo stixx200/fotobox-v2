@@ -1,8 +1,9 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { getLogger } from '@fotobox/logging';
+import { DRIZZLE, type DrizzleDb } from '@fotobox/nest-database';
+import { shareTokens } from '@fotobox/nest-database';
 import * as crypto from 'crypto';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { and, eq, gt, lte } from 'drizzle-orm';
 
 const logger = getLogger('ShareTokenService');
 
@@ -13,25 +14,17 @@ export interface ShareTokenRecord {
   createdAt: string;
 }
 
-interface PersistedTokensFile {
-  tokens: ShareTokenRecord[];
-}
-
 @Injectable()
 export class ShareTokenService implements OnModuleInit, OnModuleDestroy {
-  private tokens = new Map<string, ShareTokenRecord>();
-  private readonly tokensFilePath: string;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor() {
-    this.tokensFilePath = this.resolveTokensFilePath();
-    logger.info(`Using share tokens file: ${this.tokensFilePath}`);
-  }
+  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
 
   async onModuleInit(): Promise<void> {
-    await this.loadTokens();
-    this.cleanupExpired();
-    this.cleanupTimer = setInterval(() => this.cleanupExpired(), 60 * 60 * 1000);
+    await this.cleanupExpired();
+    this.cleanupTimer = setInterval(() => {
+      void this.cleanupExpired();
+    }, 60 * 60 * 1000);
   }
 
   onModuleDestroy(): void {
@@ -57,87 +50,30 @@ export class ShareTokenService implements OnModuleInit, OnModuleDestroy {
       createdAt: now.toISOString(),
     };
 
-    this.tokens.set(token, record);
-    await this.saveTokens();
+    this.db.insert(shareTokens).values(record).run();
     return record;
   }
 
   getValidToken(token: string): ShareTokenRecord | null {
-    const record = this.tokens.get(token);
-    if (!record) {
-      return null;
-    }
-    if (new Date(record.expiresAt).getTime() <= Date.now()) {
-      return null;
-    }
-    return record;
+    const now = new Date().toISOString();
+    const row = this.db
+      .select()
+      .from(shareTokens)
+      .where(and(eq(shareTokens.token, token), gt(shareTokens.expiresAt, now)))
+      .get();
+
+    return row ?? null;
   }
 
-  private resolveTokensFilePath(): string {
-    const explicitSettingsPath = process.env.FOTOBOX_SETTINGS_PATH;
-    if (explicitSettingsPath) {
-      const settingsDir = path.dirname(
-        path.isAbsolute(explicitSettingsPath)
-          ? explicitSettingsPath
-          : path.resolve(process.cwd(), explicitSettingsPath),
-      );
-      return path.join(settingsDir, 'share-tokens.json');
-    }
-    return path.join(this.getUserDataPath(), 'share-tokens.json');
-  }
+  private async cleanupExpired(): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db
+      .delete(shareTokens)
+      .where(lte(shareTokens.expiresAt, now))
+      .run();
 
-  private getUserDataPath(): string {
-    try {
-      const { app } = require('electron');
-      return app?.getPath('userData') || process.cwd();
-    } catch {
-      return process.cwd();
-    }
-  }
-
-  private async loadTokens(): Promise<void> {
-    try {
-      const data = await fs.readFile(this.tokensFilePath, 'utf-8');
-      const parsed = JSON.parse(data) as PersistedTokensFile;
-      this.tokens.clear();
-      for (const record of parsed.tokens ?? []) {
-        this.tokens.set(record.token, record);
-      }
-      logger.info(`Loaded ${this.tokens.size} share tokens from file`);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        logger.info('Share tokens file not found, starting empty');
-        await this.saveTokens();
-      } else {
-        logger.error('Error loading share tokens:', error);
-      }
-    }
-  }
-
-  private async saveTokens(): Promise<void> {
-    const payload: PersistedTokensFile = {
-      tokens: Array.from(this.tokens.values()),
-    };
-    await fs.mkdir(path.dirname(this.tokensFilePath), { recursive: true });
-    await fs.writeFile(
-      this.tokensFilePath,
-      JSON.stringify(payload, null, 2),
-      'utf-8',
-    );
-  }
-
-  private cleanupExpired(): void {
-    const now = Date.now();
-    let removed = 0;
-    for (const [token, record] of this.tokens.entries()) {
-      if (new Date(record.expiresAt).getTime() <= now) {
-        this.tokens.delete(token);
-        removed++;
-      }
-    }
-    if (removed > 0) {
-      void this.saveTokens();
-      logger.info(`Removed ${removed} expired share tokens`);
+    if (result.changes > 0) {
+      logger.info(`Removed ${result.changes} expired share tokens`);
     }
   }
 }

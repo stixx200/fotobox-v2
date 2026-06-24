@@ -49,29 +49,16 @@ export class ShareService {
   }
 
   private async isShareEnabled(): Promise<boolean> {
-    const setting = await this.settingsService.getSetting('useShare');
-    if (!setting?.value) {
-      return false;
-    }
-    try {
-      return JSON.parse(setting.value) === true;
-    } catch {
-      return false;
-    }
+    return this.settingsService.getParsed('useShare', false);
   }
 
   private async getTokenExpiryHours(): Promise<number> {
-    const setting = await this.settingsService.getSetting('shareTokenExpiryHours');
-    if (!setting?.value) {
-      return 24;
-    }
-    try {
-      const parsed = JSON.parse(setting.value);
-      const hours = Number(parsed);
-      return Number.isFinite(hours) && hours > 0 ? hours : 24;
-    } catch {
-      return 24;
-    }
+    const parsed = await this.settingsService.getParsed<number>(
+      'shareTokenExpiryHours',
+      24,
+    );
+    const hours = Number(parsed);
+    return Number.isFinite(hours) && hours > 0 ? hours : 24;
   }
 
   private sanitizeFilename(filename: string): string {

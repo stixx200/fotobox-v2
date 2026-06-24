@@ -30,6 +30,11 @@ export default {
           glob: '**/*',
           output: 'fotobox-ui',
         },
+        {
+          input: join(devkit.workspaceRoot, 'dist/apps/collage-editor-ui/browser'),
+          glob: '**/*',
+          output: 'collage-editor-ui',
+        },
         // Copy collage-maker images for runtime access
         {
           input: join(devkit.workspaceRoot, 'libs/collage-maker/src/images'),
@@ -47,6 +52,11 @@ export default {
           input: join(devkit.workspaceRoot, 'libs/collage-maker/src/templates'),
           glob: '**/*',
           output: 'collage-templates',
+        },
+        {
+          input: join(devkit.workspaceRoot, 'libs/nest/database/drizzle'),
+          glob: '**/*',
+          output: 'drizzle',
         },
       ],
       additionalEntryPoints: [

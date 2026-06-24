@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DatabaseModule } from '@fotobox/nest-database';
 import { SettingsModule } from '@fotobox/nest-settings';
 import { NestPhotoStorageModule } from '@fotobox/nest-photo-storage';
 import { LanUrlService } from './lan-url.service';
@@ -8,7 +9,7 @@ import { ShareResolver } from './share.resolver';
 import { ShareController } from './share.controller';
 
 @Module({
-  imports: [SettingsModule, NestPhotoStorageModule],
+  imports: [DatabaseModule, SettingsModule, NestPhotoStorageModule],
   controllers: [ShareController],
   providers: [
     LanUrlService,

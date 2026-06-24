@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { getLogger } from '@fotobox/logging';
-import { FotoboxError } from '@fotobox/error';
+import { DatabaseModule } from '@fotobox/nest-database';
 import { GraphqlModule } from '@fotobox/nest-graphql';
 import { SettingsModule } from '@fotobox/nest-settings';
 import { CamerasApiModule } from '@fotobox/nest-cameras-api';
@@ -13,7 +14,7 @@ import { AppServiceModule } from '@fotobox/nest-app-service';
 import { NestPhotoStorageModule } from '@fotobox/nest-photo-storage';
 import { ShareApiModule } from '@fotobox/nest-share-api';
 import { getDefaultConfig } from './api.config';
-import { PhotosController } from './photos.controller';
+import { FotoboxExceptionFilter } from './fotobox-exception.filter';
 
 const logger = getLogger('ApiModule');
 
@@ -27,6 +28,7 @@ const logger = getLogger('ApiModule');
  */
 @Module({
   imports: [
+    DatabaseModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [getDefaultConfig],
@@ -43,7 +45,9 @@ const logger = getLogger('ApiModule');
       driver: ApolloDriver,
       autoSchemaFile: true,
       sortSchema: true,
-      playground: true,
+      playground:
+        process.env['FOTOBOX_GRAPHQL_PLAYGROUND'] === '1' ||
+        process.env['NODE_ENV'] !== 'production',
       path: '/graphql',
       subscriptions: {
         'graphql-ws': true,
@@ -54,24 +58,15 @@ const logger = getLogger('ApiModule');
           path: error.path,
           extensions: error.extensions,
         });
-
-        if (error.extensions?.originalError instanceof FotoboxError) {
-          const fotoboxError = error.extensions.originalError as FotoboxError;
-          return {
-            ...error,
-            extensions: {
-              ...error.extensions,
-              code: fotoboxError.code,
-              info: fotoboxError.info,
-            },
-          };
-        }
-
         return error;
       },
     }),
   ],
-  controllers: [PhotosController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: FotoboxExceptionFilter,
+    },
+  ],
 })
 export class ApiModule {}

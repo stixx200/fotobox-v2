@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PhotoStorageService } from '@fotobox/photo-storage';
+import { PhotoRepository } from '@fotobox/nest-database';
 import { SettingsService } from '@fotobox/nest-settings';
 
 @Injectable()
@@ -7,8 +8,10 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
   private readonly logger = new Logger(PhotoStorageProviderService.name);
   private photoStorageService: PhotoStorageService;
 
-  constructor(private readonly settingsService: SettingsService) {
-    // Initialize with default configuration
+  constructor(
+    private readonly settingsService: SettingsService,
+    private readonly photoRepository: PhotoRepository,
+  ) {
     this.photoStorageService = PhotoStorageService.getInstance();
   }
 
@@ -18,17 +21,13 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
    * and serves all use the same directory.
    */
   async onApplicationBootstrap(): Promise<void> {
-    const setting = await this.settingsService.getSetting('photoDirectory');
-    if (setting?.value) {
-      try {
-        const parsed: unknown = JSON.parse(setting.value);
-        if (typeof parsed === 'string' && parsed.trim() !== '') {
-          this.setPhotoDirectory(parsed.trim());
-          return;
-        }
-      } catch {
-        // malformed value — fall through to default
-      }
+    const directory = await this.settingsService.getParsed<string | null>(
+      'photoDirectory',
+      null,
+    );
+    if (directory?.trim()) {
+      this.setPhotoDirectory(directory.trim());
+      return;
     }
     this.logger.log(
       `Photo storage initialized at: ${this.photoStorageService.getPhotoDirectory()}`,
@@ -55,6 +54,7 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
    */
   savePhoto(photoId: string, photoBuffer: Buffer): string {
     const filePath = this.photoStorageService.savePhoto(photoId, photoBuffer);
+    this.photoRepository.insertPhoto(photoId);
     this.logger.debug(`Photo ${photoId} saved to ${filePath}`);
     return filePath;
   }
@@ -70,7 +70,10 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
    * Check if a photo exists
    */
   photoExists(photoId: string): boolean {
-    return this.photoStorageService.photoExists(photoId);
+    return (
+      this.photoRepository.photoExists(photoId) ||
+      this.photoStorageService.photoExists(photoId)
+    );
   }
 
   /**
@@ -78,6 +81,7 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
    */
   deletePhoto(photoId: string): void {
     this.photoStorageService.deletePhoto(photoId);
+    this.photoRepository.deletePhoto(photoId);
     this.logger.debug(`Photo ${photoId} deleted`);
   }
 
@@ -85,7 +89,11 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
    * List all photos, sorted newest-first.
    */
   listPhotos(): { id: string; path: string; timestamp: string }[] {
-    return this.photoStorageService.listPhotos();
+    return this.photoRepository.listPhotos().map((photo) => ({
+      id: photo.id,
+      path: `/api/photos/${photo.filename}`,
+      timestamp: photo.createdAt,
+    }));
   }
 
   /**

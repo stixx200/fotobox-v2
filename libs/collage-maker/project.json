@@ -1,9 +1,23 @@
 {
   "name": "collage-maker",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/nest/collage-maker/src",
+  "sourceRoot": "libs/collage-maker/src",
   "projectType": "library",
-  "tags": [],
+  "tags": [
+    "scope:shared",
+    "type:util",
+    "platform:node"
+  ],
   "// targets": "to see all targets run: nx show project collage-maker --web",
-  "targets": {}
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "libs/collage-maker/vite.config.ts"
+      }
+    }
+  }
 }

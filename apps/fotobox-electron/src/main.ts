@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import type { INestApplication } from '@nestjs/common';
 import { getLogger } from '@fotobox/logging';
 import { bootstrapApiServer } from '@fotobox/nest-api';
+import { APP_NAME, applyAppBranding, getAppIcon } from './app/app-branding';
 import { registerElectronEvents } from './app/events/electron.events';
 
 const logger = getLogger('fotobox-electron');
@@ -50,6 +51,12 @@ async function startEmbeddedApi(): Promise<void> {
       'settings.json',
     );
   }
+  if (!process.env.FOTOBOX_DATABASE_PATH) {
+    process.env.FOTOBOX_DATABASE_PATH = join(
+      app.getPath('userData'),
+      'fotobox.db',
+    );
+  }
 
   // Bind on all interfaces so guest phones (QR share) and tablets on the LAN
   // can reach the API. The kiosk UI still talks to localhost via preload.
@@ -63,6 +70,8 @@ async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
     width: workAreaSize.width || 1280,
     height: workAreaSize.height || 720,
+    title: APP_NAME,
+    icon: getAppIcon(),
     show: false,
     // Kiosk mode in production keeps the app fullscreen on Windows and
     // prevents the user from exiting with Escape or Alt+F4.
@@ -89,6 +98,7 @@ async function createWindow(): Promise<void> {
 }
 
 async function bootstrap(): Promise<void> {
+  applyAppBranding();
   await app.whenReady();
   registerElectronEvents();
 

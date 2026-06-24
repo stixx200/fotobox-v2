@@ -8,6 +8,19 @@ import { getLogger } from '@fotobox/logging';
 
 const logger = getLogger('CollageTemplates');
 
+function resolveBackgroundPath(
+  template: TemplateInterface,
+  templatePath: string,
+): void {
+  if (
+    template.background &&
+    typeof template.background === 'string' &&
+    !path.isAbsolute(template.background)
+  ) {
+    template.background = path.join(templatePath, template.background);
+  }
+}
+
 /**
  * Resolve a real CommonJS `require` at runtime.
  *
@@ -45,17 +58,7 @@ function loadTemplatesFromDirectory(
         try {
           const templateData = fs.readFileSync(indexJsonPath, 'utf8');
           resolvedTemplate = JSON.parse(templateData) as TemplateInterface;
-          // resolve background
-          if (
-            resolvedTemplate.background &&
-            typeof resolvedTemplate.background === 'string' &&
-            !path.isAbsolute(resolvedTemplate.background)
-          ) {
-            resolvedTemplate.background = path.join(
-              templatePath,
-              resolvedTemplate.background,
-            );
-          }
+          resolveBackgroundPath(resolvedTemplate, templatePath);
         } catch (jsonError) {
           logger.debug(
             `Failed to load '${templateName}' as JSON: ${
@@ -73,6 +76,9 @@ function loadTemplatesFromDirectory(
             // Clear require cache
             delete nodeRequire.cache[nodeRequire.resolve(indexJsPath)];
             resolvedTemplate = nodeRequire(indexJsPath) as TemplateInterface;
+            if (resolvedTemplate) {
+              resolveBackgroundPath(resolvedTemplate, templatePath);
+            }
           }
         } catch (requireError) {
           logger.debug(

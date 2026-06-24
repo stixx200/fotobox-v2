@@ -3,6 +3,14 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/error/src",
   "projectType": "library",
-  "tags": [],
-  "targets": {}
+  "tags": [
+    "scope:core",
+    "type:util",
+    "platform:universal"
+  ],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
 }

@@ -1,0 +1,23 @@
+{
+  "name": "collage-editor",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/collage-editor/src",
+  "projectType": "library",
+  "tags": [
+    "scope:shared",
+    "type:util",
+    "platform:universal"
+  ],
+  "// targets": "to see all targets run: nx show project collage-editor --web",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "configFile": "libs/collage-editor/vite.config.ts"
+      }
+    }
+  }
+}

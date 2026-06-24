@@ -3,15 +3,24 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/nest/printer-api/src",
   "projectType": "library",
-  "tags": [],
+  "tags": [
+    "scope:server",
+    "type:feature",
+    "platform:node"
+  ],
   "// targets": "to see all targets run: nx show project printer-api --web",
   "targets": {
     "test": {
       "executor": "@nx/vitest:test",
-      "outputs": ["{workspaceRoot}/coverage/libs/nest/printer-api"],
+      "outputs": [
+        "{workspaceRoot}/coverage/libs/nest/printer-api"
+      ],
       "options": {
         "configFile": "libs/nest/printer-api/vite.config.ts"
       }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
     }
   }
 }

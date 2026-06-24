@@ -18,7 +18,7 @@
   </div>
 
   <!-- Ready / progress message -->
-  @if (!collagePhoto() && !capturing() && !reviewPhoto()) {
+  @if (!collagePhoto() && !capturing() && !reviewPhoto() && topMessage()) {
     <div class="message-stripe top-message">
       <p>{{ topMessage() }}</p>
     </div>

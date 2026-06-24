@@ -1,0 +1,83 @@
+<div class="page">
+  <header class="header">
+    <h1>{{ 'projects.title' | translate }}</h1>
+    <button type="button" class="btn primary" (click)="createNew()">
+      {{ 'projects.new' | translate }}
+    </button>
+  </header>
+
+  <section class="directory">
+    <label>
+      {{ 'projects.directory' | translate }}
+      <input
+        type="text"
+        [ngModel]="collageDirectory()"
+        (ngModelChange)="collageDirectory.set($event)"
+        placeholder="/path/to/collage-templates"
+      />
+    </label>
+    <button type="button" class="btn" (click)="refresh()">
+      {{ 'projects.refresh' | translate }}
+    </button>
+  </section>
+
+  @if (error(); as err) {
+    <p class="error">{{ err }}</p>
+  }
+
+  @if (loading()) {
+    <p>Loading…</p>
+  } @else {
+    <section>
+      <h2>{{ 'projects.saved' | translate }}</h2>
+      @if (projects().length === 0) {
+        <p class="muted">{{ 'projects.none' | translate }}</p>
+      } @else {
+        <ul class="list">
+          @for (p of projects(); track p.id) {
+            <li class="project-card">
+              @if (thumbnailUrl(p); as thumb) {
+                <img class="thumb" [src]="thumb" alt="" />
+              } @else {
+                <div class="thumb placeholder">{{ p.width }}×{{ p.height }}</div>
+              }
+              <button type="button" class="link" (click)="openProject(p.id)">
+                <strong>{{ p.name || p.id }}</strong>
+                <span>{{ p.width }}×{{ p.height }}</span>
+                @if (p.updatedAt) {
+                  <span class="muted">{{ p.updatedAt | date: 'short' }}</span>
+                }
+              </button>
+              <div class="card-actions">
+                <button type="button" class="btn small" (click)="duplicateProject(p.id, $event)">
+                  {{ 'projects.duplicate' | translate }}
+                </button>
+                <button type="button" class="btn small danger" (click)="deleteProject(p.id, $event)">
+                  {{ 'projects.delete' | translate }}
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section>
+      <h2>{{ 'projects.legacy' | translate }}</h2>
+      <p class="muted">{{ 'projects.legacyHint' | translate }}</p>
+      @if (legacyTemplates().length === 0) {
+        <p class="muted">None found in this directory.</p>
+      } @else {
+        <ul class="list">
+          @for (id of legacyTemplates(); track id) {
+            <li>
+              <button type="button" class="link" (click)="openProject(id)">
+                {{ id }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>

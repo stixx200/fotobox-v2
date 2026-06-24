@@ -1,4 +1,5 @@
 import { getLogger } from '@fotobox/logging';
+import { FotoboxError } from '@fotobox/error';
 import {
   CameraInterface,
   CameraDescriptor,
@@ -92,8 +93,9 @@ export class CameraFactory {
     const driverKey = driver.toLowerCase() as CameraDriverType;
 
     if (!CAMERA_DRIVERS[driverKey]) {
-      throw new Error(
+      throw new FotoboxError(
         `Camera driver '${driver}' not available. Available drivers: ${this.getAvailableDrivers().join(', ')}`,
+        { code: 'MAIN.CAMERAS.DRIVER_NOT_FOUND', info: { driver } },
       );
     }
 

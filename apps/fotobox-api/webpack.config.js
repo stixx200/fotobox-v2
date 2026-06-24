@@ -37,6 +37,12 @@ module.exports = {
           glob: '**/*',
           output: 'collage-templates',
         },
+        // SQLite migrations for runtime access
+        {
+          input: join(workspaceRoot, 'libs/nest/database/drizzle'),
+          glob: '**/*',
+          output: 'drizzle',
+        },
       ],
       optimization: false,
       outputHashing: 'none',

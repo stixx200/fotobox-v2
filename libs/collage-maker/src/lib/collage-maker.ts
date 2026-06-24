@@ -1,60 +1,17 @@
 import sharp from 'sharp';
 import path from 'path';
-import fs from 'fs';
 import { CollageMakerConfiguration } from './collage-maker-configuration.interface';
 import { calculateWidthHeight } from './helper';
 import { TemplateLoader } from './template-loader';
 import { Space, TemplateInterface } from './template.interface';
 import { getLogger } from '@fotobox/logging';
+import { resolveCollageMakerAssetPath } from './assets';
 const logger = getLogger('collage-maker.maker');
 
-/**
- * Resolves asset path for both development and production environments.
- * In production (electron build), images are copied to dist/apps/fotobox-electron/images/
- * In development, images are at libs/collage-maker/src/images/
- */
-function resolveAssetPath(filename: string): string {
-  const candidates = [
-    path.resolve(__dirname, 'images', filename),
-    path.resolve(
-      process.cwd(),
-      'dist/apps/fotobox-electron/images',
-      filename,
-    ),
-    path.resolve(__dirname, '../images', filename),
-    path.resolve(process.cwd(), 'libs/collage-maker/src/images', filename),
-  ];
-
-  let dir = __dirname;
-  for (let depth = 0; depth < 8; depth++) {
-    candidates.push(
-      path.join(dir, 'libs/collage-maker/src/images', filename),
-    );
-    candidates.push(
-      path.join(dir, 'dist/apps/fotobox-electron/images', filename),
-    );
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      break;
-    }
-    dir = parent;
-  }
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  logger.error('Asset not found in production or development paths', {
-    filename,
-    candidates,
-  });
-  return candidates[0];
-}
-
-const questionmarkPhoto = resolveAssetPath('questionmark.png');
-const defaultBackgroundPhoto = resolveAssetPath('default-background.jpg');
+const questionmarkPhoto = resolveCollageMakerAssetPath('questionmark.png');
+const defaultBackgroundPhoto = resolveCollageMakerAssetPath(
+  'default-background.jpg',
+);
 
 function convertPhotoPath(photoPath: string) {
   return photoPath.replace('app.asar', 'app.asar.unpacked');

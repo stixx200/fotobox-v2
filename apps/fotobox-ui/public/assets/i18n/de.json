@@ -12,6 +12,7 @@
     "PHOTO_DIRECTORY": "Speicherort für Fotos",
     "COLLAGE_DIRECTORY": "Ordner Collage-Vorlagen",
     "COLLAGE_DIRECTORY_ERROR": "Fehler beim Laden der Collage-Vorlagen",
+    "OPEN_COLLAGE_EDITOR": "Vorlagen-Editor öffnen",
     "LAYOUTS": "Layouts (max. 3)",
     "LAYOUTS_PREVIEW_HINT": "Layout in der Liste überfahren für die Vorschau oben",
     "LAYOUTS_PREVIEW_HINT_TOUCH": "Layout antippen für die Vorschau; Vorschau antippen zum Durchblättern",

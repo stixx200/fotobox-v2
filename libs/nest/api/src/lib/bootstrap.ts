@@ -1,5 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { json, urlencoded, type Express, type RequestHandler } from 'express';
+import { applyDefaultWorkspaceEnv } from '@fotobox/workspace-paths';
 import { getLogger } from '@fotobox/logging';
 import { WinstonLoggerService } from '@fotobox/nest-logger';
 import * as os from 'os';
@@ -10,6 +13,30 @@ import {
 } from './lan-access.middleware';
 
 const logger = getLogger('fotobox-api');
+
+/** Collage editor saves send base64 JPEG backgrounds and assets via GraphQL. */
+const GRAPHQL_BODY_LIMIT = process.env.FOTOBOX_GRAPHQL_BODY_LIMIT ?? '100mb';
+
+/** Insert parsers near the front of the Express stack (before /graphql). */
+function prependMiddleware(
+  expressApp: Express,
+  ...middleware: RequestHandler[]
+): void {
+  const router = expressApp.router as unknown as { stack: unknown[] };
+  for (const handler of middleware) {
+    expressApp.use(handler);
+    router.stack.splice(1, 0, router.stack.pop());
+  }
+}
+
+function installLargeBodyParser(app: NestExpressApplication): void {
+  const expressApp = app.getHttpAdapter().getInstance();
+  prependMiddleware(
+    expressApp,
+    json({ limit: GRAPHQL_BODY_LIMIT }),
+    urlencoded({ extended: true, limit: GRAPHQL_BODY_LIMIT }),
+  );
+}
 
 function isLoopbackHost(host: string): boolean {
   return host === '127.0.0.1' || host === 'localhost' || host === '::1';
@@ -44,8 +71,11 @@ export interface BootstrapApiOptions {
 export async function bootstrapApiServer(
   options: BootstrapApiOptions = {},
 ): Promise<INestApplication> {
-  const app = await NestFactory.create(ApiModule, {
+  applyDefaultWorkspaceEnv();
+
+  const app = await NestFactory.create<NestExpressApplication>(ApiModule, {
     logger: new WinstonLoggerService(),
+    bodyParser: false,
   });
 
   // Allow the UI client (potentially served from a different origin/device)
@@ -61,6 +91,11 @@ export async function bootstrapApiServer(
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix, { exclude: ['graphql'] });
+
+  // GraphQL registers during init(); prepend parsers afterward so they run first.
+  await app.init();
+  installLargeBodyParser(app);
+  logger.info(`GraphQL request body limit: ${GRAPHQL_BODY_LIMIT}`);
 
   const port = options.port ?? (Number(process.env.PORT) || 3000);
   const host = options.host ?? process.env.HOST ?? '0.0.0.0';

@@ -109,6 +109,9 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     if (this.reviewPhoto()) {
       return this.translateService.instant('COLLAGE.USE_PHOTO');
     }
+    if (total === 1) {
+      return '';
+    }
     if (this.previewSrc() && !this.capturing()) {
       return this.translateService.instant('COLLAGE.PHOTO_TAKEN', {
         next,
@@ -133,10 +136,14 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
         this.lastProcessedPictureId = picture.id;
         this.awaitingPicture = false;
         this.capturing.set(false);
-        this.reviewPhoto.set({
-          url: getPhotoUrl(picture.path),
-          path: picture.path,
-        });
+        if (this.requiredPhotos() === 1) {
+          this.onPhotoCaptured(picture.path);
+        } else {
+          this.reviewPhoto.set({
+            url: getPhotoUrl(picture.path),
+            path: picture.path,
+          });
+        }
       }
     });
   }

@@ -1,4 +1,4 @@
-import * as path from 'path';
+import { workspacePaths } from '@fotobox/workspace-paths';
 
 /**
  * Configuration for photo storage
@@ -16,6 +16,6 @@ export interface PhotoStorageConfig {
  */
 export function getDefaultPhotoStorageConfig(): PhotoStorageConfig {
   return {
-    photoDirectory: path.join(process.cwd(), 'photos'),
+    photoDirectory: workspacePaths.photos(),
   };
 }

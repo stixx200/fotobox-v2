@@ -3,6 +3,7 @@ import 'zone.js';
 import 'zone.js/testing';
 
 export default defineConfig({
+  root: import.meta.dirname,
   test: {
     globals: true,
     environment: 'jsdom',

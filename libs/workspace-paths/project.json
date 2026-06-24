@@ -1,0 +1,16 @@
+{
+  "name": "workspace-paths",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/workspace-paths/src",
+  "projectType": "library",
+  "tags": [
+    "scope:core",
+    "type:util",
+    "platform:universal"
+  ],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

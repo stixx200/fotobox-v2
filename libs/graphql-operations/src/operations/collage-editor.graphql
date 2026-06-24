@@ -1,0 +1,79 @@
+query CollageEditorProjects($collageDirectory: String) {
+  collageEditorProjects(collageDirectory: $collageDirectory) {
+    id
+    name
+    width
+    height
+    updatedAt
+    thumbnailBase64
+  }
+}
+
+query CollageEditorLegacyTemplates($collageDirectory: String) {
+  collageEditorLegacyTemplates(collageDirectory: $collageDirectory)
+}
+
+query CollageEditorProject($templateId: String!, $collageDirectory: String) {
+  collageEditorProject(
+    templateId: $templateId
+    collageDirectory: $collageDirectory
+  ) {
+    version
+    id
+    name
+    width
+    height
+    borderJson
+    fabricJson
+    layerMetaJson
+  }
+}
+
+mutation SaveCollageEditorProject($input: SaveCollageEditorProjectInput!) {
+  saveCollageEditorProject(input: $input) {
+    templateId
+    path
+  }
+}
+
+mutation DeleteCollageEditorProject(
+  $templateId: String!
+  $collageDirectory: String
+) {
+  deleteCollageEditorProject(
+    templateId: $templateId
+    collageDirectory: $collageDirectory
+  ) {
+    templateId
+  }
+}
+
+mutation DuplicateCollageEditorProject(
+  $templateId: String!
+  $newTemplateId: String!
+  $collageDirectory: String
+) {
+  duplicateCollageEditorProject(
+    templateId: $templateId
+    newTemplateId: $newTemplateId
+    collageDirectory: $collageDirectory
+  ) {
+    templateId
+    name
+  }
+}
+
+query ValidateCollageTemplate($templateId: String!, $collageDirectory: String) {
+  validateCollageTemplate(
+    templateId: $templateId
+    collageDirectory: $collageDirectory
+  ) {
+    valid
+    previewBase64
+    message
+  }
+}
+
+query LayoutPreview($layoutId: String!, $collageDirectory: String) {
+  layoutPreview(layoutId: $layoutId, collageDirectory: $collageDirectory)
+}

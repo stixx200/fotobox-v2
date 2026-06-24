@@ -27,7 +27,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, filter, merge, take } from 'rxjs';
+import { Subject, filter, finalize, merge, take } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   SettingsStore,
@@ -45,6 +45,8 @@ import {
 import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { ClientLogService } from '../services/client-log.service';
 import { ShareService } from '../services/share.service';
+import { SettingsCameraLayoutsComponent } from './components/settings-camera-layouts.component';
+import { SettingsShareGalleryComponent } from './components/settings-share-gallery.component';
 
 /** @title Form field with label */
 @Component({
@@ -67,6 +69,8 @@ import { ShareService } from '../services/share.service';
     MatProgressSpinnerModule,
     TranslatePipe,
     RouterLink,
+    SettingsCameraLayoutsComponent,
+    SettingsShareGalleryComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -133,6 +137,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     url: string;
   } | null>(null);
   collageDirectoryError = signal<string | null>(null);
+  readonly refreshingTemplates = signal(false);
   layoutsAutoSelectionMessage = signal<string | null>(null);
   isInitializingCamera = signal(false);
   startError = signal<string | null>(null);
@@ -313,7 +318,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
         } catch (error) {
           console.error(`Failed to parse setting ${key}:`, error);
         }
-      } else {
       }
     });
 
@@ -371,27 +375,49 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private loadAvailableLayouts(collageDirectory?: string): void {
+  refreshTemplates(): void {
+    const collageDir =
+      this.settingsForm.get('collageDirectory')?.value || undefined;
+    this.loadAvailableLayouts(collageDir, true);
+  }
+
+  private loadAvailableLayouts(
+    collageDirectory?: string,
+    userInitiated = false,
+  ): void {
+    if (userInitiated) {
+      this.refreshingTemplates.set(true);
+    }
     this.layoutPreview.set(null);
-    this.collageService.getAvailableLayoutIds(collageDirectory).subscribe({
-      next: (layoutIds) => {
-        this.layouts.set(layoutIds);
-        this.collageDirectoryError.set(null);
-        this.layoutPreviews.set(new Map());
-        this.loadLayoutPreviews(layoutIds, collageDirectory);
-      },
-      error: (error) => {
-        console.error('Error loading available layouts:', error);
-        // Fallback to just Einzelbild if there's an error
-        const fallbackLayouts = ['Einzelbild'];
-        this.layouts.set(fallbackLayouts);
-        this.layoutPreviews.set(new Map());
-        this.loadLayoutPreviews(fallbackLayouts, collageDirectory);
-        this.collageDirectoryError.set(
-          this.translateService.instant('SETTINGS.COLLAGE_DIRECTORY_ERROR'),
-        );
-      },
-    });
+    this.collageService
+      .getAvailableLayoutIds(collageDirectory)
+      .pipe(
+        finalize(() => {
+          if (userInitiated) {
+            this.refreshingTemplates.set(false);
+            this.cdr.markForCheck();
+          }
+        }),
+      )
+      .subscribe({
+        next: (layoutIds) => {
+          this.layouts.set(layoutIds);
+          this.collageDirectoryError.set(null);
+          this.layoutPreviews.set(new Map());
+          this.loadLayoutPreviews(layoutIds, collageDirectory);
+        },
+        error: (error) => {
+          console.error('Error loading available layouts:', error);
+          // Fallback to just Einzelbild if there's an error
+          const fallbackLayouts = ['Einzelbild'];
+          this.layouts.set(fallbackLayouts);
+          this.layoutPreviews.set(new Map());
+          this.loadLayoutPreviews(fallbackLayouts, collageDirectory);
+          this.collageDirectoryError.set(
+            this.translateService.instant('SETTINGS.COLLAGE_DIRECTORY_ERROR'),
+          );
+        },
+      });
   }
 
   getLayoutPreview(layout: string): string | null {
@@ -636,6 +662,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
+  openCollageEditor(): void {
+    const collageDir = this.settingsForm.get('collageDirectory')?.value;
+    if (window.electron?.openCollageEditor) {
+      void window.electron.openCollageEditor(collageDir || undefined);
+      return;
+    }
+    const params = collageDir ? `?dir=${encodeURIComponent(collageDir)}` : '';
+    window.open(`http://localhost:4201/${params}`, '_blank');
+  }
+
   async openPicker(fieldName: string): Promise<void> {
     if (!window.electron?.openDirectoryDialog) {
       console.warn('Electron API not available');
@@ -674,5 +710,17 @@ export class SettingsComponent implements OnInit, OnDestroy {
       selectedLayouts.length >= this.MAX_LAYOUTS &&
       !selectedLayouts.includes(layout)
     );
+  }
+
+  layoutPreviewUrls(): Record<string, string> {
+    return Object.fromEntries(this.layoutPreviews());
+  }
+
+  layoutDisabledMap(): Record<string, boolean> {
+    const map: Record<string, boolean> = {};
+    for (const layout of this.layouts()) {
+      map[layout] = this.isLayoutOptionDisabled(layout);
+    }
+    return map;
   }
 }

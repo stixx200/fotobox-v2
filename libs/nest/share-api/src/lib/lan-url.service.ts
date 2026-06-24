@@ -31,17 +31,12 @@ export class LanUrlService {
   }
 
   private async readShareBaseUrlOverride(): Promise<string | null> {
-    const setting = await this.settingsService.getSetting('shareBaseUrl');
-    if (!setting?.value) {
-      return null;
-    }
-    try {
-      const parsed: unknown = JSON.parse(setting.value);
-      if (typeof parsed === 'string' && parsed.trim() !== '') {
-        return parsed.trim();
-      }
-    } catch {
-      // ignore malformed value
+    const parsed = await this.settingsService.getParsed<string | null>(
+      'shareBaseUrl',
+      null,
+    );
+    if (typeof parsed === 'string' && parsed.trim() !== '') {
+      return parsed.trim();
     }
     return null;
   }

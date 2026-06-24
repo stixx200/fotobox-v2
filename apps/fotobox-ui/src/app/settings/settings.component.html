@@ -98,15 +98,16 @@
         >
           @if (isInitializingCamera()) {
             <mat-spinner diameter="20" class="start-spinner"></mat-spinner>
-            <span class="header-btn-label">{{
-              'SETTINGS.STARTING' | translate
-            }}</span>
           } @else {
             <mat-icon>play_arrow</mat-icon>
-            <span class="header-btn-label">{{
-              'SETTINGS.START' | translate
-            }}</span>
           }
+          <span class="header-btn-label">
+            @if (isInitializingCamera()) {
+              {{ 'SETTINGS.STARTING' | translate }}
+            } @else {
+              {{ 'SETTINGS.START' | translate }}
+            }
+          </span>
         </button>
       </div>
     </div>
@@ -140,116 +141,20 @@
   <!-- ── Form grid ──────────────────────────────────────────────────── -->
   <form [formGroup]="settingsForm" class="settings-grid">
     <!-- 1. Camera (primary) -->
-    <div class="settings-card">
-      <div class="card-header">
-        <mat-icon>camera_alt</mat-icon>
-        <span>{{ 'SETTINGS.CAMERA' | translate }}</span>
-      </div>
-      <div class="card-body">
-        <mat-form-field floatLabel="always">
-          <mat-label>{{ 'SETTINGS.CAMERA' | translate }}</mat-label>
-          <mat-select formControlName="camera">
-            @for (camera of availableCameraNames(); track camera) {
-              <mat-option [value]="camera">{{ camera }}</mat-option>
-            }
-            @if (availableCameraNames().length === 0) {
-              <mat-option disabled>{{
-                'SETTINGS.NO_CAMERA' | translate
-              }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <div class="layouts-select-wrap">
-          <div
-            class="layout-preview-pane"
-            aria-live="polite"
-            (click)="cycleLayoutPreview()"
-          >
-            @if (layoutPreview(); as preview) {
-              @if (preview.url) {
-                <img
-                  class="layout-preview-pane__image"
-                  [src]="preview.url"
-                  [attr.alt]="preview.layout"
-                />
-              } @else {
-                <span
-                  class="layout-preview-pane__placeholder layout-preview-pane__placeholder--loading"
-                  >{{ preview.layout }}</span
-                >
-              }
-              <span class="layout-preview-pane__label">{{
-                preview.layout
-              }}</span>
-            } @else {
-              <span class="layout-preview-pane__placeholder">{{
-                'SETTINGS.LAYOUTS_PREVIEW_PLACEHOLDER' | translate
-              }}</span>
-            }
-          </div>
-
-          <mat-form-field floatLabel="always" class="layouts-select-field">
-            <mat-label>{{ 'SETTINGS.LAYOUTS' | translate }}</mat-label>
-            <mat-select
-              formControlName="layouts"
-              multiple
-              panelClass="layout-select-panel"
-              (opened)="onLayoutsSelectOpened()"
-              (closed)="onLayoutsSelectClosed()"
-            >
-              @for (layout of layouts(); track layout) {
-                <mat-option
-                  [value]="layout"
-                  [disabled]="isLayoutOptionDisabled(layout)"
-                  class="layout-select-option"
-                  [class.layout-select-option--active]="
-                    layoutPreview()?.layout === layout
-                  "
-                  (mouseenter)="showLayoutPreview(layout)"
-                  (pointerdown)="showLayoutPreview(layout)"
-                >
-                  <span class="layout-option">
-                    @if (getLayoutPreview(layout); as previewUrl) {
-                      <img
-                        class="layout-option__thumb"
-                        [src]="previewUrl"
-                        alt=""
-                      />
-                    } @else {
-                      <span
-                        class="layout-option__thumb layout-option__thumb--placeholder"
-                        aria-hidden="true"
-                      ></span>
-                    }
-                    <span class="layout-option__label">{{ layout }}</span>
-                  </span>
-                </mat-option>
-              }
-            </mat-select>
-            <mat-hint class="layouts-select-hint">
-              <span class="layouts-select-hint__hover">{{
-                'SETTINGS.LAYOUTS_PREVIEW_HINT' | translate
-              }}</span>
-              <span class="layouts-select-hint__touch">{{
-                'SETTINGS.LAYOUTS_PREVIEW_HINT_TOUCH' | translate
-              }}</span>
-            </mat-hint>
-          </mat-form-field>
-        </div>
-
-        <mat-form-field floatLabel="always">
-          <mat-label>{{ 'SETTINGS.SHUTTER_TIMEOUT' | translate }}</mat-label>
-          <input
-            matInput
-            type="number"
-            placeholder="0"
-            formControlName="shutterTimeout"
-          />
-          <span matTextSuffix>s</span>
-        </mat-form-field>
-      </div>
-    </div>
+    <app-settings-camera-layouts
+      [settingsForm]="settingsForm"
+      [availableCameraNames]="availableCameraNames()"
+      [layouts]="layouts()"
+      [layoutPreview]="layoutPreview()"
+      [layoutPreviewUrls]="layoutPreviewUrls()"
+      [disabledLayouts]="layoutDisabledMap()"
+      [refreshingTemplates]="refreshingTemplates()"
+      (cycleLayoutPreview)="cycleLayoutPreview()"
+      (layoutsSelectOpened)="onLayoutsSelectOpened()"
+      (layoutsSelectClosed)="onLayoutsSelectClosed()"
+      (layoutHover)="showLayoutPreview($event)"
+      (refreshTemplates)="refreshTemplates()"
+    />
 
     <!-- 2. Printer -->
     <div class="settings-card">
@@ -293,153 +198,18 @@
       <span>{{ 'SETTINGS.EXPERT_SECTION' | translate }}</span>
     </div>
 
-    <!-- 4. Sharing (expandable) -->
-    <div
-      class="settings-card settings-card--expandable settings-card--accent"
-      [class.is-expanded]="shareExpanded()"
-    >
-      <button
-        type="button"
-        class="card-header card-header--toggle"
-        (click)="toggleShareExpanded()"
-        [attr.aria-expanded]="shareExpanded()"
-        [attr.aria-label]="
-          (shareExpanded()
-            ? 'SETTINGS.COLLAPSE_SECTION'
-            : 'SETTINGS.EXPAND_SECTION'
-          ) | translate
-        "
-      >
-        <mat-icon>qr_code_2</mat-icon>
-        <span class="card-header-title">{{
-          'SETTINGS.SHARE_TITLE' | translate
-        }}</span>
-        <span class="card-header-badge">{{ shareStatusLabel() }}</span>
-        <mat-icon class="card-header-chevron">expand_more</mat-icon>
-      </button>
-
-      @if (shareExpanded()) {
-        <div class="card-body share-settings-body">
-          <mat-checkbox
-            class="share-enable-checkbox"
-            formControlName="useShare"
-            >{{ 'SETTINGS.USE_SHARE' | translate }}</mat-checkbox
-          >
-
-          @if (settingsForm.controls.useShare.value) {
-            <div class="share-settings-details">
-              <div>
-                <p class="settings-hint">
-                  {{ 'SETTINGS.SHARE_DETECTED_URL' | translate }}
-                </p>
-                <p class="settings-detected-url">
-                  {{ detectedShareBaseUrl() }}
-                </p>
-              </div>
-
-              <div class="share-field-group">
-                <mat-form-field floatLabel="always" subscriptSizing="dynamic">
-                  <mat-label>{{
-                    'SETTINGS.SHARE_BASE_URL' | translate
-                  }}</mat-label>
-                  <input
-                    matInput
-                    formControlName="shareBaseUrl"
-                    [placeholder]="
-                      'SETTINGS.SHARE_BASE_URL_PLACEHOLDER' | translate
-                    "
-                  />
-                </mat-form-field>
-                <p class="settings-field-hint">
-                  {{ 'SETTINGS.SHARE_BASE_URL_HINT' | translate }}
-                </p>
-              </div>
-
-              <div class="share-field-group share-field-group--compact">
-                <mat-form-field floatLabel="always" subscriptSizing="dynamic">
-                  <mat-label>{{
-                    'SETTINGS.SHARE_TOKEN_EXPIRY' | translate
-                  }}</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    min="1"
-                    formControlName="shareTokenExpiryHours"
-                  />
-                  <span matTextSuffix>{{
-                    'SETTINGS.SHARE_TOKEN_EXPIRY_SUFFIX' | translate
-                  }}</span>
-                </mat-form-field>
-                <p class="settings-field-hint">
-                  {{ 'SETTINGS.SHARE_TOKEN_EXPIRY_HINT' | translate }}
-                </p>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    </div>
-
-    <!-- 5. Gallery PIN (expandable) -->
-    <div
-      class="settings-card settings-card--expandable settings-card--accent"
-      [class.is-expanded]="galleryExpanded()"
-    >
-      <button
-        type="button"
-        class="card-header card-header--toggle"
-        (click)="toggleGalleryExpanded()"
-        [attr.aria-expanded]="galleryExpanded()"
-        [attr.aria-label]="
-          (galleryExpanded()
-            ? 'SETTINGS.COLLAPSE_SECTION'
-            : 'SETTINGS.EXPAND_SECTION'
-          ) | translate
-        "
-      >
-        <mat-icon>photo_library</mat-icon>
-        <span class="card-header-title">{{
-          'SETTINGS.GALLERY' | translate
-        }}</span>
-        <span class="card-header-badge">{{ galleryStatusLabel() }}</span>
-        <mat-icon class="card-header-chevron">expand_more</mat-icon>
-      </button>
-
-      @if (galleryExpanded()) {
-        <div class="card-body">
-          <mat-checkbox formControlName="showGalleryButton">{{
-            'SETTINGS.SHOW_GALLERY_BUTTON' | translate
-          }}</mat-checkbox>
-          <p class="settings-field-hint settings-field-hint--inline">
-            {{ 'SETTINGS.SHOW_GALLERY_BUTTON_HINT' | translate }}
-          </p>
-
-          <mat-form-field floatLabel="always">
-            <mat-label>{{ 'SETTINGS.GALLERY' | translate }}</mat-label>
-            <input
-              matInput
-              type="password"
-              formControlName="galleryPassword"
-              [attr.maxlength]="galleryPinLength"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              autocomplete="off"
-              class="gallery-pin-input"
-              (input)="onGalleryPinInput($event)"
-            />
-            <mat-hint>{{ 'SETTINGS.GALLERY_PIN_HINT' | translate }}</mat-hint>
-            @if (
-              settingsForm.controls.galleryPassword.touched &&
-              settingsForm.controls.galleryPassword.hasError('galleryPin')
-            ) {
-              <mat-error>{{
-                'SETTINGS.GALLERY_PIN_INVALID' | translate
-              }}</mat-error>
-            }
-          </mat-form-field>
-        </div>
-      }
-    </div>
+    <app-settings-share-gallery
+      [settingsForm]="settingsForm"
+      [shareExpanded]="shareExpanded()"
+      [galleryExpanded]="galleryExpanded()"
+      [shareStatusLabel]="shareStatusLabel()"
+      [galleryStatusLabel]="galleryStatusLabel()"
+      [detectedShareBaseUrl]="detectedShareBaseUrl()"
+      [galleryPinLength]="galleryPinLength"
+      (shareToggle)="toggleShareExpanded()"
+      (galleryToggle)="toggleGalleryExpanded()"
+      (galleryPinInput)="onGalleryPinInput($event)"
+    />
 
     <!-- 6. Storage (advanced, bottom) -->
     <div class="settings-card settings-card--muted">
@@ -491,6 +261,17 @@
             <mat-error>{{ error }}</mat-error>
           }
         </mat-form-field>
+
+        <div class="collage-editor-action">
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="openCollageEditor()"
+          >
+            <mat-icon>design_services</mat-icon>
+            {{ 'SETTINGS.OPEN_COLLAGE_EDITOR' | translate }}
+          </button>
+        </div>
       </div>
     </div>
   </form>

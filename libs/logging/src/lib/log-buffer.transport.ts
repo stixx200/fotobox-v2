@@ -7,7 +7,7 @@ export class LogBufferTransport extends Transport {
     super(opts);
   }
 
-  log(info: Logform.TransformableInfo, callback: () => void): void {
+  override log(info: Logform.TransformableInfo, callback: () => void): void {
     setImmediate(() => {
       this.emit('logged', info);
     });

@@ -2,11 +2,10 @@ import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideApollo } from 'apollo-angular';
-import { appRoutes } from './app.routes';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { provideFotoboxI18n } from '@fotobox/frontend-core';
+import { appRoutes } from './app.routes';
 import { createApolloOptions } from './graphql.config';
-import { provideTranslateService } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -18,15 +17,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideHttpClient(),
     provideApollo(createApolloOptions),
-    provideTranslateService({
-      lang: (() => {
-        try {
-          return localStorage.getItem('fotobox.language') || 'de';
-        } catch {
-          return 'de';
-        }
-      })(),
-    }),
-    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
+    provideFotoboxI18n(),
   ],
 };
