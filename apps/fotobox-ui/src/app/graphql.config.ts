@@ -11,8 +11,13 @@ import { onError } from '@apollo/client/link/error';
 import { createClient } from 'graphql-ws';
 import { GraphQLError } from 'graphql';
 import { getGraphqlHttpUri, getGraphqlWsUri } from './api-config';
+import { ClientLogService } from './services/client-log.service';
+import { RecoveryService } from './services/recovery.service';
 
-export function createApolloOptions() {
+export function createApolloOptions(
+  clientLog?: ClientLogService,
+  recovery?: RecoveryService,
+): ApolloClientOptions {
   // Create HTTP link for queries and mutations
   const http = new HttpLink({
     uri: getGraphqlHttpUri(),
@@ -27,34 +32,43 @@ export function createApolloOptions() {
       }),
       on: {
         error: (error) => {
+          const message =
+            error instanceof Error ? error.message : String(error);
           console.error('WebSocket error:', error);
+          clientLog?.error('WebSocket error', message);
         },
         connected: () => {
+          recovery?.clearNetworkDegraded();
         },
-        closed: () => {
-        },
+        closed: () => {},
       },
     }),
   );
 
-  // Error handling link
   const errorLink = onError((errorResponse) => {
-    const { graphQLErrors, networkError, operation } = errorResponse as any;
+    const { graphQLErrors, networkError, operation } = errorResponse as {
+      graphQLErrors?: GraphQLError[];
+      networkError?: Error;
+      operation?: { operationName?: string };
+    };
+
     if (graphQLErrors) {
       graphQLErrors.forEach((error: GraphQLError) => {
-        console.error(
-          `[GraphQL error]: Message: ${error.message}, Location: ${JSON.stringify(error.locations)}, Path: ${error.path}`,
-          error.extensions,
-        );
+        const detail = {
+          message: error.message,
+          path: error.path,
+          extensions: error.extensions,
+          operation: operation?.operationName,
+        };
+        console.error('[GraphQL error]', detail);
+        clientLog?.error(`GraphQL: ${error.message}`, detail);
       });
     }
 
     if (networkError) {
       console.error(`[Network error]: ${networkError.message}`, networkError);
-    }
-
-    if (operation) {
-      console.error(`[Operation]: ${operation.operationName}`);
+      clientLog?.error(`Network: ${networkError.message}`, networkError);
+      recovery?.reportNetworkError(networkError.message);
     }
   });
 

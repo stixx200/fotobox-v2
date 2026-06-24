@@ -12,9 +12,28 @@ import { setMainWindow } from './app/window-state';
 const logger = getLogger('fotobox-electron');
 
 const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+const API_START_MAX_ATTEMPTS = 5;
+const API_START_RETRY_DELAY_MS = 2000;
+const API_HEALTH_INTERVAL_MS = 30_000;
+const API_HEALTH_MAX_FAILURES = 3;
 
 let mainWindow: BrowserWindow | null = null;
 let apiApp: INestApplication | null = null;
+let isQuitting = false;
+let apiHealthFailures = 0;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function relaunchApp(reason: string): void {
+  if (isQuitting) {
+    return;
+  }
+  logger.error(`Relaunching app: ${reason}`);
+  app.relaunch();
+  app.exit(0);
+}
 
 /**
  * Resolve the API URL the renderer should talk to. By default the Electron
@@ -65,6 +84,132 @@ async function startEmbeddedApi(): Promise<void> {
   apiApp = await bootstrapApiServer({ port: DEFAULT_PORT, host: '0.0.0.0' });
 }
 
+async function startEmbeddedApiWithRetry(): Promise<void> {
+  if (process.env.FOTOBOX_API_URL) {
+    return;
+  }
+
+  for (let attempt = 1; attempt <= API_START_MAX_ATTEMPTS; attempt++) {
+    try {
+      await startEmbeddedApi();
+      return;
+    } catch (error) {
+      logger.error(
+        `Embedded API start attempt ${attempt}/${API_START_MAX_ATTEMPTS} failed:`,
+        error,
+      );
+      if (attempt === API_START_MAX_ATTEMPTS) {
+        throw error;
+      }
+      await sleep(API_START_RETRY_DELAY_MS * attempt);
+    }
+  }
+}
+
+async function restartEmbeddedApi(): Promise<boolean> {
+  if (process.env.FOTOBOX_API_URL) {
+    return true;
+  }
+
+  if (apiApp) {
+    await apiApp.close().catch(() => undefined);
+    apiApp = null;
+  }
+
+  try {
+    await startEmbeddedApiWithRetry();
+    return true;
+  } catch (error) {
+    logger.error('Failed to restart embedded API:', error);
+    return false;
+  }
+}
+
+async function checkEmbeddedApiHealth(): Promise<boolean> {
+  if (process.env.FOTOBOX_API_URL) {
+    return true;
+  }
+
+  const response = await fetch(`http://127.0.0.1:${DEFAULT_PORT}/graphql`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: '{ __typename }' }),
+    signal: AbortSignal.timeout(5000),
+  });
+  return response.ok;
+}
+
+function startEmbeddedApiHealthWatch(): void {
+  if (process.env.FOTOBOX_API_URL) {
+    return;
+  }
+
+  setInterval(() => {
+    void (async () => {
+      try {
+        const healthy = await checkEmbeddedApiHealth();
+        if (healthy) {
+          apiHealthFailures = 0;
+          return;
+        }
+        throw new Error('API health check returned non-OK status');
+      } catch (error) {
+        apiHealthFailures++;
+        logger.error(
+          `Embedded API health check failed (${apiHealthFailures}/${API_HEALTH_MAX_FAILURES}):`,
+          error,
+        );
+
+        if (apiHealthFailures < API_HEALTH_MAX_FAILURES) {
+          const restarted = await restartEmbeddedApi();
+          if (restarted) {
+            apiHealthFailures = 0;
+          }
+          return;
+        }
+
+        relaunchApp('embedded API unreachable after repeated failures');
+      }
+    })();
+  }, API_HEALTH_INTERVAL_MS);
+}
+
+function attachWindowRecoveryHandlers(window: BrowserWindow): void {
+  const uiUrl = getUIUrl();
+
+  window.webContents.on('render-process-gone', (_event, details) => {
+    logger.error('Renderer process gone', details);
+    relaunchApp(`renderer crashed (${details.reason})`);
+  });
+
+  window.on('unresponsive', () => {
+    logger.warn('Window became unresponsive, reloading renderer');
+    if (!window.isDestroyed()) {
+      window.webContents.reload();
+    }
+  });
+
+  window.webContents.on('responsive', () => {
+    logger.info('Window responsive again');
+  });
+
+  window.webContents.on(
+    'did-fail-load',
+    (_event, errorCode, errorDescription, validatedURL) => {
+      logger.error('Page failed to load', {
+        errorCode,
+        errorDescription,
+        validatedURL,
+      });
+      setTimeout(() => {
+        if (!window.isDestroyed()) {
+          void window.loadURL(uiUrl);
+        }
+      }, 3000);
+    },
+  );
+}
+
 async function createWindow(): Promise<void> {
   const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
   const isProd = !process.env.FOTOBOX_DEV_SERVER;
@@ -99,6 +244,8 @@ async function createWindow(): Promise<void> {
 
   setMainWindow(mainWindow);
 
+  attachWindowRecoveryHandlers(mainWindow);
+
   await mainWindow.loadURL(getUIUrl());
 }
 
@@ -110,9 +257,10 @@ async function bootstrap(): Promise<void> {
   await runProductionKioskSetup();
 
   try {
-    await startEmbeddedApi();
+    await startEmbeddedApiWithRetry();
+    startEmbeddedApiHealthWatch();
   } catch (error) {
-    logger.error('Failed to start embedded API server:', error);
+    logger.error('Failed to start embedded API server after retries:', error);
   }
 
   await createWindow();
@@ -131,6 +279,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', async () => {
+  isQuitting = true;
   if (apiApp) {
     await apiApp.close().catch(() => undefined);
     apiApp = null;

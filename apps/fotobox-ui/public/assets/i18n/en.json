@@ -91,7 +91,12 @@
     "ACCEPT": "Yes, use it",
     "RETAKE": "No, try again",
     "PREVIEW_ALT": "Collage preview",
-    "CANCEL": "Cancel"
+    "CANCEL": "Cancel",
+    "LOAD_ERROR": "Could not load collage template.",
+    "START_ERROR": "Could not start collage. Check template settings.",
+    "ADD_PHOTO_ERROR": "Could not add photo to collage.",
+    "PREVIEW_ERROR": "Could not load collage preview.",
+    "FINALIZE_ERROR": "Could not create collage."
   },
   "GALLERY": {
     "TITLE": "Gallery",
@@ -136,5 +141,14 @@
   },
   "COUNTDOWN": {
     "SMILE": "Smile! 😊"
+  },
+  "RECOVERY": {
+    "TITLE": "Something went wrong",
+    "TO_SETTINGS": "Return to settings",
+    "RETRY": "Reload app",
+    "NETWORK_DEGRADED": "Connection to backend lost — tap to dismiss"
+  },
+  "CAPTURE": {
+    "TIMEOUT": "Photo capture timed out. Please try again."
   }
 }

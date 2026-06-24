@@ -1,4 +1,11 @@
-@if (showRouter()) {
+@if (recovery.fatalError()) {
+  <app-recovery-overlay />
+} @else if (showRouter()) {
+  @if (recovery.networkDegraded()) {
+    <div class="network-banner" (click)="recovery.clearNetworkDegraded()">
+      {{ 'RECOVERY.NETWORK_DEGRADED' | translate }}
+    </div>
+  }
   <router-outlet></router-outlet>
 } @else {
   <app-splash-screen

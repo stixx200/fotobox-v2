@@ -2,16 +2,24 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ApiHealthService } from './services/api-health.service';
 import { SplashScreenComponent } from './splash-screen.component';
+import { RecoveryOverlayComponent } from './recovery-overlay.component';
 import { CameraStore } from './store/camera.store';
 import { IdleService } from './services/idle.service';
 import { ClientLogService } from './services/client-log.service';
-import { TranslateService } from '@ngx-translate/core';
+import { RecoveryService } from './services/recovery.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterModule, SplashScreenComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SplashScreenComponent,
+    RecoveryOverlayComponent,
+    TranslatePipe,
+  ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -21,6 +29,7 @@ export class AppComponent implements OnInit {
   readonly isApiReady = signal(false);
   readonly apiError = signal<string | null>(null);
   readonly showRouter = signal(false);
+  readonly recovery = inject(RecoveryService);
   private readonly router = inject(Router);
   private readonly cameraStore = inject(CameraStore);
   private readonly clientLogService = inject(ClientLogService);
@@ -54,6 +63,7 @@ export class AppComponent implements OnInit {
       if (isReady) {
         this.isApiReady.set(true);
         this.apiError.set(null);
+        this.recovery.clearNetworkDegraded();
         this.updateShowRouter();
         return;
       }

@@ -8,13 +8,16 @@ import {
   withHooks,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, catchError, of, EMPTY, distinctUntilChanged } from 'rxjs';
+import { pipe, tap, switchMap, catchError, of, EMPTY, distinctUntilChanged, timer, retry } from 'rxjs';
 import {
   CameraService,
   CameraInfo,
   Picture,
   LiveViewFrame,
 } from '../services/camera.service';
+import { ClientLogService } from '../services/client-log.service';
+
+const LIVE_VIEW_MAX_RETRIES = 5;
 
 type CameraState = {
   availableCameras: CameraInfo[];
@@ -52,7 +55,7 @@ export class CameraStore extends signalStore(
       () => state.currentCamera()?.location === 'client',
     ),
   })),
-  withMethods((store, cameraService = inject(CameraService)) => ({
+  withMethods((store, cameraService = inject(CameraService), clientLog = inject(ClientLogService)) => ({
     loadAvailableCameras: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
@@ -272,7 +275,18 @@ export class CameraStore extends signalStore(
           }
           return cameraService.subscribeLiveView().pipe(
             tap((frame) => patchState(store, { lastLiveFrame: frame })),
-            catchError(() => EMPTY),
+            retry({
+              count: LIVE_VIEW_MAX_RETRIES,
+              delay: (_error, retryCount) =>
+                timer(Math.min(1000 * retryCount, 5000)),
+            }),
+            catchError((error) => {
+              const errorMessage =
+                error?.message || 'Live view connection lost';
+              clientLog.error('Live view subscription failed', error);
+              patchState(store, { error: errorMessage, isLiveViewActive: false });
+              return EMPTY;
+            }),
           );
         }),
       ),

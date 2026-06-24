@@ -24,6 +24,7 @@ import { LayoutNavigationService } from '../../services/layout-navigation.servic
 import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
 import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
 import { GalleryAccessService } from '../../services/gallery-access.service';
+import { CaptureWatchdogService } from '../../services/capture-watchdog.service';
 
 @Component({
   selector: 'app-single-layout',
@@ -52,6 +53,7 @@ export class SingleLayoutComponent implements OnInit {
   private readonly translateService = inject(TranslateService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly galleryAccess = inject(GalleryAccessService);
+  private readonly captureWatchdog = inject(CaptureWatchdogService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -63,6 +65,7 @@ export class SingleLayoutComponent implements OnInit {
   /** True while we expect a freshly captured photo to arrive in the store. */
   private awaitingPicture = false;
   private lastProcessedPictureId: string | null = null;
+  private cancelCaptureWatch: (() => void) | null = null;
 
   readonly showPrint = computed(() => this.usePrinter());
   readonly showShare = computed(() => this.useShare());
@@ -84,6 +87,8 @@ export class SingleLayoutComponent implements OnInit {
         this.lastProcessedPictureId = lastPicture.id;
         this.awaitingPicture = false;
         this.capturing.set(false);
+        this.stopCaptureWatch();
+        this.captureWatchdog.onCaptureSuccess();
         this.photo.set(getPhotoUrl(lastPicture.path));
       }
     });
@@ -150,18 +155,39 @@ export class SingleLayoutComponent implements OnInit {
     this.flashing.set(true);
     setTimeout(() => this.flashing.set(false), 420);
     this.awaitingPicture = true;
+    this.startCaptureWatch();
 
     if (this.cameraStore.isClientCamera()) {
       const frame = this.liveView()?.captureFrame();
       if (frame) {
         this.cameraStore.uploadPhoto(frame);
       } else {
-        this.awaitingPicture = false;
-        this.capturing.set(false);
+        this.recoverFromCaptureFailure();
       }
     } else {
       this.cameraStore.takePicture();
     }
+  }
+
+  private startCaptureWatch(): void {
+    this.stopCaptureWatch();
+    this.cancelCaptureWatch = this.captureWatchdog.start(() =>
+      this.recoverFromCaptureFailure(),
+    );
+  }
+
+  private stopCaptureWatch(): void {
+    this.cancelCaptureWatch?.();
+    this.cancelCaptureWatch = null;
+  }
+
+  private recoverFromCaptureFailure(): void {
+    if (!this.awaitingPicture) {
+      return;
+    }
+    this.awaitingPicture = false;
+    this.capturing.set(false);
+    this.stopCaptureWatch();
   }
 
   get isOnlyLayoutActive(): boolean {
@@ -211,13 +237,13 @@ export class SingleLayoutComponent implements OnInit {
 
   backToLiveView(): void {
     this.countdownRef()?.abort();
-    this.capturing.set(false);
+    this.recoverFromCaptureFailure();
     this.photo.set(null);
   }
 
   exitToHome(): void {
     this.countdownRef()?.abort();
-    this.capturing.set(false);
+    this.recoverFromCaptureFailure();
     this.photo.set(null);
     void this.layoutNavigation.navigateToEntryPoint();
   }

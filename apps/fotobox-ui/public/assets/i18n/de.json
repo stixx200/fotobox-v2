@@ -91,7 +91,12 @@
     "ACCEPT": "Ja, verwenden",
     "RETAKE": "Nein, nochmal",
     "PREVIEW_ALT": "Collage Vorschau",
-    "CANCEL": "Abbrechen"
+    "CANCEL": "Abbrechen",
+    "LOAD_ERROR": "Collage-Vorlage konnte nicht geladen werden.",
+    "START_ERROR": "Collage konnte nicht gestartet werden. Vorlagen-Einstellungen prüfen.",
+    "ADD_PHOTO_ERROR": "Foto konnte nicht zur Collage hinzugefügt werden.",
+    "PREVIEW_ERROR": "Collage-Vorschau konnte nicht geladen werden.",
+    "FINALIZE_ERROR": "Collage konnte nicht erstellt werden."
   },
   "GALLERY": {
     "TITLE": "Galerie",
@@ -136,5 +141,14 @@
   },
   "COUNTDOWN": {
     "SMILE": "Lächeln! 😊"
+  },
+  "RECOVERY": {
+    "TITLE": "Etwas ist schiefgelaufen",
+    "TO_SETTINGS": "Zu Einstellungen",
+    "RETRY": "App neu laden",
+    "NETWORK_DEGRADED": "Verbindung zum Backend verloren – tippen zum Schließen"
+  },
+  "CAPTURE": {
+    "TIMEOUT": "Foto-Aufnahme hat zu lange gedauert. Bitte erneut versuchen."
   }
 }

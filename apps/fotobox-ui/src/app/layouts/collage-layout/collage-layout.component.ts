@@ -26,6 +26,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
+import { CaptureWatchdogService } from '../../services/capture-watchdog.service';
+import { RecoveryService } from '../../services/recovery.service';
 
 interface ReviewPhoto {
   url: string;
@@ -61,6 +63,8 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly translateService = inject(TranslateService);
   private readonly galleryAccess = inject(GalleryAccessService);
+  private readonly captureWatchdog = inject(CaptureWatchdogService);
+  private readonly recovery = inject(RecoveryService);
 
   private readonly liveView = viewChild(CameraLiveViewComponent);
   private readonly countdownRef = viewChild(CountdownComponent);
@@ -83,6 +87,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   /** True while we expect a freshly captured photo to arrive in the store. */
   private awaitingPicture = false;
   private lastProcessedPictureId: string | null = null;
+  private cancelCaptureWatch: (() => void) | null = null;
 
   readonly showPrint = computed(() => this.usePrinter());
   readonly showShare = computed(() => this.useShare());
@@ -136,6 +141,8 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
         this.lastProcessedPictureId = picture.id;
         this.awaitingPicture = false;
         this.capturing.set(false);
+        this.stopCaptureWatch();
+        this.captureWatchdog.onCaptureSuccess();
         if (this.requiredPhotos() === 1) {
           this.onPhotoCaptured(picture.path);
         } else {
@@ -166,12 +173,22 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
             this.requiredPhotos.set(count);
           }
         },
+        error: () =>
+          this.notificationService.error(
+            this.translateService.instant('COLLAGE.LOAD_ERROR'),
+          ),
       });
 
     // Start a fresh collage on the backend, then load the initial preview
     // (shows the template with questionmark placeholders in all slots).
     this.collageService.startCollage(this.templateId).subscribe({
       next: () => this.loadCollagePreview(),
+      error: () => {
+        this.notificationService.error(
+          this.translateService.instant('COLLAGE.START_ERROR'),
+        );
+        this.recovery.navigateToSettings();
+      },
     });
   }
 
@@ -248,18 +265,39 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.flashing.set(true);
     setTimeout(() => this.flashing.set(false), 420);
     this.awaitingPicture = true;
+    this.startCaptureWatch();
 
     if (this.cameraStore.isClientCamera()) {
       const frame = this.liveView()?.captureFrame();
       if (frame) {
         this.cameraStore.uploadPhoto(frame);
       } else {
-        this.awaitingPicture = false;
-        this.capturing.set(false);
+        this.recoverFromCaptureFailure();
       }
     } else {
       this.cameraStore.takePicture();
     }
+  }
+
+  private startCaptureWatch(): void {
+    this.stopCaptureWatch();
+    this.cancelCaptureWatch = this.captureWatchdog.start(() =>
+      this.recoverFromCaptureFailure(),
+    );
+  }
+
+  private stopCaptureWatch(): void {
+    this.cancelCaptureWatch?.();
+    this.cancelCaptureWatch = null;
+  }
+
+  private recoverFromCaptureFailure(): void {
+    if (!this.awaitingPicture) {
+      return;
+    }
+    this.awaitingPicture = false;
+    this.capturing.set(false);
+    this.stopCaptureWatch();
   }
 
   private onPhotoCaptured(path: string): void {
@@ -277,6 +315,12 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
           this.finalizeCollage();
         }
       },
+      error: () => {
+        this.photos.update((photos) => photos.slice(0, -1));
+        this.notificationService.error(
+          this.translateService.instant('COLLAGE.ADD_PHOTO_ERROR'),
+        );
+      },
     });
   }
 
@@ -287,6 +331,10 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
           this.previewSrc.set(src);
         }
       },
+      error: () =>
+        this.notificationService.error(
+          this.translateService.instant('COLLAGE.PREVIEW_ERROR'),
+        ),
     });
   }
 
@@ -299,6 +347,9 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.building.set(false);
+        this.notificationService.error(
+          this.translateService.instant('COLLAGE.FINALIZE_ERROR'),
+        );
       },
     });
   }
@@ -345,10 +396,10 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.photos.set([]);
     this.previewSrc.set(null);
     this.collagePhoto.set(null);
-    this.capturing.set(false);
+    this.recoverFromCaptureFailure();
     this.building.set(false);
-    this.awaitingPicture = false;
     this.reviewPhoto.set(null);
+    this.stopCaptureWatch();
   }
 
   exitToHome(): void {
