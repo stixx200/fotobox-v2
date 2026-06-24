@@ -1,0 +1,102 @@
+<div class="layout-container" (click)="takePicture()">
+  @if (isOnlyLayoutActive) {
+    <app-settings-escape-zone></app-settings-escape-zone>
+    @if (showGalleryButton()) {
+      <button
+        class="gallery-btn"
+        mat-mini-fab
+        [attr.aria-label]="'GALLERY.OPEN' | translate"
+        (click)="goToGallery(); $event.stopPropagation()"
+      >
+        <mat-icon>photo_library</mat-icon>
+      </button>
+    }
+  }
+
+  <div class="live-view" [class.photo-mode]="collagePhoto()">
+    <app-camera-live-view></app-camera-live-view>
+  </div>
+
+  <!-- Ready / progress message -->
+  @if (!collagePhoto() && !capturing() && !reviewPhoto() && topMessage()) {
+    <div class="message-stripe top-message">
+      <p>{{ topMessage() }}</p>
+    </div>
+  }
+
+  <!-- Ask the user to confirm before adding the shot to the collage -->
+  @if (reviewPhoto(); as photo) {
+    <div class="photo-review" (click)="$event.stopPropagation()">
+      <img
+        [src]="photo.url"
+        [attr.alt]="'PHOTO_VIEW.ALT' | translate"
+        class="photo-review__image"
+      />
+      <p class="photo-review__prompt">{{ 'COLLAGE.USE_PHOTO' | translate }}</p>
+      <div class="photo-review__actions">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="acceptReviewedPhoto()"
+        >
+          {{ 'COLLAGE.ACCEPT' | translate }}
+        </button>
+        <button mat-raised-button (click)="rejectReviewedPhoto()">
+          {{ 'COLLAGE.RETAKE' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Intermediate collage preview: shows template with ? placeholders filling
+       empty slots; updated after every captured photo. Hidden while the
+       countdown / capture is in progress so the user sees the live camera. -->
+  @if (!collagePhoto() && !capturing() && !reviewPhoto() && previewSrc(); as src) {
+    <div class="collage-preview-corner">
+      <img [src]="src" [attr.alt]="'COLLAGE.PREVIEW_ALT' | translate" />
+    </div>
+  }
+
+  <!-- Finished collage view -->
+  @if (collagePhoto(); as src) {
+    <app-photo-view
+      [src]="src"
+      [showPrint]="showPrint()"
+      [showShare]="showShare()"
+      (print)="print()"
+      (share)="share()"
+      (back)="exitToHome()"
+    ></app-photo-view>
+    @if (activeShareLink(); as link) {
+      <app-share-qr-overlay
+        [shareUrl]="link.url"
+        [expiresAt]="link.expiresAt"
+        (closed)="closeShare()"
+      ></app-share-qr-overlay>
+    }
+  }
+
+  <!-- Countdown -->
+  <app-countdown (completed)="onCountdownComplete()"></app-countdown>
+
+  <!-- Flash overlay after shutter fires -->
+  @if (flashing()) {
+    <div class="capture-flash"></div>
+  }
+
+  <!-- Bottom message to exit (only if single layout is available) -->
+  @if (
+    !collagePhoto() &&
+    !capturing() &&
+    !reviewPhoto() &&
+    !isCollageComplete() &&
+    !isOnlyLayoutActive
+  ) {
+    <div
+      class="message-stripe bottom-message"
+      (click)="exitToHome(); $event.stopPropagation()"
+    >
+      <p>{{ 'COLLAGE.CANCEL' | translate }}</p>
+    </div>
+  }
+</div>

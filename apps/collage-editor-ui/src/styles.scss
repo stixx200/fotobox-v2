@@ -1,0 +1,12 @@
+/* Global styles for collage editor */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}

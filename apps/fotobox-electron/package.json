@@ -1,0 +1,11 @@
+{
+  "name": "fotobox-electron",
+  "productName": "Fotobox",
+  "version": "1.0.0",
+  "description": "Fotobox photo booth",
+  "author": {
+    "name": "Markus Völk",
+    "email": "stixx200@gmail.com"
+  },
+  "main": "./main.js"
+}

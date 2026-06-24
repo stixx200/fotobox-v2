@@ -1,0 +1,8 @@
+@if (showRouter()) {
+  <router-outlet></router-outlet>
+} @else {
+  <app-splash-screen
+    [errorMessage]="apiError()"
+    (retry)="retryApi()"
+  ></app-splash-screen>
+}

@@ -1,0 +1,285 @@
+<div class="settings-page" [attr.data-theme]="currentTheme()">
+  <!-- ── Top header bar ─────────────────────────────────────────────── -->
+  <header class="settings-header">
+    <div class="header-top">
+      <div class="header-title">
+        <mat-icon class="header-icon">settings</mat-icon>
+        <h1>{{ 'SETTINGS.TITLE' | translate }}</h1>
+      </div>
+      <div class="header-toolbar">
+        <mat-button-toggle-group
+          [value]="currentLang()"
+          (change)="setLanguage($event.value)"
+          hideSingleSelectionIndicator
+          class="header-lang-toggle"
+          [attr.aria-label]="'SETTINGS.LANGUAGE' | translate"
+        >
+          @for (lang of availableLangs; track lang) {
+            <mat-button-toggle [value]="lang">
+              {{ 'SETTINGS.LANG_' + lang.toUpperCase() | translate }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <a
+          mat-icon-button
+          class="debug-link-btn"
+          routerLink="/debug"
+          [attr.aria-label]="'DEBUG.TITLE' | translate"
+        >
+          <mat-icon>bug_report</mat-icon>
+        </a>
+        <button
+          mat-icon-button
+          class="theme-toggle-btn"
+          (click)="toggleTheme()"
+          [attr.aria-label]="
+            currentTheme() === 'dark'
+              ? 'Switch to light mode'
+              : 'Switch to dark mode'
+          "
+        >
+          <mat-icon>{{
+            currentTheme() === 'dark' ? 'light_mode' : 'dark_mode'
+          }}</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="header-action-group">
+        @if (settingsIsLoading()) {
+          <button mat-stroked-button class="header-action-btn" disabled>
+            <mat-icon>hourglass_empty</mat-icon>
+            <span class="header-btn-label">{{
+              'SETTINGS.RESETTING' | translate
+            }}</span>
+          </button>
+          <button
+            mat-raised-button
+            color="primary"
+            class="header-action-btn"
+            disabled
+          >
+            <mat-icon>hourglass_empty</mat-icon>
+            <span class="header-btn-label">{{
+              'SETTINGS.SAVING' | translate
+            }}</span>
+          </button>
+        } @else {
+          <button
+            mat-stroked-button
+            class="header-action-btn"
+            (click)="resetSettings()"
+            [disabled]="!hasUnsavedChanges()"
+          >
+            <mat-icon>restart_alt</mat-icon>
+            <span class="header-btn-label">{{
+              'SETTINGS.RESET' | translate
+            }}</span>
+          </button>
+          <button
+            mat-raised-button
+            color="primary"
+            class="header-action-btn"
+            (click)="saveSettings()"
+            [disabled]="!hasUnsavedChanges() || settingsForm.invalid"
+          >
+            <mat-icon>save</mat-icon>
+            <span class="header-btn-label">{{
+              'SETTINGS.SAVE' | translate
+            }}</span>
+          </button>
+        }
+        <button
+          mat-raised-button
+          class="start-btn header-action-btn"
+          (click)="startFotobox()"
+          [disabled]="isInitializingCamera()"
+        >
+          @if (isInitializingCamera()) {
+            <mat-spinner diameter="20" class="start-spinner"></mat-spinner>
+          } @else {
+            <mat-icon>play_arrow</mat-icon>
+          }
+          <span class="header-btn-label">
+            @if (isInitializingCamera()) {
+              {{ 'SETTINGS.STARTING' | translate }}
+            } @else {
+              {{ 'SETTINGS.START' | translate }}
+            }
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Status banners ─────────────────────────────────────────────── -->
+  @if (startError(); as error) {
+    <div class="settings-banner settings-banner--error">
+      <mat-icon>error_outline</mat-icon>
+      <div class="banner-content">
+        <span>{{ error }}</span>
+        <a routerLink="/debug" class="banner-link">{{
+          'DEBUG.VIEW_LOGS' | translate
+        }}</a>
+      </div>
+    </div>
+  }
+  @if (settingsError(); as error) {
+    <div class="settings-banner settings-banner--error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error }}</span>
+    </div>
+  }
+  @if (layoutsAutoSelectionMessage(); as message) {
+    <div class="settings-banner settings-banner--info">
+      <mat-icon>info_outline</mat-icon>
+      <span>{{ message }}</span>
+    </div>
+  }
+
+  <!-- ── Form grid ──────────────────────────────────────────────────── -->
+  <form [formGroup]="settingsForm" class="settings-grid">
+    <!-- 1. Camera (primary) -->
+    <app-settings-camera-layouts
+      [settingsForm]="settingsForm"
+      [availableCameraNames]="availableCameraNames()"
+      [layouts]="layouts()"
+      [layoutPreview]="layoutPreview()"
+      [layoutPreviewUrls]="layoutPreviewUrls()"
+      [disabledLayouts]="layoutDisabledMap()"
+      [refreshingTemplates]="refreshingTemplates()"
+      (cycleLayoutPreview)="cycleLayoutPreview()"
+      (layoutsSelectOpened)="onLayoutsSelectOpened()"
+      (layoutsSelectClosed)="onLayoutsSelectClosed()"
+      (layoutHover)="showLayoutPreview($event)"
+      (refreshTemplates)="refreshTemplates()"
+    />
+
+    <!-- 2. Printer -->
+    <div class="settings-card">
+      <div class="card-header">
+        <mat-icon>print</mat-icon>
+        <span>{{ 'SETTINGS.USE_PRINTER' | translate }}</span>
+      </div>
+      <div class="card-body">
+        <mat-checkbox formControlName="usePrinter">{{
+          'SETTINGS.USE_PRINTER' | translate
+        }}</mat-checkbox>
+
+        @if (settingsForm.controls.usePrinter.value) {
+          <mat-form-field floatLabel="always">
+            <mat-label>{{ 'SETTINGS.PRINTER' | translate }}</mat-label>
+            <mat-select required formControlName="printerName">
+              @for (printer of availablePrinterNames(); track printer) {
+                <mat-option [value]="printer">{{ printer }}</mat-option>
+              }
+              @if (availablePrinterNames().length === 0) {
+                <mat-option disabled>{{
+                  'SETTINGS.NO_PRINTER' | translate
+                }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-checkbox formControlName="showPrintDialog">{{
+            'SETTINGS.SHOW_PRINT_DIALOG' | translate
+          }}</mat-checkbox>
+          <p class="settings-field-hint settings-field-hint--inline">
+            {{ 'SETTINGS.SHOW_PRINT_DIALOG_HINT' | translate }}
+          </p>
+        }
+      </div>
+    </div>
+
+    <!-- Expert section -->
+    <div class="settings-section-label settings-section-label--full">
+      <mat-icon>tune</mat-icon>
+      <span>{{ 'SETTINGS.EXPERT_SECTION' | translate }}</span>
+    </div>
+
+    <app-settings-share-gallery
+      [settingsForm]="settingsForm"
+      [shareExpanded]="shareExpanded()"
+      [galleryExpanded]="galleryExpanded()"
+      [shareStatusLabel]="shareStatusLabel()"
+      [galleryStatusLabel]="galleryStatusLabel()"
+      [detectedShareBaseUrl]="detectedShareBaseUrl()"
+      [galleryPinLength]="galleryPinLength"
+      (shareToggle)="toggleShareExpanded()"
+      (galleryToggle)="toggleGalleryExpanded()"
+      (galleryPinInput)="onGalleryPinInput($event)"
+    />
+
+    <!-- 6. Storage (advanced, bottom) -->
+    <div class="settings-card settings-card--muted">
+      <div class="card-header">
+        <mat-icon>folder</mat-icon>
+        <span>{{ 'SETTINGS.PHOTO_DIRECTORY' | translate }}</span>
+      </div>
+      <div class="card-body">
+        <mat-form-field floatLabel="always">
+          <mat-label>{{ 'SETTINGS.PHOTO_DIRECTORY' | translate }}</mat-label>
+          <input
+            [readonly]="isElectronAvailable"
+            (click)="handleDirectoryClick('photoDirectory')"
+            formControlName="photoDirectory"
+            matInput
+            [placeholder]="'SETTINGS.PHOTO_DIRECTORY' | translate"
+          />
+          @if (isElectronAvailable) {
+            <button
+              mat-icon-button
+              matSuffix
+              (click)="openPicker('photoDirectory'); $event.stopPropagation()"
+            >
+              <mat-icon>folder_open</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <mat-form-field floatLabel="always">
+          <mat-label>{{ 'SETTINGS.COLLAGE_DIRECTORY' | translate }}</mat-label>
+          <input
+            [readonly]="isElectronAvailable"
+            (click)="handleDirectoryClick('collageDirectory')"
+            formControlName="collageDirectory"
+            matInput
+            [placeholder]="'SETTINGS.COLLAGE_DIRECTORY' | translate"
+            [class.error-input]="collageDirectoryError()"
+          />
+          @if (isElectronAvailable) {
+            <button
+              mat-icon-button
+              matSuffix
+              (click)="openPicker('collageDirectory'); $event.stopPropagation()"
+            >
+              <mat-icon>folder_open</mat-icon>
+            </button>
+          }
+          @if (collageDirectoryError(); as error) {
+            <mat-error>{{ error }}</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="collage-editor-action">
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="openCollageEditor()"
+          >
+            <mat-icon>design_services</mat-icon>
+            {{ 'SETTINGS.OPEN_COLLAGE_EDITOR' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <footer class="settings-footer">
+    @if (appVersion(); as version) {
+      <span>{{ 'SETTINGS.VERSION' | translate: { version: version } }}</span>
+    }
+  </footer>
+</div>

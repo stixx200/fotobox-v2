@@ -1,0 +1,209 @@
+.live-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a1a;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background-color: #000;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.gallery-btn {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+.message-stripe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 24px 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  text-align: center;
+  z-index: 10;
+
+  p {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+}
+
+.top-message {
+  top: 0;
+}
+
+.bottom-message {
+  bottom: 0;
+  cursor: pointer;
+}
+
+.photo-review {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.92);
+  cursor: default;
+}
+
+.photo-review__image {
+  max-width: 100%;
+  max-height: min(62vh, 720px);
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.photo-review__prompt {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+  text-align: center;
+}
+
+.photo-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 720px;
+
+  button {
+    min-width: 12rem;
+    min-height: 4rem;
+    font-size: 1.2rem;
+    flex: 1 1 12rem;
+  }
+}
+
+.photo-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px;
+
+  img {
+    max-width: 100%;
+    max-height: calc(100vh - 120px);
+    object-fit: contain;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .photo-actions {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+
+    button {
+      min-width: 150px;
+    }
+  }
+}
+
+// Small preview thumbnail in the lower-left corner so the live camera
+// stream remains visible while taking collage photos.
+.collage-preview-corner {
+  position: absolute;
+  bottom: 96px; // sit above the cancel message stripe (≈ 2rem text + 24px padding × 2)
+  left: 16px;
+  width: min(25%, 240px);
+  border-radius: 6px;
+  overflow: hidden;
+  opacity: 0.8;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  z-index: 8;
+  pointer-events: none;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+}
+
+.countdown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 20;
+
+  .countdown-number {
+    font-size: 15rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    animation: pulse 1s ease-in-out;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

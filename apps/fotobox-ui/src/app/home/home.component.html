@@ -1,0 +1,57 @@
+<div class="home-container">
+  <div class="live-view">
+    <app-camera-live-view></app-camera-live-view>
+  </div>
+
+  <div class="live-view-vignette" aria-hidden="true"></div>
+
+  <app-settings-escape-zone></app-settings-escape-zone>
+
+  @if (showGalleryButton()) {
+    <button
+      class="gallery-btn"
+      mat-mini-fab
+      [attr.aria-label]="'GALLERY.OPEN' | translate"
+      (click)="goToGallery(); $event.stopPropagation()"
+    >
+      <mat-icon>photo_library</mat-icon>
+    </button>
+  }
+
+  <div class="layout-dock">
+    <p class="layout-prompt">{{ 'HOME.CHOOSE_LAYOUT' | translate }}</p>
+
+    <div class="layout-tiles" [class.layout-tiles--count-1]="activeLayouts().length === 1" [class.layout-tiles--count-2]="activeLayouts().length === 2">
+      @for (layout of activeLayouts(); track layout) {
+        <button
+          type="button"
+          class="layout-card"
+          (click)="navigateToLayout(layout)"
+        >
+          <div class="layout-card__preview">
+            @if (getLayoutPreview(layout); as previewUrl) {
+              <img
+                class="layout-card__image"
+                [src]="previewUrl"
+                [alt]="getLayoutDescription(layout)"
+              />
+            } @else {
+              <mat-icon class="layout-card__icon" aria-hidden="true">{{
+                getLayoutIcon(layout)
+              }}</mat-icon>
+            }
+          </div>
+
+          <div class="layout-card__info">
+            <span class="layout-card__title">{{
+              getLayoutDescription(layout)
+            }}</span>
+            <span class="layout-card__hint">{{
+              'HOME.TAP_TO_START' | translate
+            }}</span>
+          </div>
+        </button>
+      }
+    </div>
+  </div>
+</div>

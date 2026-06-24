@@ -1,0 +1,218 @@
+// Shared sidebar panel styles for editor child components (view encapsulation safe).
+
+.project-settings {
+  padding: 0.75rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #475569;
+  }
+
+  input[type='text'],
+  input[type='number'] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+  }
+
+  .checkbox-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: #334155;
+    cursor: pointer;
+
+    input {
+      margin: 0;
+      flex-shrink: 0;
+    }
+  }
+
+  .template-border {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+  }
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.props {
+  margin: 0;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .hint {
+    margin: 0 0 0.5rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.25rem 0.375rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+  }
+
+  textarea,
+  select,
+  .font-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.25rem 0.375rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+  }
+
+  .checkbox-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: #334155;
+    cursor: pointer;
+
+    input {
+      margin: 0;
+      width: auto;
+      flex-shrink: 0;
+    }
+  }
+
+  .color-input {
+    padding: 0.125rem;
+    height: 2rem;
+    width: auto;
+    cursor: pointer;
+  }
+
+  button {
+    padding: 0.375rem 0.625rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.75rem;
+
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+}
+
+.validation ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+  }
+}
+
+.validation-issue,
+.validation-issue-text {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.validation-issue {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &--error {
+    color: #dc2626;
+    border-color: #fecaca;
+
+    &:hover {
+      background: #fef2f2;
+    }
+  }
+
+  &--warning {
+    color: #d97706;
+    border-color: #fde68a;
+
+    &:hover {
+      background: #fffbeb;
+    }
+  }
+
+  &--related {
+    width: auto;
+    flex-shrink: 0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+    color: #b45309;
+    border-color: #fde68a;
+    background: #fffbeb;
+  }
+}
+
+.validation-issue-text {
+  display: block;
+  padding: 0.125rem 0.5rem;
+  color: #dc2626;
+
+  .warning & {
+    color: #d97706;
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "name": "fotobox-electron",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/fotobox-electron/src",
+  "projectType": "application",
+  "implicitDependencies": [
+    "fotobox-ui",
+    "collage-editor-ui"
+  ],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": [
+          "apps/fotobox-electron/**/*.ts"
+        ]
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "fotobox-electron:build",
+        "inspect": false,
+        "runtimeArgs": [
+          "./apps/fotobox-electron/tools/serve-electron.mjs"
+        ],
+        "runBuildTargetDependencies": true
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "fotobox-electron:build:production"
+        },
+        "development": {
+          "buildTarget": "fotobox-electron:build:development"
+        },
+        "nest-only": {
+          "runtimeArgs": []
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "apps/fotobox-electron",
+        "command": "rspack build"
+      },
+      "configurations": {
+        "development": {
+          "args": ["--node-env=development"],
+          "dependsOn": [
+            {
+              "projects": ["fotobox-ui", "collage-editor-ui"],
+              "target": "build",
+              "params": "forward"
+            }
+          ]
+        },
+        "production": {
+          "args": ["--node-env=production"]
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "package": {
+      "executor": "nx-electron:package",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "name": "fotobox-electron",
+        "frontendProject": "fotobox-ui",
+        "sourcePath": "dist/apps",
+        "outputPath": "dist/packages",
+        "platform": [
+          "mac",
+          "windows"
+        ]
+      }
+    }
+  },
+  "tags": [
+    "scope:server",
+    "type:app",
+    "platform:electron"
+  ]
+}
