@@ -21,10 +21,10 @@
     "@apollo/client": "^4.1.4",
     "@apollo/server": "^5.4.0",
     "@as-integrations/express5": "^1.1.2",
-    "@nestjs/apollo": "^13.2.4",
+    "@nestjs/apollo": "^13.4.2",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
-    "@nestjs/graphql": "^13.2.4",
+    "@nestjs/graphql": "^13.4.2",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/serve-static": "^5.0.4",
     "@ngrx/signals": "^21.0.1",
@@ -101,14 +101,13 @@
     "@typescript-eslint/utils": "8.55.0",
     "@vitest/coverage-v8": "4.0.9",
     "@vitest/ui": "4.0.9",
-    "ajv": "^8.0.0",
     "angular-eslint": "21.2.0",
     "drizzle-kit": "^1.0.0-rc.3",
     "electron": "^37.1.0",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.0.0",
     "jiti": "2.4.2",
-    "jsdom": "~22.1.0",
+    "jsdom": "^26.1.0",
     "jsonc-eslint-parser": "^2.1.0",
     "nx": "22.5.1",
     "nx-electron": "^22.0.0",
@@ -123,5 +122,10 @@
     "vite-plugin-dts": "~4.5.0",
     "vitest": "4.0.9",
     "webpack-cli": "^5.1.4"
+  },
+  "overrides": {
+    "@apollo/server-plugin-landing-page-graphql-playground": {
+      "@apollo/server": "$@apollo/server"
+    }
   }
 }
