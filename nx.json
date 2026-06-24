@@ -167,5 +167,33 @@
       }
     }
   ],
-  "defaultProject": "fotobox-electron"
+  "defaultProject": "fotobox-electron",
+  "release": {
+    "groups": {
+      "fotobox": {
+        "projects": ["fotobox-electron"],
+        "projectsRelationship": "fixed",
+        "version": {
+          "conventionalCommits": true,
+          "fallbackCurrentVersionResolver": "disk",
+          "manifestRootsToUpdate": [
+            "apps/fotobox-electron",
+            "."
+          ],
+          "git": {
+            "commit": true,
+            "tag": true,
+            "commitMessage": "chore(release): fotobox v{version}"
+          }
+        },
+        "changelog": {
+          "projectChangelogs": true,
+          "workspaceChangelog": true
+        },
+        "releaseTag": {
+          "pattern": "fotobox-v{version}"
+        }
+      }
+    }
+  }
 }

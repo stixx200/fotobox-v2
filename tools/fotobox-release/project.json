@@ -1,0 +1,26 @@
+{
+  "name": "fotobox-release",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tools/fotobox-release",
+  "projectType": "application",
+  "tags": ["scope:release", "type:tool"],
+  "targets": {
+    "package": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": "fotobox-electron",
+          "target": "package",
+          "params": "forward"
+        }
+      ],
+      "options": {
+        "command": "echo Fotobox release package complete"
+      },
+      "configurations": {
+        "production": {}
+      },
+      "defaultConfiguration": "production"
+    }
+  }
+}

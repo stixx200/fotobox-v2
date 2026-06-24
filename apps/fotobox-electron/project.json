@@ -44,7 +44,11 @@
       "dependsOn": ["^build"],
       "options": {
         "cwd": "apps/fotobox-electron",
-        "command": "rspack build"
+        "commands": [
+          "rspack build",
+          "node ../../scripts/copy-electron-assets.mjs"
+        ],
+        "parallel": false
       },
       "configurations": {
         "development": {
@@ -58,26 +62,60 @@
           ]
         },
         "production": {
-          "args": ["--node-env=production"]
+          "args": ["--node-env=production"],
+          "dependsOn": [
+            {
+              "projects": ["fotobox-ui", "collage-editor-ui"],
+              "target": "build",
+              "params": "forward"
+            }
+          ]
         }
       },
       "defaultConfiguration": "development"
     },
+    "verify-dist": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "target": "build",
+          "params": "forward"
+        }
+      ],
+      "options": {
+        "command": "node scripts/verify-electron-dist.mjs"
+      }
+    },
     "package": {
       "executor": "nx-electron:package",
       "dependsOn": [
-        "build"
+        {
+          "target": "verify-dist",
+          "params": "forward"
+        }
       ],
       "options": {
         "name": "fotobox-electron",
         "frontendProject": "fotobox-ui",
+        "extraProjects": ["collage-editor-ui"],
         "sourcePath": "dist/apps",
         "outputPath": "dist/packages",
         "platform": [
           "mac",
           "windows"
         ]
-      }
+      },
+      "configurations": {
+        "production": {
+          "dependsOn": [
+            {
+              "target": "verify-dist",
+              "params": "forward"
+            }
+          ]
+        }
+      },
+      "defaultConfiguration": "production"
     }
   },
   "tags": [

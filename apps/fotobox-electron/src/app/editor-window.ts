@@ -2,6 +2,7 @@ import { BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getLogger } from '@fotobox/logging';
+import { getMainWindow } from './window-state';
 import { APP_NAME, getAppIcon } from './app-branding';
 
 const logger = getLogger('collage-editor-window');
@@ -34,13 +35,20 @@ export function openCollageEditorWindow(collageDirectory?: string): void {
     return;
   }
 
+  const isProd = !process.env.FOTOBOX_COLLAGE_EDITOR_DEV_SERVER;
+  const parent = isProd ? getMainWindow() ?? undefined : undefined;
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
   editorWindow = new BrowserWindow({
-    width: Math.min(width, 1600),
-    height: Math.min(height, 1000),
+    width: isProd ? width : Math.min(width, 1600),
+    height: isProd ? height : Math.min(height, 1000),
     title: `${APP_NAME} Collage Editor`,
     icon: getAppIcon(),
     show: false,
+    parent,
+    modal: isProd && !!parent,
+    fullscreen: isProd,
+    kiosk: isProd,
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,

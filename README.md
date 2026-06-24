@@ -139,8 +139,8 @@ Available in development at `http://localhost:3000/graphql`.
 ## Building a production release
 
 ```bash
-# Build all three apps
-npx nx run-many -t build --projects=fotobox-api,fotobox-ui,fotobox-electron
+# Build all apps (or use the release package target below)
+npx nx run-many -t build --projects=fotobox-ui,collage-editor-ui,fotobox-electron --configuration=production
 
 # Lint + test before releasing
 npx nx run-many -t lint
@@ -152,29 +152,75 @@ Build outputs:
 | App                | Output directory              |
 | ------------------ | ----------------------------- |
 | `fotobox-ui`       | `dist/apps/fotobox-ui/`       |
+| `collage-editor-ui`| `dist/apps/collage-editor-ui/`|
 | `fotobox-api`      | `dist/apps/fotobox-api/`      |
 | `fotobox-electron` | `dist/apps/fotobox-electron/` |
+
+The Electron dist bundles both UIs plus runtime assets (templates, migrations, images). Verify before packaging:
+
+```bash
+node scripts/verify-electron-dist.mjs
+```
+
+---
+
+## Releasing (versioning + Windows MSI)
+
+Versions are managed with **Nx Release** (`fotobox` group). Root `package.json` and `apps/fotobox-electron/package.json` stay in sync.
+
+### Local release (trigger)
+
+```bash
+# 1. Ensure tests pass
+npx nx run-many -t lint test
+
+# 2. Preview version bump (optional)
+npx nx release version --group=fotobox --dry-run --first-release
+
+# 3. Create version bump, changelog, commit, and tag
+npm run release
+# equivalent to: npx nx release --group=fotobox --skip-publish
+# On the first release, add: --first-release
+
+# 4. Push to trigger CI packaging on Windows
+git push origin main --tags
+```
+
+This creates tag `fotobox-vX.Y.Z`. GitHub Actions builds the MSI on `windows-latest` and publishes it to **GitHub Releases** with a SHA256 checksum.
+
+### Manual MSI build (on Windows)
+
+```bash
+npx nx run fotobox-release:package --configuration=production
+```
+
+Output: `dist/packages/Fotobox-<version>-x64.msi`
 
 ---
 
 ## Packaging the Electron app (installer)
 
+The `fotobox-release:package` target builds both Angular apps, bundles Electron, verifies static assets, and creates the installer.
+
 ### Windows MSI installer
 
-Run this on a **Windows machine** (or a Windows CI runner):
+Run this on a **Windows machine** (or via the release CI workflow):
 
 ```bash
-# 1. Build
-npx nx build fotobox-electron
-
-# 2. Package
-npx nx run fotobox-electron:package
+npx nx run fotobox-release:package --configuration=production
 ```
 
-Output: `dist/packages/fotobox-electron-<version>-x64.msi`
+Output: `dist/packages/Fotobox-<version>-x64.msi`
 
 The MSI configuration lives in [`apps/fotobox-electron/src/app/options/maker.options.json`](apps/fotobox-electron/src/app/options/maker.options.json).  
-Set `"perMachine": true` to install system-wide instead of per-user.
+Installs per-user under `%LOCALAPPDATA%` (`msi.perMachine: false`).
+
+After install, the app:
+- Launches once automatically (`msi.runAfterFinish`)
+- Configures **open-at-login** on first run
+- Prompts to run **`setup-kiosk.ps1`** for advanced kiosk options (Startup shortcut fallback, Assigned Access guidance, optional firewall rule)
+
+Bundled kiosk script: [`scripts/windows/setup-kiosk.ps1`](scripts/windows/setup-kiosk.ps1)
 
 ### macOS DMG
 
@@ -199,9 +245,9 @@ Output: `dist/packages/fotobox-electron-<version>.dmg`
 
 ### Installation steps
 
-1. Copy `fotobox-electron-<version>-x64.msi` to the Surface (USB, network share, etc.).
+1. Copy `Fotobox-<version>-x64.msi` from GitHub Releases (or `dist/packages/`).
 2. Double-click the `.msi` and follow the wizard.  
-   Default install path: `%LOCALAPPDATA%\fotobox-electron\`
+   Default install path: `%LOCALAPPDATA%\Programs\fotobox-electron\`
 3. **First launch**: the app starts in full-screen kiosk mode automatically.  
    Configure on the Settings screen:
    - **Camera** – `webcam` (built-in Surface camera) or `gphoto2` (Sony)
@@ -214,11 +260,23 @@ Output: `dist/packages/fotobox-electron-<version>.dmg`
 
 ## Kiosk auto-start on Windows
 
-### Option A — Startup folder (simplest)
+On first production launch, Fotobox configures **open-at-login** automatically. The bundled `setup-kiosk.ps1` (installed next to the app) provides additional setup:
+
+```powershell
+# From the install directory (or via the in-app prompt)
+powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1
+
+# Optional: open firewall for LAN QR sharing (requires admin)
+powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Elevated
+```
+
+### Manual options (if needed)
+
+#### Option A — Startup folder (manual fallback)
 
 1. Press **Win + R**, type `shell:startup`, press **Enter**.
 2. Right-click → **New → Shortcut**.
-3. Target: `%LOCALAPPDATA%\fotobox-electron\fotobox-electron.exe`
+3. Target: `%LOCALAPPDATA%\Programs\fotobox-electron\Fotobox.exe`
 4. Click **Finish**.
 
 The app launches automatically after Windows login.
@@ -285,8 +343,11 @@ npx nx run-many -t lint
 # Test
 npx nx run-many -t test
 
-# Package Electron installer (build first)
-npx nx run fotobox-electron:package
+# Package Electron installer (build + verify + package)
+npx nx run fotobox-release:package --configuration=production
+
+# Create a release (version bump + changelog + tag)
+npm run release
 
 # Dependency graph
 npx nx graph

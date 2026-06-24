@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'fotobox-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        env:
+          SKIP_PLAYWRIGHT_INSTALL: 'true'
+        run: npm ci
+
+      - name: Resolve release version from tag
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG="${GITHUB_REF_NAME#fotobox-v}"
+          else
+            TAG=$(node -p "require('./apps/fotobox-electron/package.json').version")
+          fi
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release version: $TAG"
+
+      - name: Verify package.json versions match tag
+        shell: bash
+        run: |
+          ROOT_VERSION=$(node -p "require('./package.json').version")
+          ELECTRON_VERSION=$(node -p "require('./apps/fotobox-electron/package.json').version")
+          EXPECTED="${{ steps.version.outputs.version }}"
+          if [[ "$ROOT_VERSION" != "$EXPECTED" || "$ELECTRON_VERSION" != "$EXPECTED" ]]; then
+            echo "Version mismatch: root=$ROOT_VERSION electron=$ELECTRON_VERSION expected=$EXPECTED"
+            exit 1
+          fi
+
+      - name: Build Windows MSI
+        run: npx nx run fotobox-release:package --configuration=production
+
+      - name: Generate checksum
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Path dist/packages -Filter *.msi | Select-Object -First 1
+          if (-not $msi) { throw "No MSI found in dist/packages" }
+          $hash = Get-FileHash -Path $msi.FullName -Algorithm SHA256
+          "$($hash.Hash)  $($msi.Name)" | Out-File -FilePath "$($msi.FullName).sha256" -Encoding ascii
+          echo "MSI_PATH=$($msi.FullName)" >> $env:GITHUB_ENV
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('fotobox-v{0}', steps.version.outputs.version) }}
+          name: Fotobox v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/packages/*.msi
+            dist/packages/*.msi.sha256
+          fail_on_unmatched_files: true

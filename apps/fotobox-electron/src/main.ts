@@ -6,6 +6,8 @@ import { getLogger } from '@fotobox/logging';
 import { bootstrapApiServer } from '@fotobox/nest-api';
 import { APP_NAME, applyAppBranding, getAppIcon } from './app/app-branding';
 import { registerElectronEvents } from './app/events/electron.events';
+import { runProductionKioskSetup } from './app/kiosk-setup';
+import { setMainWindow } from './app/window-state';
 
 const logger = getLogger('fotobox-electron');
 
@@ -92,7 +94,10 @@ async function createWindow(): Promise<void> {
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => {
     mainWindow = null;
+    setMainWindow(null);
   });
+
+  setMainWindow(mainWindow);
 
   await mainWindow.loadURL(getUIUrl());
 }
@@ -101,6 +106,8 @@ async function bootstrap(): Promise<void> {
   applyAppBranding();
   await app.whenReady();
   registerElectronEvents();
+
+  await runProductionKioskSetup();
 
   try {
     await startEmbeddedApi();

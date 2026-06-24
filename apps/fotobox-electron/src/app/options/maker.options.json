@@ -3,9 +3,19 @@
   "appId": "de.se-voelk.fotobox",
   "productName": "Fotobox",
   "directories": {
-    "buildResources": "apps/fotobox-electron/build"
+    "buildResources": "apps/fotobox-electron/build",
+    "output": "dist/packages"
   },
   "icon": "icon.png",
+  "files": ["**/*", "!**/*.map"],
+  "asar": true,
+  "asarUnpack": ["**/node_modules/sharp/**/*", "**/node_modules/@img/**/*"],
+  "extraFiles": [
+    {
+      "from": "scripts/windows/setup-kiosk.ps1",
+      "to": "setup-kiosk.ps1"
+    }
+  ],
   "win": {
     "target": "msi",
     "defaultArch": "x64",
@@ -15,6 +25,7 @@
     "icon": "icon.icns"
   },
   "msi": {
-    "perMachine": false
+    "perMachine": false,
+    "runAfterFinish": true
   }
 }
