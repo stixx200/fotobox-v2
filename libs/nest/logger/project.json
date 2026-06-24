@@ -1,0 +1,17 @@
+{
+  "name": "nest-logger",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nest/nest-logger/src",
+  "projectType": "library",
+  "tags": [
+    "scope:server",
+    "type:util",
+    "platform:node"
+  ],
+  "// targets": "to see all targets run: nx show project nest-logger --web",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

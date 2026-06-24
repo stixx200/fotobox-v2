@@ -1,0 +1,17 @@
+{
+  "name": "electron-window",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/electron/window/src",
+  "projectType": "library",
+  "tags": [
+    "scope:server",
+    "type:feature",
+    "platform:electron"
+  ],
+  "// targets": "to see all targets run: nx show project window --web",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

@@ -1,0 +1,81 @@
+type Query {
+  collageEditorProjects(collageDirectory: String): [CollageEditorProjectSummary!]!
+  collageEditorLegacyTemplates(collageDirectory: String): [String!]!
+  collageEditorProject(
+    templateId: String!
+    collageDirectory: String
+  ): CollageEditorProject!
+  validateCollageTemplate(
+    templateId: String!
+    collageDirectory: String
+  ): CollageEditorValidationResult!
+  layoutPreview(layoutId: String!, collageDirectory: String): String!
+}
+
+type Mutation {
+  saveCollageEditorProject(
+    input: SaveCollageEditorProjectInput!
+  ): SaveCollageEditorProjectResult!
+  deleteCollageEditorProject(
+    templateId: String!
+    collageDirectory: String
+  ): DeleteCollageEditorProjectResult!
+  duplicateCollageEditorProject(
+    templateId: String!
+    newTemplateId: String!
+    collageDirectory: String
+  ): DuplicateCollageEditorProjectResult!
+}
+
+type CollageEditorProjectSummary {
+  id: String!
+  name: String
+  width: Int!
+  height: Int!
+  updatedAt: String
+  thumbnailBase64: String
+}
+
+type CollageEditorProject {
+  version: Int!
+  id: String!
+  name: String
+  width: Int!
+  height: Int!
+  borderJson: String
+  fabricJson: String!
+  layerMetaJson: String!
+}
+
+type CollageEditorValidationResult {
+  valid: Boolean!
+  previewBase64: String
+  message: String
+}
+
+type SaveCollageEditorProjectResult {
+  templateId: String!
+  path: String!
+}
+
+type DeleteCollageEditorProjectResult {
+  templateId: String!
+}
+
+type DuplicateCollageEditorProjectResult {
+  templateId: String!
+  name: String!
+}
+
+input SaveCollageEditorProjectInput {
+  projectJson: String!
+  backgroundBase64: String!
+  assets: [CollageEditorAssetInput!]
+  collageDirectory: String
+  overwrite: Boolean
+}
+
+input CollageEditorAssetInput {
+  filename: String!
+  base64: String!
+}
