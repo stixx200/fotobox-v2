@@ -5,6 +5,22 @@ dist
 tmp
 out-tsc
 
+# workspace runtime data & test artifacts
+tmp/runtime/**
+tmp/logs/**
+tmp/playwright/**
+
+# legacy root runtime paths (migrated to tmp/)
+photos
+application.log
+settings.json
+share-tokens.json
+fotobox.db
+collage-templates
+/playwright-report
+/test-results
+/dist/.playwright
+
 # dependencies
 node_modules
 
@@ -42,3 +58,15 @@ Thumbs.db
 .nx/workspace-data
 
 .angular
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+
+.nx/polygraph
+.claude/worktrees
+.claude/settings.local.json
+
+__screenshots__/
