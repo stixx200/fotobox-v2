@@ -24,16 +24,23 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      # This line enables distribution
-      # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
-      # - run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="e2e-ci"
-      - run: npm ci
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: ${{ steps.playwright-cache.outputs.cache-hit == 'true' && '1' || '' }}
+        run: npm ci
 
       - uses: nrwl/nx-set-shas@v4
 
       - run: npx nx-cloud record -- nx format:check
       - run: npx nx affected -t lint test build e2e-ci
 
-      # NEW: Add this step at the end of your job
       - run: npx nx fix-ci
         if: always()

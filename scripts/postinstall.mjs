@@ -17,5 +17,14 @@ if (!skipElectronRebuild) {
 }
 
 if (process.env.SKIP_PLAYWRIGHT_INSTALL !== 'true') {
-  run('npx playwright install chromium');
+  const skipBrowserDownload =
+    process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === '1' ||
+    process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === 'true';
+  if (skipBrowserDownload) {
+    console.log(
+      'Skipping Playwright browser download (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD).',
+    );
+  } else {
+    run('npx playwright install chromium');
+  }
 }

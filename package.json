@@ -9,6 +9,7 @@
     "release": "nx release --group=fotobox --skip-publish"
   },
   "private": true,
+  "packageManager": "npm@10.9.8",
   "dependencies": {
     "@angular/common": "21.1.4",
     "@angular/compiler": "21.1.4",
