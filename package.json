@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "postinstall": "electron-builder install-app-deps && playwright install chromium",
+    "postinstall": "node scripts/postinstall.mjs",
     "graphql:codegen": "nx run graphql-operations:codegen",
     "collage-maker": "tsx --tsconfig=libs/collage-maker/tsconfig.lib.json ./libs/collage-maker/src/cli.ts",
     "release": "nx release --group=fotobox --skip-publish"
