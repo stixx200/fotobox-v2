@@ -9,6 +9,7 @@ import {
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, tap, switchMap, catchError, of } from 'rxjs';
 import { SettingsService, Setting } from '../services/settings.service';
+import { mergeSettings } from '../settings/settings-autosave';
 
 type SettingsState = {
   settings: Setting[];
@@ -125,14 +126,23 @@ export class SettingsStore extends signalStore(
       ),
     ),
 
+    /** Merge settings saved elsewhere (settings page auto-save). */
+    applySavedSettings(updated: Setting[]): void {
+      patchState(store, {
+        settings: mergeSettings(store.settings(), updated),
+        error: null,
+      });
+    },
+
     updateSettings: rxMethod<Array<{ key: string; value: string }>>(
       pipe(
         tap(() => patchState(store, { isLoading: true, error: null })),
         switchMap((settingsArray) =>
           settingsService.updateSettings(settingsArray).pipe(
+            // The server returns only the saved entries: merge, don't replace.
             tap((updatedSettings) =>
               patchState(store, {
-                settings: updatedSettings,
+                settings: mergeSettings(store.settings(), updatedSettings),
                 isLoading: false,
               }),
             ),

@@ -27,7 +27,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Subject, finalize, firstValueFrom, merge } from 'rxjs';
+import { Subject, debounceTime, finalize, firstValueFrom, merge } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   SettingsStore,
@@ -61,6 +61,14 @@ import { NotificationService } from '../services/notification.service';
 import { SettingsCameraLayoutsComponent } from './components/settings-camera-layouts.component';
 import { SettingsShareGalleryComponent } from './components/settings-share-gallery.component';
 import { SettingsOperationComponent } from './components/settings-operation.component';
+import { RestoreDefaultsDialogComponent } from './components/restore-defaults-dialog.component';
+import { SettingsService } from '../services/settings.service';
+import { changedSettings, DEFAULT_SETTINGS } from './settings-autosave';
+
+/** Pause after the last change before it is saved. */
+const AUTOSAVE_DEBOUNCE_MS = 600;
+
+export type AutosaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 /** Form validator: empty or exactly four digits. */
 function optionalPinValidator(errorKey: string): ValidatorFn {
@@ -108,8 +116,20 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(MatDialog);
   private readonly shareService = inject(ShareService);
   private readonly notification = inject(NotificationService);
-  /** A user-initiated save waits for its result to confirm it. */
-  private saveFeedbackPending = false;
+  private readonly settingsService = inject(SettingsService);
+
+  /** Auto-save status shown in the header. */
+  readonly saveState = signal<AutosaveState>('idle');
+  /** Some fields hold incomplete input (e.g. a 2-digit PIN) that isn't saved. */
+  readonly hasIncompleteInput = signal(false);
+  /** Stored value (JSON) per key, i.e. what the server has. */
+  private readonly persisted = new Map<string, string>();
+  /** The form was filled from the stored settings; saving may start. */
+  private formLoaded = false;
+  /** The layout list is open: save once it closes, not on every click. */
+  private layoutSelectOpen = false;
+  private saveInFlight: Promise<void> | null = null;
+  private saveAgain = false;
 
   readonly currentLang = signal<string>(
     this.translateService.currentLang() || 'de',
@@ -163,7 +183,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
   } | null>(null);
   collageDirectoryError = signal<string | null>(null);
   readonly refreshingTemplates = signal(false);
-  layoutsAutoSelectionMessage = signal<string | null>(null);
   readonly isInitializingCamera = this.fotoboxStart.starting;
   readonly startError = this.fotoboxStart.error;
 
@@ -172,33 +191,30 @@ export class SettingsComponent implements OnInit, OnDestroy {
   readonly detectedShareBaseUrl = signal('');
   readonly shareExpanded = signal(false);
   readonly galleryExpanded = signal(false);
-  readonly hasUnsavedChanges = signal(false);
-
-  private savedFormSnapshot: string | null = null;
-
   readonly settingsForm = new FormGroup(
     {
-      shutterTimeout: new FormControl(5),
-      usePrinter: new FormControl(true),
-      useShare: new FormControl(false),
-      shareBaseUrl: new FormControl(''),
-      shareTokenExpiryHours: new FormControl(24, {
-        validators: [Validators.min(1)],
-      }),
-      printerName: new FormControl(''),
-      showPrintDialog: new FormControl(false),
-      photoDirectory: new FormControl(''),
-      collageDirectory: new FormControl(''),
-      layouts: new FormControl<string[]>([]),
-      camera: new FormControl(''),
-      galleryPassword: new FormControl('', {
+      shutterTimeout: new FormControl(DEFAULT_SETTINGS.shutterTimeout),
+      usePrinter: new FormControl(DEFAULT_SETTINGS.usePrinter),
+      useShare: new FormControl(DEFAULT_SETTINGS.useShare),
+      shareBaseUrl: new FormControl(DEFAULT_SETTINGS.shareBaseUrl),
+      shareTokenExpiryHours: new FormControl(
+        DEFAULT_SETTINGS.shareTokenExpiryHours,
+        { validators: [Validators.min(1)] },
+      ),
+      printerName: new FormControl(DEFAULT_SETTINGS.printerName),
+      showPrintDialog: new FormControl(DEFAULT_SETTINGS.showPrintDialog),
+      photoDirectory: new FormControl(DEFAULT_SETTINGS.photoDirectory),
+      collageDirectory: new FormControl(DEFAULT_SETTINGS.collageDirectory),
+      layouts: new FormControl<string[]>([...DEFAULT_SETTINGS.layouts]),
+      camera: new FormControl(DEFAULT_SETTINGS.camera),
+      galleryPassword: new FormControl(DEFAULT_SETTINGS.galleryPassword, {
         validators: [optionalPinValidator('galleryPin')],
       }),
-      showGalleryButton: new FormControl(false),
-      operatorPin: new FormControl('', {
+      showGalleryButton: new FormControl(DEFAULT_SETTINGS.showGalleryButton),
+      operatorPin: new FormControl(DEFAULT_SETTINGS.operatorPin, {
         validators: [optionalPinValidator('operatorPin')],
       }),
-      autoStart: new FormControl(false),
+      autoStart: new FormControl(DEFAULT_SETTINGS.autoStart),
     },
     {},
   );
@@ -214,23 +230,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
       document.documentElement.style.colorScheme = this.currentTheme();
     });
 
-    // Confirm a save once the store has finished (errors show a banner).
-    effect(() => {
-      if (this.settingsIsLoading() || !this.saveFeedbackPending) {
-        return;
-      }
-      this.saveFeedbackPending = false;
-      if (!this.settingsError()) {
-        this.notification.success(
-          this.translateService.instant('SETTINGS.SAVED'),
-        );
-      }
-    });
-
-    // Update form with loaded settings when they become available
+    // Track what is stored. The form is filled from it only once: later
+    // updates come from our own auto-saves and must not overwrite what the
+    // operator is typing.
     effect(() => {
       const settingsArray = this.settings();
-      if (settingsArray.length > 0) {
+      for (const setting of settingsArray) {
+        this.persisted.set(setting.key, setting.value);
+      }
+      if (settingsArray.length > 0 && !this.formLoaded) {
+        this.formLoaded = true;
         this.updateFormWithSettings();
         // Load available layouts using the loaded collageDirectory setting
         const collageDirectorySetting = settingsArray.find(
@@ -259,19 +268,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const control = this.settingsForm.controls.printerName;
-      const current = String(control.value ?? '').trim();
-      if (current && names.includes(current)) {
-        return;
-      }
-
-      const preferred = this.printerStore.defaultPrinter() ?? names[0];
-      if (preferred && preferred !== control.value) {
-        control.setValue(preferred, { emitEvent: false });
-        this.syncDirtyState();
-        this.cdr.markForCheck();
-      }
+      this.selectDefaultPrinter();
     });
+  }
+
+  /** Pick the system default printer when none (or an unknown one) is set. */
+  private selectDefaultPrinter(): void {
+    const names = this.availablePrinterNames();
+    const control = this.settingsForm.controls.printerName;
+    const current = String(control.value ?? '').trim();
+    if (names.length === 0 || (current && names.includes(current))) {
+      return;
+    }
+    const preferred = this.printerStore.defaultPrinter() ?? names[0];
+    if (preferred && preferred !== control.value) {
+      control.setValue(preferred);
+      this.cdr.markForCheck();
+    }
   }
 
   ngOnInit(): void {
@@ -335,29 +348,109 @@ export class SettingsComponent implements OnInit, OnDestroy {
       );
     }
 
+    // Auto-save: shortly after the last change (the layout list saves when
+    // it closes, see onLayoutsSelectClosed).
     merge(this.settingsForm.valueChanges, this.settingsForm.statusChanges)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.syncDirtyState());
+      .pipe(debounceTime(AUTOSAVE_DEBOUNCE_MS), takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (!this.layoutSelectOpen) {
+          void this.autosave();
+        }
+      });
   }
 
-  private captureFormSnapshot(): string {
-    return JSON.stringify(this.settingsForm.getRawValue());
+  /** Invalid fields are kept out of the save until they become valid. */
+  private invalidKeys(): Set<string> {
+    const controls = this.settingsForm.controls;
+    return new Set(
+      (Object.keys(controls) as (keyof typeof controls)[]).filter(
+        (key) => controls[key].invalid,
+      ),
+    );
   }
 
-  private updateSavedSnapshot(): void {
-    this.savedFormSnapshot = this.captureFormSnapshot();
-    this.hasUnsavedChanges.set(false);
-  }
-
-  private syncDirtyState(): void {
-    if (this.savedFormSnapshot === null) {
-      this.hasUnsavedChanges.set(false);
-      return;
+  /**
+   * Saves every changed, valid field. Changes made while a save is running
+   * are saved right after it. Resolves when everything is stored (or failed).
+   */
+  autosave(): Promise<void> {
+    if (!this.formLoaded) {
+      return Promise.resolve();
+    }
+    if (this.saveInFlight) {
+      this.saveAgain = true;
+      return this.saveInFlight;
+    }
+    const skip = this.invalidKeys();
+    this.hasIncompleteInput.set(skip.size > 0);
+    const changes = changedSettings(
+      this.settingsForm.getRawValue(),
+      this.persisted,
+      skip,
+    );
+    if (changes.length === 0) {
+      this.cdr.markForCheck();
+      return Promise.resolve();
     }
 
-    const dirty = this.captureFormSnapshot() !== this.savedFormSnapshot;
-    this.hasUnsavedChanges.set(dirty);
+    this.saveState.set('saving');
     this.cdr.markForCheck();
+    this.saveInFlight = (async () => {
+      try {
+        const saved = await firstValueFrom(
+          this.settingsService.updateSettings(changes),
+        );
+        for (const setting of saved) {
+          this.persisted.set(setting.key, setting.value);
+        }
+        this.settingsStore.applySavedSettings(saved);
+        this.saveState.set('saved');
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        this.saveState.set('error');
+      } finally {
+        this.saveInFlight = null;
+        this.cdr.markForCheck();
+      }
+      if (this.saveAgain) {
+        this.saveAgain = false;
+        await this.autosave();
+      }
+    })();
+    return this.saveInFlight;
+  }
+
+  retrySave(): void {
+    void this.autosave();
+  }
+
+  /** "Standard wiederherstellen": after confirmation, reset every field. */
+  async restoreDefaults(): Promise<void> {
+    const confirmed = await firstValueFrom(
+      this.dialog
+        .open<
+          RestoreDefaultsDialogComponent,
+          void,
+          boolean
+        >(RestoreDefaultsDialogComponent, { autoFocus: 'first-tabbable' })
+        .afterClosed(),
+    );
+    if (!confirmed) {
+      return;
+    }
+    this.settingsForm.reset({
+      ...DEFAULT_SETTINGS,
+      layouts: [...DEFAULT_SETTINGS.layouts],
+    });
+    this.selectDefaultPrinter();
+    this.syncExpertPanelsFromForm();
+    this.loadAvailableLayouts(undefined);
+    await this.autosave();
+    if (this.saveState() === 'saved') {
+      this.notification.success(
+        this.translateService.instant('SETTINGS.RESTORE_DEFAULTS_DONE'),
+      );
+    }
   }
 
   private updateFormWithSettings(): void {
@@ -384,7 +477,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
 
     this.syncExpertPanelsFromForm();
-    this.updateSavedSnapshot();
+    this.selectDefaultPrinter();
 
     // Trigger change detection for OnPush
     this.cdr.markForCheck();
@@ -433,6 +526,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Leaving the page (e.g. into the guest flow): save what is pending.
+    void this.autosave();
     document.documentElement.style.colorScheme = '';
     this.destroy$.next();
     this.destroy$.complete();
@@ -518,12 +613,15 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   onLayoutsSelectOpened(): void {
+    this.layoutSelectOpen = true;
     this.showDefaultLayoutPreview();
   }
 
   onLayoutsSelectClosed(): void {
+    this.layoutSelectOpen = false;
     // Back to the (possibly changed) selection after hovering other options.
     this.showDefaultLayoutPreview();
+    void this.autosave();
   }
 
   /** On touch devices, tap the preview pane to step through layouts. */
@@ -586,16 +684,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
   async startFotobox(): Promise<void> {
     const config = resolveStartConfig(this.settingsForm.getRawValue());
     if (!config) {
-      // Same guard as saving: never start with a malformed PIN.
+      // Never start with a malformed PIN.
       this.markPinFieldsTouched();
       return;
     }
-    // Save settings first (no "saved" toast — we are leaving the page).
-    this.saveSettings(false);
-    // saveSettings may have filled in the default layout.
-    await this.fotoboxStart.start(
-      resolveStartConfig(this.settingsForm.getRawValue()) ?? config,
-    );
+    // Store pending changes before leaving the page.
+    await this.autosave();
+    await this.fotoboxStart.start(config);
     this.cdr.markForCheck();
   }
 
@@ -626,52 +721,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.settingsForm.controls.galleryPassword.markAsTouched();
     this.settingsForm.controls.operatorPin.markAsTouched();
     this.cdr.markForCheck();
-  }
-
-  saveSettings(confirm = true): void {
-    if (
-      this.settingsForm.controls.galleryPassword.invalid ||
-      this.settingsForm.controls.operatorPin.invalid
-    ) {
-      this.markPinFieldsTouched();
-      return;
-    }
-
-    const formValue = this.settingsForm.value;
-
-    // Clear previous message
-    this.layoutsAutoSelectionMessage.set(null);
-
-    // Check if layouts is empty or null
-    let layoutsValue = formValue.layouts;
-    if (!layoutsValue || layoutsValue.length === 0) {
-      layoutsValue = ['Einzelbild'];
-      this.settingsForm.patchValue(
-        { layouts: layoutsValue },
-        { emitEvent: false },
-      );
-      this.layoutsAutoSelectionMessage.set('SETTINGS.LAYOUTS_AUTO_SELECTED');
-    }
-
-    const settingsArray = Object.entries(formValue).map(([key, value]) => {
-      if (key === 'layouts') {
-        return { key, value: JSON.stringify(layoutsValue) };
-      }
-      return { key, value: JSON.stringify(value) };
-    });
-
-    this.saveFeedbackPending = confirm;
-    this.settingsStore.updateSettings(settingsArray);
-
-    // Refresh available layouts after save
-    const collageDir = this.settingsForm.get('collageDirectory')?.value;
-    if (collageDir) {
-      this.loadAvailableLayouts(collageDir);
-    }
-  }
-
-  resetSettings(): void {
-    this.settingsStore.resetSettings();
   }
 
   handleDirectoryClick(fieldName: string): void {

@@ -103,14 +103,26 @@
     }
   }
 
-  .unsaved-chip {
-    flex-shrink: 0;
-    padding: 4px 12px;
-    border-radius: var(--mat-sys-corner-small);
-    background: var(--mat-sys-tertiary-container);
-    color: var(--mat-sys-on-tertiary-container);
+  .autosave-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    margin-right: auto;
+    color: var(--mat-sys-on-surface-variant);
     font: var(--mat-sys-label-large);
-    white-space: nowrap;
+
+    mat-icon {
+      flex-shrink: 0;
+    }
+
+    .autosave-status__error {
+      color: var(--mat-sys-error);
+    }
+
+    .autosave-status__warn {
+      color: var(--mat-sys-tertiary);
+    }
   }
 
   .header-actions {

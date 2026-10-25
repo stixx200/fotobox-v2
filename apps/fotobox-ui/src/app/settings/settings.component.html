@@ -5,9 +5,6 @@
       <div class="header-title">
         <mat-icon class="header-icon">settings</mat-icon>
         <h1>{{ 'SETTINGS.TITLE' | translate }}</h1>
-        @if (hasUnsavedChanges()) {
-          <span class="unsaved-chip">{{ 'SETTINGS.UNSAVED' | translate }}</span>
-        }
       </div>
       <div class="header-toolbar">
         <mat-button-toggle-group
@@ -51,34 +48,39 @@
 
     <div class="header-actions">
       <div class="header-action-group">
+        <div class="autosave-status" role="status" aria-live="polite">
+          @switch (saveState()) {
+            @case ('saving') {
+              <mat-spinner diameter="18" />
+              <span>{{ 'SETTINGS.AUTOSAVE_SAVING' | translate }}</span>
+            }
+            @case ('error') {
+              <mat-icon class="autosave-status__error">cloud_off</mat-icon>
+              <span>{{ 'SETTINGS.AUTOSAVE_FAILED' | translate }}</span>
+              <button matButton type="button" (click)="retrySave()">
+                {{ 'SETTINGS.AUTOSAVE_RETRY' | translate }}
+              </button>
+            }
+            @default {
+              @if (hasIncompleteInput()) {
+                <mat-icon class="autosave-status__warn">edit_note</mat-icon>
+                <span>{{ 'SETTINGS.AUTOSAVE_INCOMPLETE' | translate }}</span>
+              } @else {
+                <mat-icon>cloud_done</mat-icon>
+                <span>{{ 'SETTINGS.AUTOSAVE_SAVED' | translate }}</span>
+              }
+            }
+          }
+        </div>
         <button
           matButton="outlined"
           class="header-action-btn"
-          (click)="resetSettings()"
-          [disabled]="settingsIsLoading() || !hasUnsavedChanges()"
+          (click)="restoreDefaults()"
+          [disabled]="saveState() === 'saving'"
         >
-          <mat-icon>undo</mat-icon>
+          <mat-icon>settings_backup_restore</mat-icon>
           <span class="header-btn-label">{{
-            (settingsIsLoading() ? 'SETTINGS.RESETTING' : 'SETTINGS.RESET')
-              | translate
-          }}</span>
-        </button>
-        <button
-          matButton="tonal"
-          class="header-action-btn"
-          (click)="saveSettings()"
-          [disabled]="
-            settingsIsLoading() || !hasUnsavedChanges() || settingsForm.invalid
-          "
-        >
-          @if (settingsIsLoading()) {
-            <mat-spinner diameter="20" class="start-spinner" />
-          } @else {
-            <mat-icon>save</mat-icon>
-          }
-          <span class="header-btn-label">{{
-            (settingsIsLoading() ? 'SETTINGS.SAVING' : 'SETTINGS.SAVE')
-              | translate
+            'SETTINGS.RESTORE_DEFAULTS' | translate
           }}</span>
         </button>
         <button
@@ -127,12 +129,6 @@
           <code>{{ error }}</code>
         </details>
       </div>
-    </div>
-  }
-  @if (layoutsAutoSelectionMessage()) {
-    <div class="settings-banner settings-banner--info" role="status">
-      <mat-icon>info_outline</mat-icon>
-      <span>{{ 'SETTINGS.LAYOUTS_AUTO_SELECTED' | translate }}</span>
     </div>
   }
 
