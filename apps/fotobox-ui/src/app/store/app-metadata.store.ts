@@ -1,8 +1,4 @@
-import {
-  computed,
-  inject,
-  Injectable,
-} from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import {
   signalStore,
   withState,
@@ -32,7 +28,7 @@ export class AppMetadataStore extends signalStore(
     isLoading: false,
     error: null,
   }),
-  withComputed(({ version, metadata, isLoading, error }) => ({
+  withComputed(({ version, metadata }) => ({
     displayVersion: computed(() => {
       const v = version();
       return v ? `v${v}` : 'Unknown';
@@ -48,9 +44,7 @@ export class AppMetadataStore extends signalStore(
         tap(() => patchState(store, { isLoading: true, error: null })),
         switchMap(() =>
           appMetadataService.getAppVersion().pipe(
-            tap((version) =>
-              patchState(store, { version, isLoading: false })
-            ),
+            tap((version) => patchState(store, { version, isLoading: false })),
             catchError((error) => {
               const errorMessage =
                 error?.message || 'Failed to load app version';
@@ -59,10 +53,10 @@ export class AppMetadataStore extends signalStore(
                 isLoading: false,
               });
               return of(null);
-            })
-          )
-        )
-      )
+            }),
+          ),
+        ),
+      ),
     ),
 
     loadMetadata: rxMethod<void>(
@@ -71,7 +65,7 @@ export class AppMetadataStore extends signalStore(
         switchMap(() =>
           appMetadataService.getAppMetadata().pipe(
             tap((metadata) =>
-              patchState(store, { metadata, isLoading: false })
+              patchState(store, { metadata, isLoading: false }),
             ),
             catchError((error) => {
               const errorMessage =
@@ -81,12 +75,12 @@ export class AppMetadataStore extends signalStore(
                 isLoading: false,
               });
               return of(null);
-            })
-          )
-        )
-      )
+            }),
+          ),
+        ),
+      ),
     ),
-  }))
+  })),
 ) {
   constructor() {
     super();

@@ -17,6 +17,7 @@ import {
   CdkDropList,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   FabricCanvasService,
@@ -74,6 +75,7 @@ const TEXT_FONT_OPTIONS = [
     TranslatePipe,
     CdkDropList,
     CdkDrag,
+    CdkTrapFocus,
     EditorCanvasToolsComponent,
     EditorProjectPanelComponent,
     EditorValidationPanelComponent,
@@ -331,32 +333,30 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
 
   private loadExisting(id: string): void {
     this.status.set('Loading…');
-    this.api
-      .loadProject(id, this.collageDirectory() || undefined)
-      .subscribe({
-        next: (project) => {
-          this.templateId.set(project.id);
-          this.templateName.set(project.name ?? project.id);
-          this.canvasWidth.set(project.width);
-          this.canvasHeight.set(project.height);
-          if (project.border) {
-            this.templateBorderEnabled.set(true);
-            this.templateBorderWidth.set(project.border.top ?? 0);
-          }
-          void this.fabric.loadProject(project).then(() => {
-            this.refreshLayers();
-            this.syncHistoryState();
-            this.savedOnce.set(true);
-            this.fabric.markSaved();
-            this.status.set(null);
-            this.fitCanvasToViewport();
-          });
-        },
-        error: (err) => {
-          this.error.set(err.message ?? 'Load failed');
+    this.api.loadProject(id, this.collageDirectory() || undefined).subscribe({
+      next: (project) => {
+        this.templateId.set(project.id);
+        this.templateName.set(project.name ?? project.id);
+        this.canvasWidth.set(project.width);
+        this.canvasHeight.set(project.height);
+        if (project.border) {
+          this.templateBorderEnabled.set(true);
+          this.templateBorderWidth.set(project.border.top ?? 0);
+        }
+        void this.fabric.loadProject(project).then(() => {
+          this.refreshLayers();
+          this.syncHistoryState();
+          this.savedOnce.set(true);
+          this.fabric.markSaved();
           this.status.set(null);
-        },
-      });
+          this.fitCanvasToViewport();
+        });
+      },
+      error: (err) => {
+        this.error.set(err.message ?? 'Load failed');
+        this.status.set(null);
+      },
+    });
   }
 
   refreshLayers(): void {
@@ -839,7 +839,11 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
       event.preventDefault();
       const step = event.shiftKey ? 10 : 1;
       const dx =
-        event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+        event.key === 'ArrowLeft'
+          ? -step
+          : event.key === 'ArrowRight'
+            ? step
+            : 0;
       const dy =
         event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
       this.fabric.nudgeActive(dx, dy);
@@ -861,27 +865,35 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    const target = event.target as Node;
-
-    if (!this.layersSidebarPinned() && this.layersSidebarOpen()) {
-      if (
-        !this.layersSidebar?.nativeElement.contains(target) &&
-        !this.layersToggle?.nativeElement.contains(target)
-      ) {
-        this.layersSidebarOpen.set(false);
-      }
+    // Clicks inside the layers sidebar are ignored entirely. The composed path
+    // is captured at dispatch time, so it still matches when the click removed
+    // its target from the DOM (e.g. deleting a layer row).
+    if (this.isEventWithin(event, this.layersSidebar?.nativeElement)) {
+      return;
     }
 
-    this.clearSelectionIfOutsideCanvas(target);
+    if (
+      !this.layersSidebarPinned() &&
+      this.layersSidebarOpen() &&
+      !this.isEventWithin(event, this.layersToggle?.nativeElement)
+    ) {
+      this.layersSidebarOpen.set(false);
+    }
+
+    this.clearSelectionIfOutsideCanvas(event.target as Node);
+  }
+
+  private isEventWithin(
+    event: Event,
+    element: HTMLElement | undefined,
+  ): boolean {
+    return !!element && event.composedPath().includes(element);
   }
 
   private clearSelectionIfOutsideCanvas(target: Node): void {
     const canvasContainer =
       this.canvasWrap?.nativeElement.querySelector('.canvas-container');
     if (canvasContainer?.contains(target)) {
-      return;
-    }
-    if (this.layersSidebar?.nativeElement.contains(target)) {
       return;
     }
     if (this.isEditableTarget(target)) {
@@ -891,10 +903,7 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
   }
 
   private clearCanvasSelection(): void {
-    if (
-      !this.fabric.getActiveSelectionCount() &&
-      !this.activeLayerId()
-    ) {
+    if (!this.fabric.getActiveSelectionCount() && !this.activeLayerId()) {
       return;
     }
     this.fabric.discardSelection();
@@ -1093,7 +1102,10 @@ export class EditorComponent implements AfterViewInit, OnDestroy {
     );
     this.validationIssues.set(issues);
     if (projectHasValidationErrors(issues)) {
-      this.error.set(issues.find((i) => i.severity === 'error')?.message ?? 'Validation failed');
+      this.error.set(
+        issues.find((i) => i.severity === 'error')?.message ??
+          'Validation failed',
+      );
       return;
     }
 

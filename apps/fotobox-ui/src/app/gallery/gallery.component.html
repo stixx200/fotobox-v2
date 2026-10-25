@@ -69,16 +69,23 @@
     @if (!loading() && photos().length > 0) {
       <div class="gallery-grid">
         @for (photo of photos(); track photo.id) {
-          <div class="gallery-thumb" (click)="select(photo)">
+          <button type="button" class="gallery-thumb" (click)="select(photo)">
             <img [src]="photoUrl(photo)" [alt]="photo.id" loading="lazy" />
-          </div>
+          </button>
         }
       </div>
     }
 
     @if (selected(); as photo) {
-      <div class="gallery-detail" (click)="closeDetail()">
-        <div class="gallery-detail-toolbar" (click)="$event.stopPropagation()">
+      <div
+        class="gallery-detail"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="photo.id"
+        (click)="onDetailBackdropClick($event)"
+        (keydown.escape)="closeDetail()"
+      >
+        <div class="gallery-detail-toolbar">
           <button
             mat-icon-button
             class="gallery-detail-back"
@@ -100,14 +107,11 @@
           }
         </div>
 
-        <div
-          class="gallery-detail-image-wrap"
-          (click)="$event.stopPropagation()"
-        >
+        <div class="gallery-detail-image-wrap">
           <img [src]="selectedUrl()" [alt]="photo.id" />
         </div>
 
-        <div class="gallery-detail-footer" (click)="$event.stopPropagation()">
+        <div class="gallery-detail-footer">
           @if (deleteConfirmPending()) {
             <div class="gallery-delete-confirm">
               <p>{{ 'GALLERY.DELETE_CONFIRM' | translate }}</p>
@@ -115,7 +119,11 @@
                 <button mat-stroked-button (click)="cancelDelete()">
                   {{ 'GALLERY.CANCEL' | translate }}
                 </button>
-                <button mat-raised-button color="warn" (click)="confirmDelete()">
+                <button
+                  mat-raised-button
+                  color="warn"
+                  (click)="confirmDelete()"
+                >
                   {{ 'GALLERY.DELETE_CONFIRM_ACTION' | translate }}
                 </button>
               </div>

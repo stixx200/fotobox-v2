@@ -1,6 +1,5 @@
 import {
   Component,
-  OnDestroy,
   inject,
   signal,
   computed,
@@ -26,7 +25,7 @@ import { WebcamService } from '../../services/webcam.service';
   templateUrl: './camera-live-view.component.html',
   styleUrl: './camera-live-view.component.scss',
 })
-export class CameraLiveViewComponent implements OnDestroy {
+export class CameraLiveViewComponent {
   private readonly cameraStore = inject(CameraStore);
   private readonly webcam = inject(WebcamService);
 
@@ -36,7 +35,9 @@ export class CameraLiveViewComponent implements OnDestroy {
 
   readonly isClient = this.cameraStore.isClientCamera;
   /** Latest frame — reads directly from the store so no spinner on layout switch. */
-  readonly liveFrame = computed(() => this.cameraStore.lastLiveFrame()?.data ?? null);
+  readonly liveFrame = computed(
+    () => this.cameraStore.lastLiveFrame()?.data ?? null,
+  );
 
   private readonly localError = signal<string | null>(null);
   readonly error = computed(
@@ -80,10 +81,6 @@ export class CameraLiveViewComponent implements OnDestroy {
       );
       return null;
     }
-  }
-
-  ngOnDestroy(): void {
-    // Live-view subscription is managed by the store; nothing to tear down here.
   }
 
   private async startWebcam(element: HTMLVideoElement): Promise<void> {

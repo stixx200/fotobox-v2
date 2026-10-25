@@ -1,7 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, retry, timeout, catchError } from 'rxjs';
-import { of } from 'rxjs';
 import { getApiAuthHeaders, getGraphqlHttpUri } from '../api-config';
 
 @Injectable({
@@ -13,7 +12,7 @@ export class ApiHealthService {
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly TIMEOUT = 5000; // 5 seconds
 
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   async waitForApiReady(): Promise<boolean> {
     try {

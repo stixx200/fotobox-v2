@@ -60,7 +60,9 @@
   text-align: center;
   z-index: 10;
 
-  p {
+  p,
+  .message-stripe__text {
+    display: block;
     margin: 0;
     font-size: 2rem;
     font-weight: 500;
@@ -77,6 +79,12 @@
 }
 
 .bottom-message {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  font: inherit;
   bottom: 0;
   cursor: pointer;
 }

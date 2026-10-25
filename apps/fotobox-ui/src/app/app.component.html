@@ -2,9 +2,13 @@
   <app-recovery-overlay />
 } @else if (showRouter()) {
   @if (recovery.networkDegraded()) {
-    <div class="network-banner" (click)="recovery.clearNetworkDegraded()">
+    <button
+      type="button"
+      class="network-banner"
+      (click)="recovery.clearNetworkDegraded()"
+    >
       {{ 'RECOVERY.NETWORK_DEGRADED' | translate }}
-    </div>
+    </button>
   }
   <router-outlet></router-outlet>
 } @else {

@@ -332,9 +332,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
     // Update all form controls
     Object.keys(this.settingsForm.controls).forEach((key) => {
       const control = this.settingsForm.get(key);
-      if (control && settingsMap.has(key)) {
+      const rawValue = settingsMap.get(key);
+      if (control && rawValue !== undefined) {
         try {
-          const rawValue = settingsMap.get(key)!;
           const value = JSON.parse(rawValue);
           control.setValue(value, { emitEvent: false });
         } catch (error) {

@@ -25,7 +25,7 @@ export class SettingsStore extends signalStore(
     error: null,
     selectedSetting: null,
   }),
-  withComputed(({ settings, isLoading, error, selectedSetting }) => ({
+  withComputed(({ settings }) => ({
     settingsCount: computed(() => settings().length),
     settingsMap: computed(() => {
       const settingsArray = settings();

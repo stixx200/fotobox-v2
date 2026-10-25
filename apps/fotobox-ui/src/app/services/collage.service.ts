@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { map, Observable } from 'rxjs';
 
@@ -77,7 +77,7 @@ const GET_COLLAGE_PREVIEW = gql`
   providedIn: 'root',
 })
 export class CollageService {
-  constructor(private apollo: Apollo) {}
+  private readonly apollo = inject(Apollo);
 
   getAvailableLayoutIds(collageDirectory?: string): Observable<string[]> {
     return this.apollo

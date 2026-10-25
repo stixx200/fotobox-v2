@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
+import { requireData } from './graphql-result';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
@@ -76,7 +77,7 @@ export interface MutationResult {
   providedIn: 'root',
 })
 export class SettingsService {
-  constructor(private apollo: Apollo) {}
+  private readonly apollo = inject(Apollo);
 
   getAllSettings(): Observable<Setting[]> {
     console.log('SettingsService: getAllSettings called');
@@ -88,7 +89,7 @@ export class SettingsService {
         tap((result) =>
           console.log('SettingsService: getAllSettings result:', result),
         ),
-        map((result) => result.data!.settings.items),
+        map((result) => requireData(result).settings.items),
       );
   }
 
@@ -98,7 +99,7 @@ export class SettingsService {
         query: GET_SETTING,
         variables: { key },
       })
-      .pipe(map((result) => result.data!.setting));
+      .pipe(map((result) => requireData(result).setting));
   }
 
   updateSetting(key: string, value: string): Observable<Setting> {
@@ -110,7 +111,7 @@ export class SettingsService {
         },
         refetchQueries: [{ query: GET_SETTINGS }],
       })
-      .pipe(map((result) => result.data!.updateSetting));
+      .pipe(map((result) => requireData(result).updateSetting));
   }
 
   updateSettings(settings: SettingInput[]): Observable<Setting[]> {
@@ -122,7 +123,7 @@ export class SettingsService {
         },
         refetchQueries: [{ query: GET_SETTINGS }],
       })
-      .pipe(map((result) => result.data!.updateSettings));
+      .pipe(map((result) => requireData(result).updateSettings));
   }
 
   resetSettings(): Observable<MutationResult> {
@@ -131,6 +132,6 @@ export class SettingsService {
         mutation: RESET_SETTINGS,
         refetchQueries: [{ query: GET_SETTINGS }],
       })
-      .pipe(map((result) => result.data!.resetSettings));
+      .pipe(map((result) => requireData(result).resetSettings));
   }
 }

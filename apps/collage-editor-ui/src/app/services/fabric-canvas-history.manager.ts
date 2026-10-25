@@ -39,13 +39,16 @@ export class FabricCanvasHistoryManager {
 
   async undo(): Promise<void> {
     if (!this.canUndo()) return;
-    this.redoStack.push(this.undoStack.pop()!);
+    const current = this.undoStack.pop();
+    if (current === undefined) return;
+    this.redoStack.push(current);
     await this.deps.restoreState(this.undoStack[this.undoStack.length - 1]);
   }
 
   async redo(): Promise<void> {
     if (!this.canRedo()) return;
-    const state = this.redoStack.pop()!;
+    const state = this.redoStack.pop();
+    if (state === undefined) return;
     this.undoStack.push(state);
     await this.deps.restoreState(state);
   }

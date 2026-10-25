@@ -143,6 +143,19 @@ export class SingleLayoutComponent implements OnInit {
     }
   }
 
+  /**
+   * Keyboard equivalent of tapping the screen. Only reacts when the container
+   * itself is focused so that Enter/Space on nested buttons keeps its own
+   * meaning.
+   */
+  onContainerKeydown(event: Event): void {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    event.preventDefault();
+    this.takePicture();
+  }
+
   takePicture(): void {
     if (this.photo() || this.countdownRef()?.isRunning || this.capturing()) {
       return; // Already showing a photo or counting down.

@@ -1,4 +1,11 @@
 .network-banner {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  font-family: inherit;
+  line-height: inherit;
   position: fixed;
   top: 0;
   left: 0;

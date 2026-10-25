@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, Injector, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Apollo } from 'apollo-angular';
 import { CameraStore } from '../store';
@@ -14,10 +14,23 @@ const MAX_CAPTURE_FAILURES = 3;
 @Injectable({ providedIn: 'root' })
 export class RecoveryService {
   private readonly router = inject(Router);
-  private readonly cameraStore = inject(CameraStore);
   private readonly clientLog = inject(ClientLogService);
-  private readonly layoutNavigation = inject(LayoutNavigationService);
-  private readonly apollo = inject(Apollo);
+  // Apollo's factory injects RecoveryService (see app.config.ts), and
+  // CameraStore / LayoutNavigationService depend on Apollo-backed services.
+  // Resolve them lazily to avoid a circular dependency (NG0200) at bootstrap.
+  private readonly injector = inject(Injector);
+
+  private get cameraStore(): CameraStore {
+    return this.injector.get(CameraStore);
+  }
+
+  private get layoutNavigation(): LayoutNavigationService {
+    return this.injector.get(LayoutNavigationService);
+  }
+
+  private get apollo(): Apollo {
+    return this.injector.get(Apollo);
+  }
 
   readonly fatalError = signal<string | null>(null);
   readonly networkDegraded = signal(false);

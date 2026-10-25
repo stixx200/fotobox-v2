@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
+import { requireData } from './graphql-result';
 import { Observable } from 'rxjs';
-import { map, switchMap, take } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 // GraphQL Queries
 const GET_AVAILABLE_CAMERAS = gql`
@@ -126,14 +127,14 @@ export interface MutationResult {
   providedIn: 'root',
 })
 export class CameraService {
-  constructor(private apollo: Apollo) {}
+  private readonly apollo = inject(Apollo);
 
   getAvailableCameras(): Observable<CameraInfo[]> {
     return this.apollo
       .query<{ availableCameras: { cameras: CameraInfo[] } }>({
         query: GET_AVAILABLE_CAMERAS,
       })
-      .pipe(map((result) => result.data!.availableCameras.cameras));
+      .pipe(map((result) => requireData(result).availableCameras.cameras));
   }
 
   getCameraStatus(): Observable<CameraInfo> {
@@ -141,7 +142,7 @@ export class CameraService {
       .query<{ cameraStatus: CameraInfo }>({
         query: GET_CAMERA_STATUS,
       })
-      .pipe(map((result) => result.data!.cameraStatus));
+      .pipe(map((result) => requireData(result).cameraStatus));
   }
 
   initializeCamera(driver: string): Observable<MutationResult> {
@@ -151,7 +152,7 @@ export class CameraService {
         variables: { driver },
         refetchQueries: [{ query: GET_CAMERA_STATUS }],
       })
-      .pipe(map((result) => result.data!.initializeCamera));
+      .pipe(map((result) => requireData(result).initializeCamera));
   }
 
   takePicture(): Observable<Picture> {
@@ -167,7 +168,7 @@ export class CameraService {
           }
         `,
       })
-      .pipe(map((result) => result.data!.takePicture));
+      .pipe(map((result) => requireData(result).takePicture));
   }
 
   /**
@@ -180,7 +181,7 @@ export class CameraService {
         mutation: UPLOAD_PHOTO,
         variables: { input: { imageData } },
       })
-      .pipe(map((result) => result.data!.uploadPhoto));
+      .pipe(map((result) => requireData(result).uploadPhoto));
   }
 
   startLiveView(): Observable<MutationResult> {
@@ -188,7 +189,7 @@ export class CameraService {
       .mutate<{ startLiveView: MutationResult }>({
         mutation: START_LIVE_VIEW,
       })
-      .pipe(map((result) => result.data!.startLiveView));
+      .pipe(map((result) => requireData(result).startLiveView));
   }
 
   stopLiveView(): Observable<MutationResult> {
@@ -196,7 +197,7 @@ export class CameraService {
       .mutate<{ stopLiveView: MutationResult }>({
         mutation: STOP_LIVE_VIEW,
       })
-      .pipe(map((result) => result.data!.stopLiveView));
+      .pipe(map((result) => requireData(result).stopLiveView));
   }
 
   /**
@@ -207,7 +208,7 @@ export class CameraService {
       .subscribe<{ liveViewStream: LiveViewFrame }>({
         query: LIVE_VIEW_STREAM,
       })
-      .pipe(map((result) => result.data!.liveViewStream));
+      .pipe(map((result) => requireData(result).liveViewStream));
   }
 
   /**
@@ -218,6 +219,6 @@ export class CameraService {
       .subscribe<{ pictureTaken: Picture }>({
         query: PICTURE_TAKEN,
       })
-      .pipe(map((result) => result.data!.pictureTaken));
+      .pipe(map((result) => requireData(result).pictureTaken));
   }
 }

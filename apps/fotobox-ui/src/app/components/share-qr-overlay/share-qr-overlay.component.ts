@@ -22,9 +22,16 @@ import { TranslatePipe } from '@ngx-translate/core';
     TranslatePipe,
   ],
   template: `
-    <div class="share-qr-overlay" (click)="$event.stopPropagation()">
+    <div
+      class="share-qr-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-qr-title"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="onClose($event)"
+    >
       <div class="share-qr-panel">
-        <h2>{{ 'SHARE.TITLE' | translate }}</h2>
+        <h2 id="share-qr-title">{{ 'SHARE.TITLE' | translate }}</h2>
         <p class="share-qr-hint">{{ 'SHARE.SCAN_HINT' | translate }}</p>
 
         @if (qrError()) {

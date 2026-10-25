@@ -10,7 +10,6 @@ import {
   FabricImage,
   Line,
   ActiveSelection,
-  Point,
   type TPointerEvent,
 } from 'fabric';
 import {
@@ -445,7 +444,7 @@ export class FabricCanvasService {
     this.viewport.zoomTo100();
   }
 
-  zoomBy(factor: number, _pointX?: number, _pointY?: number): void {
+  zoomBy(factor: number): void {
     this.viewport.zoomBy(factor);
   }
 
@@ -576,7 +575,8 @@ export class FabricCanvasService {
       .getObjects()
       .find(
         (obj) =>
-          obj.get(FOTOBOX_EDITOR_ONLY) && obj.get(FOTOBOX_PHOTO_REF) === photoId,
+          obj.get(FOTOBOX_EDITOR_ONLY) &&
+          obj.get(FOTOBOX_PHOTO_REF) === photoId,
       );
     if (label) {
       this.positionPhotoSlotLabel(photo, label);
@@ -748,9 +748,11 @@ export class FabricCanvasService {
 
   deleteActive(): void {
     if (!this.canvas) return;
-    const active = this.canvas.getActiveObjects().filter(
-      (obj) => !obj.get(FOTOBOX_EDITOR_ONLY) && !obj.get(FOTOBOX_LOCKED),
-    );
+    const active = this.canvas
+      .getActiveObjects()
+      .filter(
+        (obj) => !obj.get(FOTOBOX_EDITOR_ONLY) && !obj.get(FOTOBOX_LOCKED),
+      );
     if (!active.length) return;
     for (const obj of active) {
       if (obj.get(FOTOBOX_LAYER_TYPE) === 'photo') {
@@ -810,13 +812,15 @@ export class FabricCanvasService {
         const slot = this.nextPhotoSlot();
         cloned.set({
           [FOTOBOX_PHOTO_SLOT]: slot,
-          [FOTOBOX_BORDER]:
-            obj.get(FOTOBOX_BORDER) ?? DEFAULT_PHOTO_BORDER,
+          [FOTOBOX_BORDER]: obj.get(FOTOBOX_BORDER) ?? DEFAULT_PHOTO_BORDER,
         });
       }
       this.canvas.add(cloned);
       if (type === 'photo') {
-        this.createPhotoSlotLabel(cloned, cloned.get(FOTOBOX_PHOTO_SLOT) as number);
+        this.createPhotoSlotLabel(
+          cloned,
+          cloned.get(FOTOBOX_PHOTO_SLOT) as number,
+        );
       }
       this.ensurePhotoPanesOnTop();
       this.canvas.setActiveObject(cloned);
@@ -834,7 +838,9 @@ export class FabricCanvasService {
     if (!this.canvas) return;
     const objects = this.canvas
       .getActiveObjects()
-      .filter((obj) => !obj.get(FOTOBOX_LOCKED) && !obj.get(FOTOBOX_EDITOR_ONLY));
+      .filter(
+        (obj) => !obj.get(FOTOBOX_LOCKED) && !obj.get(FOTOBOX_EDITOR_ONLY),
+      );
     if (!objects.length) return;
     for (const obj of objects) {
       obj.set({ left: (obj.left ?? 0) + dx, top: (obj.top ?? 0) + dy });
@@ -1015,7 +1021,9 @@ export class FabricCanvasService {
 
   bringDecorationToFront(layerId?: string): void {
     const decorations = this.getDecorationObjects();
-    const obj = layerId ? this.findLayerById(layerId) : this.getActiveDecoration();
+    const obj = layerId
+      ? this.findLayerById(layerId)
+      : this.getActiveDecoration();
     if (!obj || !this.canvas) return;
     const index = decorations.indexOf(obj);
     if (index < 0 || index >= decorations.length - 1) return;
@@ -1029,7 +1037,9 @@ export class FabricCanvasService {
 
   sendDecorationToBack(layerId?: string): void {
     const decorations = this.getDecorationObjects();
-    const obj = layerId ? this.findLayerById(layerId) : this.getActiveDecoration();
+    const obj = layerId
+      ? this.findLayerById(layerId)
+      : this.getActiveDecoration();
     if (!obj || !this.canvas) return;
     const index = decorations.indexOf(obj);
     if (index <= 0) return;
@@ -1543,9 +1553,7 @@ export class FabricCanvasService {
       }
     }
 
-    photos.sort(
-      (a, b) => (a.photoSlot ?? 0) - (b.photoSlot ?? 0),
-    );
+    photos.sort((a, b) => (a.photoSlot ?? 0) - (b.photoSlot ?? 0));
     decorations.reverse();
 
     return {
@@ -1565,7 +1573,8 @@ export class FabricCanvasService {
     const id = obj.get(FOTOBOX_LAYER_ID) as string | undefined;
     if (!type || !id) return null;
     const name =
-      (obj.get(FOTOBOX_LAYER_NAME) as string) ?? `${type} ${id.split('-').pop()}`;
+      (obj.get(FOTOBOX_LAYER_NAME) as string) ??
+      `${type} ${id.split('-').pop()}`;
     return {
       id,
       type,

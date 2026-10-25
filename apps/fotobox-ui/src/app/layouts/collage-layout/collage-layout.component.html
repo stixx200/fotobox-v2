@@ -1,4 +1,12 @@
-<div class="layout-container" (click)="takePicture()">
+<div
+  class="layout-container"
+  role="button"
+  tabindex="0"
+  [attr.aria-label]="'CAPTURE.TAKE_PHOTO' | translate"
+  (click)="takePicture()"
+  (keydown.enter)="onContainerKeydown($event)"
+  (keydown.space)="onContainerKeydown($event)"
+>
   @if (isOnlyLayoutActive) {
     <app-settings-escape-zone></app-settings-escape-zone>
     @if (showGalleryButton()) {
@@ -26,7 +34,7 @@
 
   <!-- Ask the user to confirm before adding the shot to the collage -->
   @if (reviewPhoto(); as photo) {
-    <div class="photo-review" (click)="$event.stopPropagation()">
+    <div class="photo-review">
       <img
         [src]="photo.url"
         [attr.alt]="'PHOTO_VIEW.ALT' | translate"
@@ -37,11 +45,14 @@
         <button
           mat-raised-button
           color="primary"
-          (click)="acceptReviewedPhoto()"
+          (click)="acceptReviewedPhoto(); $event.stopPropagation()"
         >
           {{ 'COLLAGE.ACCEPT' | translate }}
         </button>
-        <button mat-raised-button (click)="rejectReviewedPhoto()">
+        <button
+          mat-raised-button
+          (click)="rejectReviewedPhoto(); $event.stopPropagation()"
+        >
           {{ 'COLLAGE.RETAKE' | translate }}
         </button>
       </div>
@@ -51,7 +62,10 @@
   <!-- Intermediate collage preview: shows template with ? placeholders filling
        empty slots; updated after every captured photo. Hidden while the
        countdown / capture is in progress so the user sees the live camera. -->
-  @if (!collagePhoto() && !capturing() && !reviewPhoto() && previewSrc(); as src) {
+  @if (
+    !collagePhoto() && !capturing() && !reviewPhoto() && previewSrc();
+    as src
+  ) {
     <div class="collage-preview-corner">
       <img [src]="src" [attr.alt]="'COLLAGE.PREVIEW_ALT' | translate" />
     </div>
@@ -92,11 +106,14 @@
     !isCollageComplete() &&
     !isOnlyLayoutActive
   ) {
-    <div
+    <button
+      type="button"
       class="message-stripe bottom-message"
       (click)="exitToHome(); $event.stopPropagation()"
     >
-      <p>{{ 'COLLAGE.CANCEL' | translate }}</p>
-    </div>
+      <span class="message-stripe__text">{{
+        'COLLAGE.CANCEL' | translate
+      }}</span>
+    </button>
   }
 </div>

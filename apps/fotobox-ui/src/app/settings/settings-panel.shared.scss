@@ -33,7 +33,11 @@
   }
 
   &--accent {
-    border-color: color-mix(in srgb, var(--sp-accent) 35%, var(--sp-card-border));
+    border-color: color-mix(
+      in srgb,
+      var(--sp-accent) 35%,
+      var(--sp-card-border)
+    );
   }
 
   .card-header {
@@ -257,6 +261,10 @@
 }
 
 .layout-preview-pane {
+  appearance: none;
+  margin: 0;
+  font: inherit;
+  color: inherit;
   display: flex;
   flex-direction: column;
   align-items: center;

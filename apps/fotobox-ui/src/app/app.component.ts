@@ -36,8 +36,7 @@ export class AppComponent implements OnInit {
   private readonly translateService = inject(TranslateService);
   // Activating the idle service here starts the idle timer for the whole app.
   private readonly _idle = inject(IdleService);
-
-  constructor(private apiHealthService: ApiHealthService) {}
+  private readonly apiHealthService = inject(ApiHealthService);
 
   ngOnInit() {
     this.updateShowRouter();

@@ -233,6 +233,19 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     return this.readSetting<number>('shutterTimeout') ?? 3;
   }
 
+  /**
+   * Keyboard equivalent of tapping the screen. Only reacts when the container
+   * itself is focused so that Enter/Space on nested buttons keeps its own
+   * meaning.
+   */
+  onContainerKeydown(event: Event): void {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    event.preventDefault();
+    this.takePicture();
+  }
+
   takePicture(): void {
     if (
       this.collagePhoto() ||

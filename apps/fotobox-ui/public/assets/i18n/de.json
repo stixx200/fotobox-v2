@@ -149,6 +149,7 @@
     "NETWORK_DEGRADED": "Verbindung zum Backend verloren – tippen zum Schließen"
   },
   "CAPTURE": {
+    "TAKE_PHOTO": "Foto aufnehmen",
     "TIMEOUT": "Foto-Aufnahme hat zu lange gedauert. Bitte erneut versuchen."
   }
 }

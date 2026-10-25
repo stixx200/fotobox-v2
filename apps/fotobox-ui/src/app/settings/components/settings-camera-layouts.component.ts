@@ -58,7 +58,8 @@ import { TranslatePipe } from '@ngx-translate/core';
         </mat-form-field>
 
         <div class="layouts-select-wrap">
-          <div
+          <button
+            type="button"
             class="layout-preview-pane"
             aria-live="polite"
             (click)="cycleLayoutPreview.emit()"
@@ -84,7 +85,7 @@ import { TranslatePipe } from '@ngx-translate/core';
                 'SETTINGS.LAYOUTS_PREVIEW_PLACEHOLDER' | translate
               }}</span>
             }
-          </div>
+          </button>
 
           <mat-form-field floatLabel="always" class="layouts-select-field">
             <mat-label>{{ 'SETTINGS.LAYOUTS' | translate }}</mat-label>

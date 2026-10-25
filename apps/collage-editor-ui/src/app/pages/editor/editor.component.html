@@ -4,7 +4,11 @@
       <a routerLink="/" class="back">{{ 'editor.back' | translate }}</a>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.history' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
@@ -33,15 +37,29 @@
       </div>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.view' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
         <div class="toolbar-flyout" role="menu">
-          <button type="button" class="flyout-item" role="menuitem" (click)="zoomFit()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="zoomFit()"
+          >
             {{ 'editor.zoomFit' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="zoom100()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="zoom100()"
+          >
             {{ 'editor.zoom100' | translate }}
           </button>
           <div class="flyout-divider" role="separator"></div>
@@ -69,76 +87,162 @@
     </div>
 
     <div class="toolbar-section toolbar-section--center">
-      <button type="button" class="toolbar-btn toolbar-btn--accent" (click)="addPhotoPane()">
+      <button
+        type="button"
+        class="toolbar-btn toolbar-btn--accent"
+        (click)="addPhotoPane()"
+      >
         + {{ 'editor.photoPane' | translate }}
       </button>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.shapes' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
         <div class="toolbar-flyout" role="menu">
-          <button type="button" class="flyout-item" role="menuitem" (click)="addShape()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addShape()"
+          >
             {{ 'editor.shape' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addEllipse()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addEllipse()"
+          >
             {{ 'editor.ellipse' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addCircle()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addCircle()"
+          >
             {{ 'editor.circle' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addRoundedRect()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addRoundedRect()"
+          >
             {{ 'editor.roundedRect' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addLine()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addLine()"
+          >
             {{ 'editor.line' | translate }}
           </button>
         </div>
       </div>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.presets' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
         <div class="toolbar-flyout" role="menu">
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('bubbles')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('bubbles')"
+          >
             {{ 'editor.presetsBubbles' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('balloons')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('balloons')"
+          >
             {{ 'editor.presetsBalloons' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('confetti')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('confetti')"
+          >
             {{ 'editor.presetsConfetti' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('hearts')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('hearts')"
+          >
             {{ 'editor.presetsHearts' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('sparkles')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('sparkles')"
+          >
             {{ 'editor.presetsSparkles' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('petals')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('petals')"
+          >
             {{ 'editor.presetsPetals' | translate }}
           </button>
-          <button type="button" class="flyout-item" role="menuitem" (click)="addDecoration('bokeh')">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addDecoration('bokeh')"
+          >
             {{ 'editor.presetsBokeh' | translate }}
           </button>
         </div>
       </div>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.content' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
         <div class="toolbar-flyout" role="menu">
-          <button type="button" class="flyout-item" role="menuitem" (click)="addText()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="addText()"
+          >
             {{ 'editor.text' | translate }}
           </button>
           <label class="flyout-item flyout-item--file" role="menuitem">
             {{ 'editor.image' | translate }}
-            <input type="file" accept="image/*" (change)="onImageSelected($event)" hidden />
+            <input
+              type="file"
+              accept="image/*"
+              (change)="onImageSelected($event)"
+              hidden
+            />
           </label>
         </div>
       </div>
@@ -146,12 +250,21 @@
 
     <div class="toolbar-section toolbar-section--right">
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.preview' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
         <div class="toolbar-flyout" role="menu">
-          <button type="button" class="flyout-item" role="menuitem" (click)="runPreview()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="runPreview()"
+          >
             {{ 'editor.preview' | translate }}
           </button>
           <button
@@ -168,7 +281,11 @@
       </div>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger toolbar-group-trigger--primary" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger toolbar-group-trigger--primary"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.save' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
@@ -195,12 +312,21 @@
       </div>
 
       <div class="toolbar-group">
-        <button type="button" class="toolbar-group-trigger toolbar-group-trigger--ghost" aria-haspopup="true">
+        <button
+          type="button"
+          class="toolbar-group-trigger toolbar-group-trigger--ghost"
+          aria-haspopup="true"
+        >
           {{ 'editor.toolbar.help' | translate }}
           <span class="trigger-chevron" aria-hidden="true">▾</span>
         </button>
         <div class="toolbar-flyout toolbar-flyout--align-end" role="menu">
-          <button type="button" class="flyout-item" role="menuitem" (click)="toggleShortcuts()">
+          <button
+            type="button"
+            class="flyout-item"
+            role="menuitem"
+            (click)="toggleShortcuts()"
+          >
             {{ 'editor.shortcuts' | translate }}
           </button>
         </div>
@@ -223,7 +349,12 @@
     </div>
 
     @if (!layersSidebarVisible()) {
-      <button type="button" class="layers-toggle" #layersToggle (click)="toggleLayersSidebar($event)">
+      <button
+        type="button"
+        class="layers-toggle"
+        #layersToggle
+        (click)="toggleLayersSidebar($event)"
+      >
         Panel
       </button>
     }
@@ -234,7 +365,6 @@
       [class.visible]="layersSidebarVisible()"
       [class.pinned]="layersSidebarPinned()"
       [class.overlay]="!layersSidebarPinned()"
-      (click)="$event.stopPropagation()"
     >
       <header class="layers-sidebar-header">
         <div class="layers-sidebar-actions">
@@ -247,7 +377,13 @@
             {{ layersSidebarPinned() ? 'Pinned' : 'Pin' }}
           </button>
           @if (!layersSidebarPinned()) {
-            <button type="button" class="icon-btn" (click)="closeLayersSidebar()">×</button>
+            <button
+              type="button"
+              class="icon-btn"
+              (click)="closeLayersSidebar()"
+            >
+              ×
+            </button>
           }
         </div>
       </header>
@@ -272,19 +408,38 @@
       </div>
 
       <div class="sidebar-panel">
-        <ng-template #layerActions let-layer="layer" let-showReorder="showReorder">
+        <ng-template
+          #layerActions
+          let-layer="layer"
+          let-showReorder="showReorder"
+        >
           <div class="layer-actions">
             <button
               type="button"
               class="layer-action layer-action--lock"
               [class.is-locked]="layer.locked"
-              [attr.title]="(layer.locked ? 'editor.unlock' : 'editor.lock') | translate"
-              [attr.aria-label]="(layer.locked ? 'editor.unlock' : 'editor.lock') | translate"
+              [attr.title]="
+                (layer.locked ? 'editor.unlock' : 'editor.lock') | translate
+              "
+              [attr.aria-label]="
+                (layer.locked ? 'editor.unlock' : 'editor.lock') | translate
+              "
               (click)="toggleLayerLocked(layer, $event)"
             >
               @if (layer.locked) {
-                <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor" />
+                <svg
+                  class="layer-action-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="5"
+                    y="11"
+                    width="14"
+                    height="10"
+                    rx="2"
+                    fill="currentColor"
+                  />
                   <path
                     d="M8 11V8a4 4 0 0 1 8 0v1"
                     fill="none"
@@ -294,7 +449,11 @@
                   />
                 </svg>
               } @else {
-                <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  class="layer-action-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <rect
                     x="5"
                     y="11"
@@ -319,12 +478,20 @@
               type="button"
               class="layer-action layer-action--visibility"
               [class.is-hidden]="!layer.visible"
-              [attr.title]="(layer.visible ? 'editor.hide' : 'editor.show') | translate"
-              [attr.aria-label]="(layer.visible ? 'editor.hide' : 'editor.show') | translate"
+              [attr.title]="
+                (layer.visible ? 'editor.hide' : 'editor.show') | translate
+              "
+              [attr.aria-label]="
+                (layer.visible ? 'editor.hide' : 'editor.show') | translate
+              "
               (click)="toggleLayerVisible(layer, $event)"
             >
               @if (layer.visible) {
-                <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  class="layer-action-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
                     fill="none"
@@ -332,10 +499,21 @@
                     stroke-width="2"
                     stroke-linejoin="round"
                   />
-                  <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2" />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
                 </svg>
               } @else {
-                <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  class="layer-action-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     d="M2 12s3.5-7 10-7c2.2 0 4 .6 5.4 1.4M22 12s-3.5 7-10 7c-2.2 0-4-.6-5.4-1.4"
                     fill="none"
@@ -343,7 +521,13 @@
                     stroke-width="2"
                     stroke-linecap="round"
                   />
-                  <path d="M3 3l18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path
+                    d="M3 3l18 18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
                 </svg>
               }
             </button>
@@ -354,8 +538,21 @@
               [attr.aria-label]="'editor.duplicate' | translate"
               (click)="duplicateLayer(layer, $event)"
             >
-              <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2" />
+              <svg
+                class="layer-action-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <rect
+                  x="9"
+                  y="9"
+                  width="11"
+                  height="11"
+                  rx="2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
                 <path
                   d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
                   fill="none"
@@ -373,7 +570,11 @@
                 [attr.aria-label]="'editor.bringForward' | translate"
                 (click)="layerReorderForward(layer.id, $event)"
               >
-                <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  class="layer-action-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     d="M12 5v14M5 12l7-7 7 7"
                     fill="none"
@@ -391,7 +592,11 @@
                 [attr.aria-label]="'editor.sendBackward' | translate"
                 (click)="layerReorderBackward(layer.id, $event)"
               >
-                <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  class="layer-action-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     d="M12 19V5M5 12l7 7 7-7"
                     fill="none"
@@ -410,7 +615,11 @@
               [attr.aria-label]="'editor.deleteLayer' | translate"
               (click)="deleteLayer(layer.id, $event)"
             >
-              <svg class="layer-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                class="layer-action-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path
                   d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"
                   fill="none"
@@ -434,7 +643,9 @@
                 [class.active]="activeLayerId() === layerGroups().background.id"
                 (click)="selectLayer(layerGroups().background.id, $event)"
               >
-                <span class="layer-label">{{ layerGroups().background.name }}</span>
+                <span class="layer-label">{{
+                  layerGroups().background.name
+                }}</span>
               </button>
             </div>
           </section>
@@ -462,7 +673,10 @@
                     }
                   </button>
                   <ng-container
-                    *ngTemplateOutlet="layerActions; context: { layer: layer, showReorder: true }"
+                    *ngTemplateOutlet="
+                      layerActions;
+                      context: { layer: layer, showReorder: true }
+                    "
                   />
                 </li>
               }
@@ -485,14 +699,21 @@
                     <span class="layer-label">{{ layer.name }}</span>
                   </button>
                   <ng-container
-                    *ngTemplateOutlet="layerActions; context: { layer: layer, showReorder: false }"
+                    *ngTemplateOutlet="
+                      layerActions;
+                      context: { layer: layer, showReorder: false }
+                    "
                   />
                 </li>
               }
             </ul>
           </section>
 
-          @if (activeLayerId() && selectionCount() === 1 && activeLayerType() !== 'background') {
+          @if (
+            activeLayerId() &&
+            selectionCount() === 1 &&
+            activeLayerType() !== 'background'
+          ) {
             <div class="props">
               <label>
                 Name
@@ -519,14 +740,40 @@
             </div>
           }
 
-          @if (activeLayerId() && selectionCount() === 1 && activeLayerType() !== 'background') {
+          @if (
+            activeLayerId() &&
+            selectionCount() === 1 &&
+            activeLayerType() !== 'background'
+          ) {
             <div class="props">
               <h3>{{ 'editor.positionSize' | translate }}</h3>
               <div class="field-grid">
-                <label>X<input type="number" [ngModel]="layerX()" (ngModelChange)="updateLayerX(+$event)" /></label>
-                <label>Y<input type="number" [ngModel]="layerY()" (ngModelChange)="updateLayerY(+$event)" /></label>
-                <label>W<input type="number" min="1" [ngModel]="layerWidth()" (ngModelChange)="updateLayerWidth(+$event)" /></label>
-                <label>H<input type="number" min="1" [ngModel]="layerHeight()" (ngModelChange)="updateLayerHeight(+$event)" /></label>
+                <label
+                  >X<input
+                    type="number"
+                    [ngModel]="layerX()"
+                    (ngModelChange)="updateLayerX(+$event)"
+                /></label>
+                <label
+                  >Y<input
+                    type="number"
+                    [ngModel]="layerY()"
+                    (ngModelChange)="updateLayerY(+$event)"
+                /></label>
+                <label
+                  >W<input
+                    type="number"
+                    min="1"
+                    [ngModel]="layerWidth()"
+                    (ngModelChange)="updateLayerWidth(+$event)"
+                /></label>
+                <label
+                  >H<input
+                    type="number"
+                    min="1"
+                    [ngModel]="layerHeight()"
+                    (ngModelChange)="updateLayerHeight(+$event)"
+                /></label>
               </div>
             </div>
           }
@@ -536,17 +783,33 @@
               <h3>{{ 'editor.align' | translate }}</h3>
               <p class="hint">{{ 'editor.alignHint' | translate }}</p>
               <div class="align-grid">
-                <button type="button" (click)="alignSelection('top')">Top</button>
-                <button type="button" (click)="alignSelection('center-v')">Middle</button>
-                <button type="button" (click)="alignSelection('bottom')">Bottom</button>
-                <button type="button" (click)="alignSelection('left')">Left</button>
-                <button type="button" (click)="alignSelection('center-h')">Center</button>
-                <button type="button" (click)="alignSelection('right')">Right</button>
+                <button type="button" (click)="alignSelection('top')">
+                  Top
+                </button>
+                <button type="button" (click)="alignSelection('center-v')">
+                  Middle
+                </button>
+                <button type="button" (click)="alignSelection('bottom')">
+                  Bottom
+                </button>
+                <button type="button" (click)="alignSelection('left')">
+                  Left
+                </button>
+                <button type="button" (click)="alignSelection('center-h')">
+                  Center
+                </button>
+                <button type="button" (click)="alignSelection('right')">
+                  Right
+                </button>
               </div>
               @if (selectionCount() >= 3) {
                 <div class="align-grid">
-                  <button type="button" (click)="distributeHorizontal()">{{ 'editor.distributeH' | translate }}</button>
-                  <button type="button" (click)="distributeVertical()">{{ 'editor.distributeV' | translate }}</button>
+                  <button type="button" (click)="distributeHorizontal()">
+                    {{ 'editor.distributeH' | translate }}
+                  </button>
+                  <button type="button" (click)="distributeVertical()">
+                    {{ 'editor.distributeV' | translate }}
+                  </button>
                 </div>
               }
             </div>
@@ -556,14 +819,46 @@
             <div class="props">
               <h3>{{ 'editor.photoBorder' | translate }}</h3>
               <div class="field-grid">
-                <label>Top<input type="number" min="0" [ngModel]="photoBorderTop()" (ngModelChange)="photoBorderTop.set(+$event)" (change)="applyPhotoBorder()" /></label>
-                <label>Bottom<input type="number" min="0" [ngModel]="photoBorderBottom()" (ngModelChange)="photoBorderBottom.set(+$event)" (change)="applyPhotoBorder()" /></label>
-                <label>Left<input type="number" min="0" [ngModel]="photoBorderLeft()" (ngModelChange)="photoBorderLeft.set(+$event)" (change)="applyPhotoBorder()" /></label>
-                <label>Right<input type="number" min="0" [ngModel]="photoBorderRight()" (ngModelChange)="photoBorderRight.set(+$event)" (change)="applyPhotoBorder()" /></label>
+                <label
+                  >Top<input
+                    type="number"
+                    min="0"
+                    [ngModel]="photoBorderTop()"
+                    (ngModelChange)="photoBorderTop.set(+$event)"
+                    (change)="applyPhotoBorder()"
+                /></label>
+                <label
+                  >Bottom<input
+                    type="number"
+                    min="0"
+                    [ngModel]="photoBorderBottom()"
+                    (ngModelChange)="photoBorderBottom.set(+$event)"
+                    (change)="applyPhotoBorder()"
+                /></label>
+                <label
+                  >Left<input
+                    type="number"
+                    min="0"
+                    [ngModel]="photoBorderLeft()"
+                    (ngModelChange)="photoBorderLeft.set(+$event)"
+                    (change)="applyPhotoBorder()"
+                /></label>
+                <label
+                  >Right<input
+                    type="number"
+                    min="0"
+                    [ngModel]="photoBorderRight()"
+                    (ngModelChange)="photoBorderRight.set(+$event)"
+                    (change)="applyPhotoBorder()"
+                /></label>
               </div>
               <label>
                 {{ 'editor.photoRotation' | translate }}
-                <input type="number" [ngModel]="photoRotation()" (ngModelChange)="updatePhotoRotation(+$event)" />
+                <input
+                  type="number"
+                  [ngModel]="photoRotation()"
+                  (ngModelChange)="updatePhotoRotation(+$event)"
+                />
               </label>
             </div>
           }
@@ -572,19 +867,56 @@
             <div class="props">
               <h3>{{ 'editor.shapeStyle' | translate }}</h3>
               @if (shapeSupportsFill()) {
-                <label>Fill<input type="color" class="color-input" [ngModel]="shapeFillColor()" (ngModelChange)="updateShapeFillColor($event)" /></label>
+                <label
+                  >Fill<input
+                    type="color"
+                    class="color-input"
+                    [ngModel]="shapeFillColor()"
+                    (ngModelChange)="updateShapeFillColor($event)"
+                /></label>
               }
-              <label>Stroke<input type="color" class="color-input" [ngModel]="shapeStrokeColor()" (ngModelChange)="updateShapeStrokeColor($event)" /></label>
-              <label>Width<input type="number" min="0" [ngModel]="shapeStrokeWidth()" (ngModelChange)="updateShapeStrokeWidth(+$event)" /></label>
-              <label>Rotation<input type="number" [ngModel]="shapeRotation()" (ngModelChange)="updateShapeRotation(+$event)" /></label>
-              <label>Opacity<input type="number" min="0" max="100" [ngModel]="shapeOpacity()" (ngModelChange)="updateShapeOpacity(+$event)" /></label>
+              <label
+                >Stroke<input
+                  type="color"
+                  class="color-input"
+                  [ngModel]="shapeStrokeColor()"
+                  (ngModelChange)="updateShapeStrokeColor($event)"
+              /></label>
+              <label
+                >Width<input
+                  type="number"
+                  min="0"
+                  [ngModel]="shapeStrokeWidth()"
+                  (ngModelChange)="updateShapeStrokeWidth(+$event)"
+              /></label>
+              <label
+                >Rotation<input
+                  type="number"
+                  [ngModel]="shapeRotation()"
+                  (ngModelChange)="updateShapeRotation(+$event)"
+              /></label>
+              <label
+                >Opacity<input
+                  type="number"
+                  min="0"
+                  max="100"
+                  [ngModel]="shapeOpacity()"
+                  (ngModelChange)="updateShapeOpacity(+$event)"
+              /></label>
             </div>
           }
 
           @if (activeLayerType() === 'text' && selectionCount() === 1) {
             <div class="props">
               <h3>{{ 'editor.textStyle' | translate }}</h3>
-              <label>{{ 'editor.textContent' | translate }}<textarea rows="2" [ngModel]="textContent()" (ngModelChange)="updateTextContent($event)"></textarea></label>
+              <label
+                >{{ 'editor.textContent' | translate
+                }}<textarea
+                  rows="2"
+                  [ngModel]="textContent()"
+                  (ngModelChange)="updateTextContent($event)"
+                ></textarea>
+              </label>
               <label>
                 {{ 'editor.fontFamily' | translate }}
                 <select
@@ -593,28 +925,108 @@
                   (ngModelChange)="updateTextFontFamily($event)"
                 >
                   @for (font of textFontOptionsForSelect(); track font) {
-                    <option [value]="font" [style.font-family]="font">{{ font }}</option>
+                    <option [value]="font" [style.font-family]="font">
+                      {{ font }}
+                    </option>
                   }
                 </select>
               </label>
-              <label>{{ 'editor.fontSize' | translate }}<input type="number" min="8" [ngModel]="textFontSize()" (ngModelChange)="updateTextFontSize(+$event)" /></label>
-              <label>{{ 'editor.fontWeight' | translate }}<select [ngModel]="textFontWeight()" (ngModelChange)="updateTextFontWeight($event)"><option value="normal">Normal</option><option value="bold">Bold</option></select></label>
-              <label>{{ 'editor.textAlign' | translate }}<select [ngModel]="textAlign()" (ngModelChange)="updateTextAlign($event)"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label>
-              <label>{{ 'editor.textColor' | translate }}<input type="color" class="color-input" [ngModel]="textColor()" (ngModelChange)="updateTextColor($event)" /></label>
-              <label>Rotation<input type="number" [ngModel]="textRotation()" (ngModelChange)="updateTextRotation(+$event)" /></label>
-              <label>Spacing<input type="number" [ngModel]="textCharSpacing()" (ngModelChange)="updateTextCharSpacing(+$event)" /></label>
-              <label>Line height<input type="number" step="0.1" [ngModel]="textLineHeight()" (ngModelChange)="updateTextLineHeight(+$event)" /></label>
+              <label
+                >{{ 'editor.fontSize' | translate
+                }}<input
+                  type="number"
+                  min="8"
+                  [ngModel]="textFontSize()"
+                  (ngModelChange)="updateTextFontSize(+$event)"
+              /></label>
+              <label
+                >{{ 'editor.fontWeight' | translate
+                }}<select
+                  [ngModel]="textFontWeight()"
+                  (ngModelChange)="updateTextFontWeight($event)"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="bold">Bold</option>
+                </select></label
+              >
+              <label
+                >{{ 'editor.textAlign' | translate
+                }}<select
+                  [ngModel]="textAlign()"
+                  (ngModelChange)="updateTextAlign($event)"
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select></label
+              >
+              <label
+                >{{ 'editor.textColor' | translate
+                }}<input
+                  type="color"
+                  class="color-input"
+                  [ngModel]="textColor()"
+                  (ngModelChange)="updateTextColor($event)"
+              /></label>
+              <label
+                >Rotation<input
+                  type="number"
+                  [ngModel]="textRotation()"
+                  (ngModelChange)="updateTextRotation(+$event)"
+              /></label>
+              <label
+                >Spacing<input
+                  type="number"
+                  [ngModel]="textCharSpacing()"
+                  (ngModelChange)="updateTextCharSpacing(+$event)"
+              /></label>
+              <label
+                >Line height<input
+                  type="number"
+                  step="0.1"
+                  [ngModel]="textLineHeight()"
+                  (ngModelChange)="updateTextLineHeight(+$event)"
+              /></label>
             </div>
           }
 
           @if (activeLayerType() === 'image' && selectionCount() === 1) {
             <div class="props">
               <h3>{{ 'editor.imageStyle' | translate }}</h3>
-              <p class="hint">{{ 'editor.filename' | translate }}: {{ imageFilename() }}</p>
-              <label class="file-btn inline">{{ 'editor.replaceImage' | translate }}<input type="file" accept="image/*" (change)="onReplaceImageSelected($event)" hidden /></label>
-              <label>{{ 'editor.opacity' | translate }}<input type="number" min="0" max="100" [ngModel]="imageOpacity()" (ngModelChange)="updateImageOpacity(+$event)" /></label>
-              <label class="checkbox-row"><input type="checkbox" [ngModel]="imageFlipX()" (ngModelChange)="updateImageFlipX($event)" />{{ 'editor.flipX' | translate }}</label>
-              <label class="checkbox-row"><input type="checkbox" [ngModel]="imageFlipY()" (ngModelChange)="updateImageFlipY($event)" />{{ 'editor.flipY' | translate }}</label>
+              <p class="hint">
+                {{ 'editor.filename' | translate }}: {{ imageFilename() }}
+              </p>
+              <label class="file-btn inline"
+                >{{ 'editor.replaceImage' | translate
+                }}<input
+                  type="file"
+                  accept="image/*"
+                  (change)="onReplaceImageSelected($event)"
+                  hidden
+              /></label>
+              <label
+                >{{ 'editor.opacity' | translate
+                }}<input
+                  type="number"
+                  min="0"
+                  max="100"
+                  [ngModel]="imageOpacity()"
+                  (ngModelChange)="updateImageOpacity(+$event)"
+              /></label>
+              <label class="checkbox-row"
+                ><input
+                  type="checkbox"
+                  [ngModel]="imageFlipX()"
+                  (ngModelChange)="updateImageFlipX($event)"
+                />{{ 'editor.flipX' | translate }}</label
+              >
+              <label class="checkbox-row"
+                ><input
+                  type="checkbox"
+                  [ngModel]="imageFlipY()"
+                  (ngModelChange)="updateImageFlipY($event)"
+                />{{ 'editor.flipY' | translate }}</label
+              >
             </div>
           }
 
@@ -649,7 +1061,9 @@
             (canvasWidthChange)="canvasWidth.set($event)"
             (canvasHeightChange)="canvasHeight.set($event)"
             (collageDirectoryChange)="collageDirectory.set($event)"
-            (templateBorderEnabledChange)="onTemplateBorderEnabledChange($event)"
+            (templateBorderEnabledChange)="
+              onTemplateBorderEnabledChange($event)
+            "
             (templateBorderWidthChange)="templateBorderWidth.set($event)"
             (resizeCanvas)="resizeCanvas()"
             (applyTemplateBorder)="applyTemplateBorder()"
@@ -676,17 +1090,37 @@
   </div>
 
   @if (shortcutsOpen()) {
-    <div class="shortcuts-modal" (click)="toggleShortcuts()">
-      <div class="shortcuts-panel" (click)="$event.stopPropagation()">
-        <h2>{{ 'editor.shortcutsTitle' | translate }}</h2>
+    <div
+      class="shortcuts-modal"
+      role="presentation"
+      (click)="toggleShortcuts()"
+    >
+      <div
+        class="shortcuts-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-title"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+        (click)="$event.stopPropagation()"
+        (keydown.escape)="toggleShortcuts()"
+      >
+        <h2 id="shortcuts-title">{{ 'editor.shortcutsTitle' | translate }}</h2>
         <ul>
           <li><kbd>Ctrl+Z</kbd> {{ 'editor.shortcutUndo' | translate }}</li>
-          <li><kbd>Ctrl+Shift+Z</kbd> {{ 'editor.shortcutRedo' | translate }}</li>
+          <li>
+            <kbd>Ctrl+Shift+Z</kbd> {{ 'editor.shortcutRedo' | translate }}
+          </li>
           <li><kbd>Ctrl+S</kbd> {{ 'editor.shortcutSave' | translate }}</li>
-          <li><kbd>Ctrl+D</kbd> {{ 'editor.shortcutDuplicate' | translate }}</li>
+          <li>
+            <kbd>Ctrl+D</kbd> {{ 'editor.shortcutDuplicate' | translate }}
+          </li>
           <li><kbd>Delete</kbd> {{ 'editor.shortcutDelete' | translate }}</li>
           <li><kbd>Arrows</kbd> {{ 'editor.shortcutNudge' | translate }}</li>
-          <li><kbd>Shift+Arrows</kbd> {{ 'editor.shortcutNudgeLarge' | translate }}</li>
+          <li>
+            <kbd>Shift+Arrows</kbd>
+            {{ 'editor.shortcutNudgeLarge' | translate }}
+          </li>
           <li><kbd>Alt+Wheel</kbd> Zoom</li>
           <li><kbd>Shift+Drag</kbd> Pan</li>
         </ul>

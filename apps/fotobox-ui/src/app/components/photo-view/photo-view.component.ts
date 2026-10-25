@@ -14,16 +14,18 @@ import { TranslatePipe } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, TranslatePipe],
   template: `
-    <div class="photo-view" (click)="$event.stopPropagation()">
+    <div
+      class="photo-view"
+      role="dialog"
+      [attr.aria-label]="'PHOTO_VIEW.ALT' | translate"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="onBack($event)"
+    >
       <img [src]="src" [attr.alt]="'PHOTO_VIEW.ALT' | translate" />
 
       <div class="photo-actions">
         @if (showPrint) {
-          <button
-            mat-raised-button
-            color="primary"
-            (click)="onPrint($event)"
-          >
+          <button mat-raised-button color="primary" (click)="onPrint($event)">
             <mat-icon>print</mat-icon>
             {{ 'PHOTO_VIEW.PRINT' | translate }}
           </button>

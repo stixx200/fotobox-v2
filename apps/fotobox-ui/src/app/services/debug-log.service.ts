@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { map, Observable } from 'rxjs';
 
@@ -36,7 +36,7 @@ const CLEAR_LOGS = gql`
 
 @Injectable({ providedIn: 'root' })
 export class DebugLogService {
-  constructor(private readonly apollo: Apollo) {}
+  private readonly apollo = inject(Apollo);
 
   getRecentLogs(limit = 200): Observable<ServerLogEntry[]> {
     return this.apollo

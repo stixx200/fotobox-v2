@@ -161,6 +161,13 @@ export class GalleryComponent implements OnDestroy {
     this.selected.set(photo);
   }
 
+  /** Close the detail view only when the dimmed backdrop itself is tapped. */
+  onDetailBackdropClick(event: Event): void {
+    if (event.target === event.currentTarget) {
+      this.closeDetail();
+    }
+  }
+
   closeDetail(): void {
     this.deleteConfirmPending.set(false);
     this.selected.set(null);

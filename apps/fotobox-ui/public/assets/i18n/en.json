@@ -149,6 +149,7 @@
     "NETWORK_DEGRADED": "Connection to backend lost — tap to dismiss"
   },
   "CAPTURE": {
+    "TAKE_PHOTO": "Take a photo",
     "TIMEOUT": "Photo capture timed out. Please try again."
   }
 }

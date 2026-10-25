@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
+import { requireData } from './graphql-result';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -32,21 +33,21 @@ export interface AppMetadata {
   providedIn: 'root',
 })
 export class AppMetadataService {
-  constructor(private apollo: Apollo) {}
+  private readonly apollo = inject(Apollo);
 
   getAppMetadata(): Observable<AppMetadata> {
     return this.apollo
       .query<{ appMetadata: AppMetadata }>({
         query: GET_APP_METADATA,
       })
-      .pipe(map((result) => result.data!.appMetadata));
+      .pipe(map((result) => requireData(result).appMetadata));
   }
 
   getAppVersion(): Observable<string> {
     return this.apollo
-      .query<{ appVersion: string }>({  
+      .query<{ appVersion: string }>({
         query: GET_APP_VERSION,
       })
-      .pipe(map((result) => result.data!.appVersion));
+      .pipe(map((result) => requireData(result).appVersion));
   }
 }

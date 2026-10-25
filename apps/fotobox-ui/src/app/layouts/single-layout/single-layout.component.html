@@ -1,4 +1,12 @@
-<div class="layout-container" (click)="takePicture()">
+<div
+  class="layout-container"
+  role="button"
+  tabindex="0"
+  [attr.aria-label]="'CAPTURE.TAKE_PHOTO' | translate"
+  (click)="takePicture()"
+  (keydown.enter)="onContainerKeydown($event)"
+  (keydown.space)="onContainerKeydown($event)"
+>
   @if (isOnlyLayoutActive) {
     <app-settings-escape-zone></app-settings-escape-zone>
     @if (showGalleryButton()) {
@@ -53,11 +61,14 @@
 
   <!-- Bottom message to exit (only if collage is available) -->
   @if (!photo() && !capturing() && !isOnlyLayoutActive) {
-    <div
+    <button
+      type="button"
       class="message-stripe bottom-message"
       (click)="exitToHome(); $event.stopPropagation()"
     >
-      <p>{{ 'SINGLE.CANCEL' | translate }}</p>
-    </div>
+      <span class="message-stripe__text">{{
+        'SINGLE.CANCEL' | translate
+      }}</span>
+    </button>
   }
 </div>
