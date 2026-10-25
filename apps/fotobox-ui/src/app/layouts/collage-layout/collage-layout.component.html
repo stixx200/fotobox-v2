@@ -1,5 +1,5 @@
 <div
-  class="layout-container"
+  class="layout-container kiosk-dark"
   role="button"
   tabindex="0"
   [attr.aria-label]="'CAPTURE.TAKE_PHOTO' | translate"
@@ -7,12 +7,17 @@
   (keydown.enter)="onContainerKeydown($event)"
   (keydown.space)="onContainerKeydown($event)"
 >
+  <div class="live-view">
+    <app-camera-live-view></app-camera-live-view>
+  </div>
+  <div class="live-view-scrim" aria-hidden="true"></div>
+
   @if (isOnlyLayoutActive) {
     <app-settings-escape-zone></app-settings-escape-zone>
-    @if (showGalleryButton()) {
+    @if (showGalleryButton() && isIdle()) {
       <button
         class="gallery-btn"
-        mat-mini-fab
+        matIconButton
         [attr.aria-label]="'GALLERY.OPEN' | translate"
         (click)="goToGallery(); $event.stopPropagation()"
       >
@@ -21,20 +26,112 @@
     }
   }
 
-  <div class="live-view" [class.photo-mode]="collagePhoto()">
-    <app-camera-live-view></app-camera-live-view>
-  </div>
+  <!-- Ready / progress prompt -->
+  @if (isIdle()) {
+    <div class="kiosk-prompt">
+      <mat-icon aria-hidden="true">touch_app</mat-icon>
+      <span class="kiosk-prompt__text">
+        @if (requiredPhotos() > 1) {
+          <span>{{
+            'COLLAGE.PHOTO_PROGRESS'
+              | translate
+                : { next: photos().length + 1, total: requiredPhotos() }
+          }}</span>
+          <span class="kiosk-prompt__sub">{{
+            'COLLAGE.TAP_HINT' | translate
+          }}</span>
+        } @else {
+          <span>{{ 'SINGLE.PROMPT' | translate }}</span>
+        }
+      </span>
+    </div>
 
-  <!-- Ready / progress message -->
-  @if (!collagePhoto() && !capturing() && !reviewPhoto() && topMessage()) {
-    <div class="message-stripe top-message">
-      <p>{{ topMessage() }}</p>
+    <button
+      type="button"
+      class="shutter-btn"
+      data-testid="shutter"
+      [attr.aria-label]="'CAPTURE.TAKE_PHOTO' | translate"
+      (click)="takePicture(); $event.stopPropagation()"
+    >
+      <mat-icon>photo_camera</mat-icon>
+    </button>
+  }
+
+  <!-- Collage is being assembled -->
+  @if (building()) {
+    <div class="capture-progress" role="status">
+      <div class="capture-progress__pill">
+        <mat-spinner diameter="28" />
+        {{ 'COLLAGE.BUILDING' | translate }}
+      </div>
+    </div>
+  }
+
+  <!-- Finalizing failed: never leave the guest stuck -->
+  @if (finalizeFailed()) {
+    <div
+      class="collage-error"
+      role="alertdialog"
+      aria-labelledby="collage-error-title"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()"
+    >
+      <div class="collage-error__panel">
+        <mat-icon class="collage-error__icon" aria-hidden="true"
+          >error_outline</mat-icon
+        >
+        <h2 id="collage-error-title">
+          {{ 'COLLAGE.FINALIZE_ERROR' | translate }}
+        </h2>
+        <p>{{ 'COLLAGE.FINALIZE_ERROR_HINT' | translate }}</p>
+        <div class="collage-error__actions">
+          <button
+            matButton="filled"
+            class="kiosk-action"
+            (click)="retryFinalize()"
+          >
+            <mat-icon>refresh</mat-icon>
+            {{ 'COLLAGE.RETRY' | translate }}
+          </button>
+          <button
+            matButton="outlined"
+            class="kiosk-action"
+            (click)="restartCollage()"
+          >
+            <mat-icon>restart_alt</mat-icon>
+            {{ 'COLLAGE.RESTART' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (capturing() && !flashing()) {
+    <div class="capture-progress" role="status">
+      <div class="capture-progress__pill">
+        <mat-spinner diameter="28" />
+        {{ 'CAPTURE.PROCESSING' | translate }}
+      </div>
     </div>
   }
 
   <!-- Ask the user to confirm before adding the shot to the collage -->
   @if (reviewPhoto(); as photo) {
-    <div class="photo-review">
+    <div
+      class="photo-review"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'COLLAGE.USE_PHOTO' | translate"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()"
+    >
+      <p class="photo-review__step">
+        {{
+          'COLLAGE.PHOTO_STEP'
+            | translate: { next: photos().length + 1, total: requiredPhotos() }
+        }}
+      </p>
       <img
         [src]="photo.url"
         [attr.alt]="'PHOTO_VIEW.ALT' | translate"
@@ -43,31 +140,36 @@
       <p class="photo-review__prompt">{{ 'COLLAGE.USE_PHOTO' | translate }}</p>
       <div class="photo-review__actions">
         <button
-          mat-raised-button
-          color="primary"
-          (click)="acceptReviewedPhoto(); $event.stopPropagation()"
+          matButton="outlined"
+          class="kiosk-action"
+          (click)="rejectReviewedPhoto()"
         >
-          {{ 'COLLAGE.ACCEPT' | translate }}
+          <mat-icon>replay</mat-icon>
+          {{ 'COLLAGE.RETAKE' | translate }}
         </button>
         <button
-          mat-raised-button
-          (click)="rejectReviewedPhoto(); $event.stopPropagation()"
+          matButton="filled"
+          class="kiosk-action"
+          (click)="acceptReviewedPhoto()"
         >
-          {{ 'COLLAGE.RETAKE' | translate }}
+          <mat-icon>check</mat-icon>
+          {{ 'COLLAGE.ACCEPT' | translate }}
         </button>
       </div>
     </div>
   }
 
-  <!-- Intermediate collage preview: shows template with ? placeholders filling
-       empty slots; updated after every captured photo. Hidden while the
-       countdown / capture is in progress so the user sees the live camera. -->
-  @if (
-    !collagePhoto() && !capturing() && !reviewPhoto() && previewSrc();
-    as src
-  ) {
+  <!-- Intermediate collage preview: template with ? placeholders for empty
+       slots, updated after every captured photo. Hidden while the countdown
+       / capture is in progress so the user sees the live camera. -->
+  @if (isIdle() && previewSrc(); as src) {
     <div class="collage-preview-corner">
       <img [src]="src" [attr.alt]="'COLLAGE.PREVIEW_ALT' | translate" />
+      <div class="collage-preview-corner__progress" aria-hidden="true">
+        @for (slot of slots(); track $index) {
+          <span class="dot" [class.dot--done]="slot"></span>
+        }
+      </div>
     </div>
   }
 
@@ -77,15 +179,17 @@
       [src]="src"
       [showPrint]="showPrint()"
       [showShare]="showShare()"
+      [printing]="actions.printing()"
+      [sharing]="actions.sharing()"
       (print)="print()"
       (share)="share()"
       (back)="exitToHome()"
     ></app-photo-view>
-    @if (activeShareLink(); as link) {
+    @if (actions.shareLink(); as link) {
       <app-share-qr-overlay
         [shareUrl]="link.url"
         [expiresAt]="link.expiresAt"
-        (closed)="closeShare()"
+        (closed)="actions.closeShare()"
       ></app-share-qr-overlay>
     }
   }
@@ -98,22 +202,16 @@
     <div class="capture-flash"></div>
   }
 
-  <!-- Bottom message to exit (only if single layout is available) -->
-  @if (
-    !collagePhoto() &&
-    !capturing() &&
-    !reviewPhoto() &&
-    !isCollageComplete() &&
-    !isOnlyLayoutActive
-  ) {
+  <!-- Back to the layout choice (only when there is a choice) -->
+  @if (isIdle() && !isOnlyLayoutActive) {
     <button
       type="button"
-      class="message-stripe bottom-message"
+      matButton="tonal"
+      class="back-btn kiosk-action"
       (click)="exitToHome(); $event.stopPropagation()"
     >
-      <span class="message-stripe__text">{{
-        'COLLAGE.CANCEL' | translate
-      }}</span>
+      <mat-icon>{{ photos().length ? 'close' : 'arrow_back' }}</mat-icon>
+      {{ (photos().length ? 'COLLAGE.CANCEL' : 'SINGLE.CANCEL') | translate }}
     </button>
   }
 </div>

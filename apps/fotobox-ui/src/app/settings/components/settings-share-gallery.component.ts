@@ -35,12 +35,6 @@ import { TranslatePipe } from '@ngx-translate/core';
           class="card-header card-header--toggle"
           (click)="shareToggle.emit()"
           [attr.aria-expanded]="shareExpanded()"
-          [attr.aria-label]="
-            (shareExpanded()
-              ? 'SETTINGS.COLLAPSE_SECTION'
-              : 'SETTINGS.EXPAND_SECTION'
-            ) | translate
-          "
         >
           <mat-icon>qr_code_2</mat-icon>
           <span class="card-header-title">{{
@@ -121,12 +115,6 @@ import { TranslatePipe } from '@ngx-translate/core';
           class="card-header card-header--toggle"
           (click)="galleryToggle.emit()"
           [attr.aria-expanded]="galleryExpanded()"
-          [attr.aria-label]="
-            (galleryExpanded()
-              ? 'SETTINGS.COLLAPSE_SECTION'
-              : 'SETTINGS.EXPAND_SECTION'
-            ) | translate
-          "
         >
           <mat-icon>photo_library</mat-icon>
           <span class="card-header-title">{{

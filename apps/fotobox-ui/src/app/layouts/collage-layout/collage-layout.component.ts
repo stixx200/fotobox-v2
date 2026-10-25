@@ -11,20 +11,21 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, of, switchMap } from 'rxjs';
 import { SettingsStore, CameraStore } from '../../store';
 import { CameraLiveViewComponent } from '../../components/camera-live-view/camera-live-view.component';
 import { CountdownComponent } from '../../components/countdown/countdown.component';
 import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
 import { CollageService } from '../../services/collage.service';
 import { getPhotoUrl } from '../../api-config';
-import { PrintService } from '../../services/print.service';
-import { ShareService, ShareLink } from '../../services/share.service';
+import { PhotoActionsService } from '../../services/photo-actions.service';
 import { NotificationService } from '../../services/notification.service';
 import { LayoutNavigationService } from '../../services/layout-navigation.service';
 import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
 import { GalleryAccessService } from '../../services/gallery-access.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
 import { CaptureWatchdogService } from '../../services/capture-watchdog.service';
@@ -45,10 +46,12 @@ interface ReviewPhoto {
     PhotoViewComponent,
     MatButtonModule,
     MatIconModule,
+    MatProgressSpinnerModule,
     TranslatePipe,
     SettingsEscapeZoneComponent,
     ShareQrOverlayComponent,
   ],
+  providers: [PhotoActionsService],
   templateUrl: './collage-layout.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './collage-layout.component.scss',
@@ -59,8 +62,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
   private readonly collageService = inject(CollageService);
-  private readonly printService = inject(PrintService);
-  private readonly shareService = inject(ShareService);
+  readonly actions = inject(PhotoActionsService);
   private readonly notificationService = inject(NotificationService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly translateService = inject(TranslateService);
@@ -80,6 +82,8 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   readonly capturing = signal(false);
   readonly building = signal(false);
   readonly flashing = signal(false);
+  /** Finalizing failed — the guest chooses retry or restart. */
+  readonly finalizeFailed = signal(false);
   /** Photo awaiting user confirmation before it is added to the collage. */
   readonly reviewPhoto = signal<ReviewPhoto | null>(null);
 
@@ -97,39 +101,18 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.settingsStore.settings();
     return this.galleryAccess.isGalleryEnabled();
   });
-  readonly activeShareLink = signal<ShareLink | null>(null);
 
   readonly isCollageComplete = computed(
     () => this.photos().length >= this.requiredPhotos(),
   );
 
-  readonly topMessage = computed(() => {
-    if (this.building()) {
-      return this.translateService.instant('COLLAGE.BUILDING');
-    }
-    const taken = this.photos().length;
-    const total = this.requiredPhotos();
-    if (taken >= total) {
-      return this.translateService.instant('COLLAGE.BUILDING');
-    }
-    const next = taken + 1;
-    if (this.reviewPhoto()) {
-      return this.translateService.instant('COLLAGE.USE_PHOTO');
-    }
-    if (total === 1) {
-      return '';
-    }
-    if (this.previewSrc() && !this.capturing()) {
-      return this.translateService.instant('COLLAGE.PHOTO_TAKEN', {
-        next,
-        total,
-      });
-    }
-    return this.translateService.instant('COLLAGE.PHOTO_PROMPT', {
-      next,
-      total,
-    });
-  });
+  /** One entry per collage slot: `true` once that photo is taken. */
+  readonly slots = computed(() =>
+    Array.from(
+      { length: this.requiredPhotos() },
+      (_, i) => i < this.photos().length,
+    ),
+  );
 
   constructor() {
     // Process each freshly captured photo as it arrives in the store.
@@ -248,15 +231,21 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.takePicture();
   }
 
+  /** Live view is waiting for the next tap. */
+  isIdle(): boolean {
+    return (
+      !this.collagePhoto() &&
+      !this.building() &&
+      !this.capturing() &&
+      !this.reviewPhoto() &&
+      !this.finalizeFailed() &&
+      !this.countdownRef()?.isRunning &&
+      !this.isCollageComplete()
+    );
+  }
+
   takePicture(): void {
-    if (
-      this.collagePhoto() ||
-      this.building() ||
-      this.capturing() ||
-      this.reviewPhoto() ||
-      this.countdownRef()?.isRunning ||
-      this.isCollageComplete()
-    ) {
+    if (!this.isIdle()) {
       return;
     }
     this.countdownRef()?.start(this.shutterTimeout());
@@ -354,6 +343,7 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   }
 
   private finalizeCollage(): void {
+    this.finalizeFailed.set(false);
     this.building.set(true);
     this.collageService.finalizeCollage().subscribe({
       next: (result) => {
@@ -362,11 +352,34 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.building.set(false);
-        this.notificationService.error(
-          this.translateService.instant('COLLAGE.FINALIZE_ERROR'),
-        );
+        this.finalizeFailed.set(true);
       },
     });
+  }
+
+  retryFinalize(): void {
+    this.finalizeCollage();
+  }
+
+  /** Throw away the current collage and start over with the same template. */
+  restartCollage(): void {
+    this.reset();
+    // Reset first, then start — a late reset must not wipe the new collage.
+    this.collageService
+      .resetCollage()
+      .pipe(
+        catchError(() => of(null)),
+        switchMap(() => this.collageService.startCollage(this.templateId)),
+      )
+      .subscribe({
+        next: () => this.loadCollagePreview(),
+        error: () => {
+          this.notificationService.error(
+            this.translateService.instant('COLLAGE.START_ERROR'),
+          );
+          this.recovery.navigateToSettings();
+        },
+      });
   }
 
   get isOnlyLayoutActive(): boolean {
@@ -378,32 +391,13 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
   }
 
   async print(): Promise<void> {
-    const url = this.collagePhoto();
-    if (!url) {
-      return;
-    }
-    const success = await this.printService.printPhoto(url);
-    if (success) {
+    if (await this.actions.print(this.collagePhoto())) {
       this.exitToHome();
     }
   }
 
   share(): void {
-    const url = this.collagePhoto();
-    if (!url) {
-      return;
-    }
-    this.shareService.createShareLink(url).subscribe({
-      next: (link) => this.activeShareLink.set(link),
-      error: () =>
-        this.notificationService.error(
-          this.translateService.instant('SHARE.ERROR'),
-        ),
-    });
-  }
-
-  closeShare(): void {
-    this.activeShareLink.set(null);
+    this.actions.share(this.collagePhoto());
   }
 
   private reset(): void {
@@ -413,7 +407,9 @@ export class CollageLayoutComponent implements OnInit, OnDestroy {
     this.collagePhoto.set(null);
     this.recoverFromCaptureFailure();
     this.building.set(false);
+    this.finalizeFailed.set(false);
     this.reviewPhoto.set(null);
+    this.actions.closeShare();
     this.stopCaptureWatch();
   }
 

@@ -52,7 +52,25 @@ function isTypenameHealthCheck(body: GraphqlBody): boolean {
 }
 
 export class FotoboxUiGraphqlMock {
+  private settingOverrides: Record<string, unknown> = {};
+
   constructor(private readonly page: Page) {}
+
+  /** Override setting values (JSON-encoded like the API) for this test. */
+  setSettings(overrides: Record<string, unknown>): void {
+    this.settingOverrides = { ...this.settingOverrides, ...overrides };
+  }
+
+  private settings() {
+    return DEFAULT_SETTINGS.map((setting) =>
+      setting.key in this.settingOverrides
+        ? {
+            ...setting,
+            value: JSON.stringify(this.settingOverrides[setting.key]),
+          }
+        : setting,
+    );
+  }
 
   async install(): Promise<void> {
     await this.page.route('**/graphql', async (route: Route) => {
@@ -80,14 +98,14 @@ export class FotoboxUiGraphqlMock {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              data: { settings: { items: DEFAULT_SETTINGS } },
+              data: { settings: { items: this.settings() } },
             }),
           });
           return;
         case 'GetSetting': {
           const key = String(variables['key'] ?? '');
           const setting =
-            DEFAULT_SETTINGS.find((item) => item.key === key) ?? null;
+            this.settings().find((item) => item.key === key) ?? null;
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -204,6 +222,35 @@ export class FotoboxUiGraphqlMock {
                 layoutPreview: `data:image/jpeg;base64,${TINY_JPEG}`,
               },
             }),
+          });
+          return;
+        case 'UpdateSettings':
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { updateSettings: this.settings() },
+            }),
+          });
+          return;
+        case 'InitializeCamera':
+        case 'StartLiveView':
+        case 'StopLiveView': {
+          const field = operation.charAt(0).toLowerCase() + operation.slice(1);
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { [field]: { success: true, message: null } },
+            }),
+          });
+          return;
+        }
+        case 'Photos':
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ data: { photos: [] } }),
           });
           return;
         default:

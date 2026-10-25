@@ -15,10 +15,19 @@ import { CollageService } from '../services/collage.service';
 import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { ClientLogService } from '../services/client-log.service';
 import { ShareService } from '../services/share.service';
-import { TranslateService } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
+import { NotificationService } from '../services/notification.service';
 
 describe('SettingsComponent', () => {
+  const isLoading = signal(false);
+  const storeError = signal<string | null>(null);
+  const updateSettings = vi.fn();
+  const notification = { success: vi.fn(), error: vi.fn() };
+
   beforeEach(async () => {
+    isLoading.set(false);
+    storeError.set(null);
+    vi.clearAllMocks();
     await TestBed.configureTestingModule({
       imports: [SettingsComponent],
       providers: [
@@ -29,8 +38,9 @@ describe('SettingsComponent', () => {
           provide: SettingsStore,
           useValue: {
             settings: signal([]),
-            isLoading: signal(false),
-            error: signal(null),
+            isLoading,
+            error: storeError,
+            updateSettings,
           },
         },
         {
@@ -82,18 +92,9 @@ describe('SettingsComponent', () => {
             getDetectedShareBaseUrl: () => of(''),
           },
         },
-        {
-          provide: TranslateService,
-          useValue: {
-            instant: (key: string) => key,
-            currentLang: () => 'en',
-            use: () => of('en'),
-            get: () => of(''),
-            onLangChange: of({ lang: 'en' }),
-            onTranslationChange: of({}),
-            onDefaultLangChange: of({}),
-          },
-        },
+        { provide: NotificationService, useValue: notification },
+        // Real service without translations: `instant` returns the key.
+        provideTranslateService(),
       ],
     }).compileComponents();
   });
@@ -140,6 +141,49 @@ describe('SettingsComponent', () => {
       });
       component.onLayoutsSelectClosed();
       expect(component.layoutPreview()?.layout).toBe('2x2');
+    });
+  });
+
+  describe('save feedback', () => {
+    function save(component: SettingsComponent, confirm = true): void {
+      component.saveSettings(confirm);
+      isLoading.set(true);
+      TestBed.tick();
+    }
+
+    it('confirms a successful save', () => {
+      const component =
+        TestBed.createComponent(SettingsComponent).componentInstance;
+      save(component);
+      expect(updateSettings).toHaveBeenCalled();
+
+      isLoading.set(false);
+      TestBed.tick();
+
+      expect(notification.success).toHaveBeenCalledWith('SETTINGS.SAVED');
+    });
+
+    it('does not confirm a failed save', () => {
+      const component =
+        TestBed.createComponent(SettingsComponent).componentInstance;
+      save(component);
+
+      storeError.set('boom');
+      isLoading.set(false);
+      TestBed.tick();
+
+      expect(notification.success).not.toHaveBeenCalled();
+    });
+
+    it('stays silent when saving as part of "start"', () => {
+      const component =
+        TestBed.createComponent(SettingsComponent).componentInstance;
+      save(component, false);
+
+      isLoading.set(false);
+      TestBed.tick();
+
+      expect(notification.success).not.toHaveBeenCalled();
     });
   });
 });

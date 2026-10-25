@@ -9,6 +9,8 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { ApiHealthService } from './services/api-health.service';
 import { SplashScreenComponent } from './splash-screen.component';
 import { RecoveryOverlayComponent } from './recovery-overlay.component';
@@ -25,6 +27,8 @@ import { RecoveryService } from './services/recovery.service';
     SplashScreenComponent,
     RecoveryOverlayComponent,
     TranslatePipe,
+    MatButtonModule,
+    MatIconModule,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -78,11 +82,10 @@ export class AppComponent implements OnInit {
       this.apiError.set(message);
       this.clientLogService.error('Backend API unreachable', message);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : this.translateService.instant('SPLASH.API_UNAVAILABLE');
-      this.apiError.set(message);
+      // Raw error details go to the log (debug page), never on screen.
+      this.apiError.set(
+        this.translateService.instant('SPLASH.API_UNAVAILABLE'),
+      );
       this.clientLogService.error('Error waiting for API', error);
     }
   }

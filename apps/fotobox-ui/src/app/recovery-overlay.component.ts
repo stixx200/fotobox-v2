@@ -10,23 +10,42 @@ import { RecoveryService } from './services/recovery.service';
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, TranslatePipe],
   template: `
-    <div class="recovery-overlay">
+    <div
+      class="recovery-overlay kiosk-dark"
+      role="alertdialog"
+      aria-labelledby="recovery-title"
+      aria-describedby="recovery-message"
+    >
       <div class="recovery-content">
-        <mat-icon class="error-icon">error_outline</mat-icon>
-        <h1>{{ 'RECOVERY.TITLE' | translate }}</h1>
-        <p class="error-text">{{ recovery.fatalError() }}</p>
+        <mat-icon class="error-icon" aria-hidden="true"
+          >sentiment_dissatisfied</mat-icon
+        >
+        <h1 id="recovery-title">{{ 'RECOVERY.TITLE' | translate }}</h1>
+        <p id="recovery-message" class="error-text">
+          {{ 'RECOVERY.MESSAGE' | translate }}
+        </p>
         <div class="recovery-actions">
           <button
-            mat-raised-button
-            color="primary"
-            (click)="recovery.navigateToSettings()"
+            matButton="filled"
+            class="kiosk-action"
+            (click)="recovery.retryAfterError()"
           >
-            {{ 'RECOVERY.TO_SETTINGS' | translate }}
-          </button>
-          <button mat-stroked-button (click)="recovery.retryAfterError()">
+            <mat-icon>refresh</mat-icon>
             {{ 'RECOVERY.RETRY' | translate }}
           </button>
+          <button
+            matButton="outlined"
+            class="kiosk-action"
+            (click)="recovery.navigateToSettings()"
+          >
+            <mat-icon>settings</mat-icon>
+            {{ 'RECOVERY.TO_SETTINGS' | translate }}
+          </button>
         </div>
+        <details class="error-details">
+          <summary>{{ 'RECOVERY.DETAILS' | translate }}</summary>
+          <code>{{ recovery.fatalError() }}</code>
+        </details>
       </div>
     </div>
   `,
@@ -39,41 +58,68 @@ import { RecoveryService } from './services/recovery.service';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.85);
+        padding: 24px;
+        background: var(--mat-sys-surface);
         z-index: 10000;
       }
 
       .recovery-content {
+        max-width: 36rem;
+        padding: 40px 48px;
+        border-radius: var(--mat-sys-corner-extra-large);
+        background: var(--mat-sys-surface-container-high);
+        color: var(--mat-sys-on-surface);
+        box-shadow: var(--mat-sys-level3);
         text-align: center;
-        color: white;
-        max-width: 480px;
-        padding: 24px;
       }
 
       h1 {
-        font-size: 1.75rem;
         margin: 16px 0 8px;
-        font-weight: 400;
+        font: var(--mat-sys-headline-medium);
       }
 
       .error-text {
-        margin-bottom: 24px;
-        line-height: 1.5;
-        opacity: 0.9;
-        word-break: break-word;
+        margin: 0 0 28px;
+        font: var(--mat-sys-body-large);
+        color: var(--mat-sys-on-surface-variant);
       }
 
       .error-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--mat-sys-error);
       }
 
       .recovery-actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 16px;
         justify-content: center;
+      }
+
+      .error-details {
+        margin-top: 24px;
+        text-align: left;
+        font: var(--mat-sys-body-small);
+        color: var(--mat-sys-on-surface-variant);
+
+        summary {
+          cursor: pointer;
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        code {
+          display: block;
+          padding: 12px;
+          border-radius: var(--mat-sys-corner-small);
+          background: var(--mat-sys-surface-container-lowest);
+          word-break: break-word;
+          user-select: text;
+        }
       }
     `,
   ],

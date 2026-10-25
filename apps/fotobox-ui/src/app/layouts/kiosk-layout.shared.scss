@@ -1,0 +1,226 @@
+// Shared chrome for the capture screens (single + collage layout).
+// Colours come from the M3 system tokens; the container runs in the dark
+// colour scheme (`.kiosk-dark`).
+
+.layout-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  background-color: #000;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.live-view {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+}
+
+// Soft gradients keep the floating chrome readable on bright photos.
+.live-view-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.45) 0%,
+    transparent 22%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+// Tonal 56 px icon button (M3 "medium" icon button size for touch).
+.gallery-btn {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  right: max(20px, env(safe-area-inset-right));
+  z-index: 20;
+  --mat-icon-button-state-layer-size: 64px;
+  --mat-icon-button-icon-size: 30px;
+  --mat-icon-button-icon-color: var(--mat-sys-on-secondary-container);
+  background: color-mix(
+    in srgb,
+    var(--mat-sys-secondary-container) 88%,
+    transparent
+  );
+  box-shadow: var(--mat-sys-level2);
+
+  mat-icon {
+    font-size: 30px;
+    width: 30px;
+    height: 30px;
+  }
+}
+
+// Floating prompt pill at the top centre.
+.kiosk-prompt {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 200px);
+  padding: 14px 28px;
+  border-radius: var(--mat-sys-corner-full);
+  background: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-high) 82%,
+    transparent
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--mat-sys-on-surface);
+  box-shadow: var(--mat-sys-level2);
+  font: var(--mat-sys-headline-small);
+  text-align: center;
+  pointer-events: none;
+  animation: chrome-in 0.25s cubic-bezier(0.2, 0, 0, 1);
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: var(--mat-sys-primary);
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__sub {
+    font: var(--mat-sys-title-medium);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &--error mat-icon {
+    color: var(--mat-sys-error);
+  }
+}
+
+// Big round shutter button – the visible affordance for "tap to shoot"
+// (tapping anywhere on the live view works too).
+.shutter-btn {
+  position: absolute;
+  left: 50%;
+  bottom: max(32px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 104px;
+  height: 104px;
+  padding: 0;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.92);
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  box-shadow: var(--mat-sys-level3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+  animation: shutter-pulse 2.4s ease-in-out infinite;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  &:active {
+    transform: translateX(-50%) scale(0.92);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--mat-sys-inverse-primary);
+    outline-offset: 4px;
+  }
+}
+
+// Bottom-left "back to layout choice" pill.
+.back-btn {
+  position: absolute;
+  left: max(24px, env(safe-area-inset-left));
+  bottom: max(48px, env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+// Waiting for the camera after the shutter fired.
+.capture-progress {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  &__pill {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 28px;
+    border-radius: var(--mat-sys-corner-full);
+    background: var(--mat-sys-surface-container-high);
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-title-large);
+    box-shadow: var(--mat-sys-level3);
+  }
+}
+
+@keyframes chrome-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes shutter-pulse {
+  0%,
+  100% {
+    box-shadow:
+      var(--mat-sys-level3),
+      0 0 0 0 color-mix(in srgb, var(--mat-sys-primary) 55%, transparent);
+  }
+  50% {
+    box-shadow:
+      var(--mat-sys-level3),
+      0 0 0 18px color-mix(in srgb, var(--mat-sys-primary) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-prompt,
+  .shutter-btn {
+    animation: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .kiosk-prompt {
+    max-width: calc(100% - 120px);
+    padding: 10px 18px;
+    font: var(--mat-sys-title-large);
+  }
+
+  .back-btn {
+    bottom: max(150px, env(safe-area-inset-bottom));
+  }
+}

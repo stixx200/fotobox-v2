@@ -1,5 +1,5 @@
 <div
-  class="layout-container"
+  class="layout-container kiosk-dark"
   role="button"
   tabindex="0"
   [attr.aria-label]="'CAPTURE.TAKE_PHOTO' | translate"
@@ -7,12 +7,17 @@
   (keydown.enter)="onContainerKeydown($event)"
   (keydown.space)="onContainerKeydown($event)"
 >
+  <div class="live-view">
+    <app-camera-live-view></app-camera-live-view>
+  </div>
+  <div class="live-view-scrim" aria-hidden="true"></div>
+
   @if (isOnlyLayoutActive) {
     <app-settings-escape-zone></app-settings-escape-zone>
-    @if (showGalleryButton()) {
+    @if (showGalleryButton() && isIdle()) {
       <button
         class="gallery-btn"
-        mat-mini-fab
+        matIconButton
         [attr.aria-label]="'GALLERY.OPEN' | translate"
         (click)="goToGallery(); $event.stopPropagation()"
       >
@@ -21,14 +26,41 @@
     }
   }
 
-  <div class="live-view" [class.photo-mode]="photo()">
-    <app-camera-live-view></app-camera-live-view>
-  </div>
+  @if (isIdle()) {
+    <div class="kiosk-prompt">
+      <mat-icon aria-hidden="true">touch_app</mat-icon>
+      <span>{{ 'SINGLE.PROMPT' | translate }}</span>
+    </div>
 
-  <!-- Ready message when no photo and no countdown -->
-  @if (!photo() && !capturing()) {
-    <div class="message-stripe top-message">
-      <p>{{ 'SINGLE.PROMPT' | translate }}</p>
+    <button
+      type="button"
+      class="shutter-btn"
+      data-testid="shutter"
+      [attr.aria-label]="'CAPTURE.TAKE_PHOTO' | translate"
+      (click)="takePicture(); $event.stopPropagation()"
+    >
+      <mat-icon>photo_camera</mat-icon>
+    </button>
+
+    @if (!isOnlyLayoutActive) {
+      <button
+        type="button"
+        matButton="tonal"
+        class="back-btn kiosk-action"
+        (click)="exitToHome(); $event.stopPropagation()"
+      >
+        <mat-icon>arrow_back</mat-icon>
+        {{ 'SINGLE.CANCEL' | translate }}
+      </button>
+    }
+  }
+
+  @if (capturing() && !flashing()) {
+    <div class="capture-progress" role="status">
+      <div class="capture-progress__pill">
+        <mat-spinner diameter="28" />
+        {{ 'CAPTURE.PROCESSING' | translate }}
+      </div>
     </div>
   }
 
@@ -38,15 +70,21 @@
       [src]="src"
       [showPrint]="showPrint()"
       [showShare]="showShare()"
+      [printing]="actions.printing()"
+      [sharing]="actions.sharing()"
+      [backLabel]="
+        isOnlyLayoutActive ? 'PHOTO_VIEW.NEW_PHOTO' : 'PHOTO_VIEW.DONE'
+      "
+      [backIcon]="isOnlyLayoutActive ? 'photo_camera' : 'check'"
       (print)="print()"
       (share)="share()"
       (back)="onPhotoDismissed()"
     ></app-photo-view>
-    @if (activeShareLink(); as link) {
+    @if (actions.shareLink(); as link) {
       <app-share-qr-overlay
         [shareUrl]="link.url"
         [expiresAt]="link.expiresAt"
-        (closed)="closeShare()"
+        (closed)="actions.closeShare()"
       ></app-share-qr-overlay>
     }
   }
@@ -57,18 +95,5 @@
   <!-- Flash overlay after shutter fires -->
   @if (flashing()) {
     <div class="capture-flash"></div>
-  }
-
-  <!-- Bottom message to exit (only if collage is available) -->
-  @if (!photo() && !capturing() && !isOnlyLayoutActive) {
-    <button
-      type="button"
-      class="message-stripe bottom-message"
-      (click)="exitToHome(); $event.stopPropagation()"
-    >
-      <span class="message-stripe__text">{{
-        'SINGLE.CANCEL' | translate
-      }}</span>
-    </button>
   }
 </div>

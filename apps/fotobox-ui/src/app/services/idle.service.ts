@@ -3,13 +3,15 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { LayoutNavigationService } from './layout-navigation.service';
 
-const IDLE_ROUTES = ['/layouts/single', '/layouts/collage'];
+// The gallery is included so an unlocked gallery (with delete) never stays
+// open for the next guest.
+export const IDLE_ROUTES = ['/layouts/single', '/layouts/collage', '/gallery'];
 const IDLE_TIMEOUT_MS = 60_000; // 1 minute with no interaction
 
 /**
  * Watches for user inactivity (no touch/click/keyboard events) while on a
- * layout route. After {@link IDLE_TIMEOUT_MS} the user is silently returned
- * to the home screen so the kiosk never gets stuck on a photo.
+ * layout or gallery route. After {@link IDLE_TIMEOUT_MS} the user is silently
+ * returned to the start screen so the kiosk never gets stuck on a photo.
  *
  * The service is root-scoped and self-managing — just inject it once (e.g.
  * in AppComponent) to activate it.

@@ -35,11 +35,11 @@ import { TranslatePipe } from '@ngx-translate/core';
         <span>{{ 'SETTINGS.CAMERA' | translate }}</span>
         <button
           type="button"
-          mat-icon-button
+          matIconButton
           class="card-header__action"
           [disabled]="refreshingTemplates()"
           (click)="refreshTemplates.emit()"
-          [attr.aria-label]="'DEBUG.REFRESH' | translate"
+          [attr.aria-label]="'SETTINGS.REFRESH_TEMPLATES' | translate"
         >
           @if (refreshingTemplates()) {
             <mat-spinner diameter="20" />
@@ -93,7 +93,11 @@ import { TranslatePipe } from '@ngx-translate/core';
             }
           </button>
 
-          <mat-form-field floatLabel="always" class="layouts-select-field">
+          <mat-form-field
+            floatLabel="always"
+            subscriptSizing="dynamic"
+            class="layouts-select-field"
+          >
             <mat-label>{{ 'SETTINGS.LAYOUTS' | translate }}</mat-label>
             <mat-select
               formControlName="layouts"

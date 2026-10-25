@@ -12,15 +12,14 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SettingsStore, CameraStore } from '../../store';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CameraLiveViewComponent } from '../../components/camera-live-view/camera-live-view.component';
 import { CountdownComponent } from '../../components/countdown/countdown.component';
 import { PhotoViewComponent } from '../../components/photo-view/photo-view.component';
 import { getPhotoUrl } from '../../api-config';
-import { PrintService } from '../../services/print.service';
-import { ShareService, ShareLink } from '../../services/share.service';
-import { NotificationService } from '../../services/notification.service';
+import { PhotoActionsService } from '../../services/photo-actions.service';
 import { LayoutNavigationService } from '../../services/layout-navigation.service';
 import { SettingsEscapeZoneComponent } from '../../components/settings-escape-zone/settings-escape-zone.component';
 import { ShareQrOverlayComponent } from '../../components/share-qr-overlay/share-qr-overlay.component';
@@ -34,6 +33,7 @@ import { CaptureWatchdogService } from '../../services/capture-watchdog.service'
     CommonModule,
     MatButtonModule,
     MatIconModule,
+    MatProgressSpinnerModule,
     CameraLiveViewComponent,
     CountdownComponent,
     PhotoViewComponent,
@@ -41,6 +41,7 @@ import { CaptureWatchdogService } from '../../services/capture-watchdog.service'
     SettingsEscapeZoneComponent,
     ShareQrOverlayComponent,
   ],
+  providers: [PhotoActionsService],
   templateUrl: './single-layout.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './single-layout.component.scss',
@@ -49,10 +50,7 @@ export class SingleLayoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly settingsStore = inject(SettingsStore);
   private readonly cameraStore = inject(CameraStore);
-  private readonly printService = inject(PrintService);
-  private readonly shareService = inject(ShareService);
-  private readonly notificationService = inject(NotificationService);
-  private readonly translateService = inject(TranslateService);
+  readonly actions = inject(PhotoActionsService);
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly galleryAccess = inject(GalleryAccessService);
   private readonly captureWatchdog = inject(CaptureWatchdogService);
@@ -75,7 +73,6 @@ export class SingleLayoutComponent implements OnInit {
     this.settingsStore.settings();
     return this.galleryAccess.isGalleryEnabled();
   });
-  readonly activeShareLink = signal<ShareLink | null>(null);
 
   constructor() {
     // Display the photo once a freshly captured one arrives in the store.
@@ -205,6 +202,13 @@ export class SingleLayoutComponent implements OnInit {
     this.stopCaptureWatch();
   }
 
+  /** Live view is waiting for a tap (no countdown, capture or photo). */
+  isIdle(): boolean {
+    return (
+      !this.photo() && !this.capturing() && !this.countdownRef()?.isRunning
+    );
+  }
+
   get isOnlyLayoutActive(): boolean {
     return this.layoutNavigation.hasSingleLayoutOnly();
   }
@@ -214,32 +218,13 @@ export class SingleLayoutComponent implements OnInit {
   }
 
   async print(): Promise<void> {
-    const url = this.photo();
-    if (!url) {
-      return;
-    }
-    const success = await this.printService.printPhoto(url);
-    if (success) {
+    if (await this.actions.print(this.photo())) {
       this.onPhotoDismissed();
     }
   }
 
   share(): void {
-    const url = this.photo();
-    if (!url) {
-      return;
-    }
-    this.shareService.createShareLink(url).subscribe({
-      next: (link) => this.activeShareLink.set(link),
-      error: () =>
-        this.notificationService.error(
-          this.translateService.instant('SHARE.ERROR'),
-        ),
-    });
-  }
-
-  closeShare(): void {
-    this.activeShareLink.set(null);
+    this.actions.share(this.photo());
   }
 
   onPhotoDismissed(): void {
@@ -251,6 +236,7 @@ export class SingleLayoutComponent implements OnInit {
   }
 
   backToLiveView(): void {
+    this.actions.closeShare();
     this.countdownRef()?.abort();
     this.recoverFromCaptureFailure();
     this.photo.set(null);

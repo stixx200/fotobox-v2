@@ -5,10 +5,12 @@ import { CameraStore } from '../store';
 import { CaptureWatchdogService } from './capture-watchdog.service';
 import { NotificationService } from './notification.service';
 import { RecoveryService } from './recovery.service';
+import { ClientLogService } from './client-log.service';
 
 describe('CaptureWatchdogService', () => {
   const error = signal<string | null>(null);
   const notification = { error: vi.fn() };
+  const clientLog = { error: vi.fn() };
   const recovery = {
     recordCaptureFailure: vi.fn(),
     recordCaptureSuccess: vi.fn(),
@@ -22,6 +24,7 @@ describe('CaptureWatchdogService', () => {
         { provide: CameraStore, useValue: { error } },
         { provide: NotificationService, useValue: notification },
         { provide: RecoveryService, useValue: recovery },
+        { provide: ClientLogService, useValue: clientLog },
         { provide: TranslateService, useValue: { instant: (k: string) => k } },
       ],
     });
@@ -34,7 +37,7 @@ describe('CaptureWatchdogService', () => {
     stop();
   });
 
-  it('recovers when the camera reports an error during capture', () => {
+  it('shows a friendly message instead of the raw camera error', () => {
     const watchdog = TestBed.inject(CaptureWatchdogService);
     const onRecover = vi.fn();
     const stop = watchdog.start(onRecover);
@@ -44,7 +47,11 @@ describe('CaptureWatchdogService', () => {
     TestBed.tick();
 
     expect(onRecover).toHaveBeenCalledTimes(1);
-    expect(notification.error).toHaveBeenCalledWith('Camera disconnected');
+    expect(notification.error).toHaveBeenCalledWith('CAPTURE.FAILED');
+    expect(clientLog.error).toHaveBeenCalledWith(
+      'Photo capture failed',
+      'Camera disconnected',
+    );
     expect(recovery.recordCaptureFailure).toHaveBeenCalledTimes(1);
     stop();
   });

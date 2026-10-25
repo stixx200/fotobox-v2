@@ -2,13 +2,20 @@
   <app-recovery-overlay />
 } @else if (showRouter()) {
   @if (recovery.networkDegraded()) {
-    <button
-      type="button"
-      class="network-banner"
-      (click)="recovery.clearNetworkDegraded()"
-    >
-      {{ 'RECOVERY.NETWORK_DEGRADED' | translate }}
-    </button>
+    <div class="network-banner" role="alert">
+      <mat-icon aria-hidden="true">wifi_off</mat-icon>
+      <span class="network-banner__text">{{
+        'RECOVERY.NETWORK_DEGRADED' | translate
+      }}</span>
+      <button
+        type="button"
+        matIconButton
+        [attr.aria-label]="'RECOVERY.DISMISS' | translate"
+        (click)="recovery.clearNetworkDegraded()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
   }
   <router-outlet></router-outlet>
 } @else {

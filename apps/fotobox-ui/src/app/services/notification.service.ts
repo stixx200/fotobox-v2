@@ -9,8 +9,9 @@ const DEFAULT_CONFIG: MatSnackBarConfig = {
 
 /**
  * Thin wrapper around Angular Material's MatSnackBar so that services and
- * stores can surface user-facing error messages without directly depending on
- * the Angular Material DI hierarchy.
+ * stores can surface user-facing messages without directly depending on the
+ * Angular Material DI hierarchy. Messages must already be human-readable
+ * (translated) — never pass raw technical errors here.
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -19,7 +20,9 @@ export class NotificationService {
   error(message: string): void {
     this.snackBar.open(message, '✕', {
       ...DEFAULT_CONFIG,
+      duration: 6000,
       panelClass: ['snack-error'],
+      politeness: 'assertive',
     });
   }
 
@@ -27,7 +30,14 @@ export class NotificationService {
     this.snackBar.open(message, '✕', {
       ...DEFAULT_CONFIG,
       duration: 3000,
-      panelClass: ['snack-info'],
+    });
+  }
+
+  success(message: string): void {
+    this.snackBar.open(message, '✕', {
+      ...DEFAULT_CONFIG,
+      duration: 3000,
+      panelClass: ['snack-success'],
     });
   }
 }

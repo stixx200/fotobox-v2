@@ -1,7 +1,7 @@
 {
   "SETTINGS": {
     "TITLE": "Fotobox Settings",
-    "LOADING": "Loading...",
+    "LOADING": "Loading…",
     "START": "Start Fotobox",
     "USE_PRINTER": "Enable printer",
     "SHUTTER_TIMEOUT": "Shutter delay",
@@ -21,10 +21,10 @@
     "LAYOUTS_PREVIEW_PLACEHOLDER": "Preview",
     "CAMERA": "Camera",
     "NO_CAMERA": "No cameras available",
-    "SAVING": "Saving...",
+    "SAVING": "Saving…",
     "SAVE": "Save settings",
-    "RESETTING": "Resetting...",
-    "RESET": "Reset settings",
+    "RESETTING": "Discarding…",
+    "RESET": "Discard changes",
     "LANGUAGE": "Language",
     "LANG_DE": "Deutsch",
     "LANG_EN": "English",
@@ -34,8 +34,8 @@
     "GALLERY_PIN": "Gallery PIN",
     "GALLERY_PIN_HINT": "4 digits. Leave empty to allow open gallery access",
     "GALLERY_PIN_INVALID": "PIN must be exactly 4 digits",
-    "STARTING": "Starting...",
-    "START_FAILED": "Could not start the fotobox. Check camera and backend logs.",
+    "STARTING": "Starting…",
+    "START_FAILED": "The photo booth could not be started. Please check the camera (connected and switched on?) and try again.",
     "SHARE_TITLE": "Photo sharing",
     "USE_SHARE": "Let guests download photos via QR code",
     "SHARE_DETECTED_URL": "Address for guests (auto-detected)",
@@ -54,12 +54,21 @@
     "GALLERY_STATUS_OPEN": "Open access",
     "GALLERY_STATUS_HIDDEN": "Hidden",
     "SHOW_GALLERY_BUTTON": "Show gallery button",
-    "SHOW_GALLERY_BUTTON_HINT": "When disabled, guests cannot open the gallery."
+    "SHOW_GALLERY_BUTTON_HINT": "When disabled, guests cannot open the gallery.",
+    "STORE_ERROR": "Settings could not be loaded or saved. Please try again.",
+    "SAVED": "Settings saved",
+    "UNSAVED": "Unsaved",
+    "THEME_LIGHT": "Light theme",
+    "THEME_DARK": "Dark theme",
+    "REFRESH_PRINTERS": "Reload printer list",
+    "REFRESH_TEMPLATES": "Reload collage templates",
+    "LAYOUTS_AUTO_SELECTED": "No layout was selected – \"Einzelbild\" (single photo) was enabled automatically."
   },
   "SPLASH": {
-    "CONNECTING": "Connecting to backend...",
-    "API_UNAVAILABLE": "Could not connect to the backend. Make sure the fotobox app is running.",
-    "RETRY": "Retry"
+    "CONNECTING": "Connecting to the photo booth…",
+    "API_UNAVAILABLE": "The photo booth software is not responding. Please check that the Fotobox app is running and try again.",
+    "RETRY": "Retry",
+    "API_UNAVAILABLE_TITLE": "No connection"
   },
   "DEBUG": {
     "TITLE": "Debug",
@@ -82,29 +91,33 @@
     "NO_LOGS": "No log entries yet."
   },
   "SINGLE": {
-    "PROMPT": "Touch to take a photo",
-    "CANCEL": "Cancel"
+    "PROMPT": "Touch the screen to take a photo",
+    "CANCEL": "Back"
   },
   "COLLAGE": {
-    "BUILDING": "Creating collage...",
-    "PHOTO_TAKEN": "Photo {{next}} of {{total}} taken – touch to take next photo",
-    "PHOTO_PROMPT": "Photo {{next}} of {{total}} – touch to take a photo",
+    "BUILDING": "Creating your collage…",
     "USE_PHOTO": "Use this photo?",
-    "ACCEPT": "Yes, use it",
-    "RETAKE": "No, try again",
+    "ACCEPT": "Use it",
+    "RETAKE": "Retake",
     "PREVIEW_ALT": "Collage preview",
-    "CANCEL": "Cancel",
+    "CANCEL": "Cancel collage",
     "LOAD_ERROR": "Could not load collage template.",
     "START_ERROR": "Could not start collage. Check template settings.",
     "ADD_PHOTO_ERROR": "Could not add photo to collage.",
     "PREVIEW_ERROR": "Could not load collage preview.",
-    "FINALIZE_ERROR": "Could not create collage."
+    "FINALIZE_ERROR": "The collage could not be created.",
+    "PHOTO_PROGRESS": "Photo {{next}} of {{total}}",
+    "TAP_HINT": "Touch the screen to shoot",
+    "PHOTO_STEP": "Photo {{next}} of {{total}}",
+    "FINALIZE_ERROR_HINT": "Your photos are saved. Try again or start a new collage.",
+    "RETRY": "Try again",
+    "RESTART": "Start over"
   },
   "GALLERY": {
     "TITLE": "Gallery",
     "BACK": "Back",
     "OPEN": "Open gallery",
-    "EMPTY": "No photos yet.",
+    "EMPTY": "No photos yet",
     "PRINT": "Print",
     "SHARE": "Share",
     "DELETE": "Delete",
@@ -114,18 +127,31 @@
     "CLOSE": "Close",
     "BACK_TO_GALLERY": "Back to gallery",
     "ENTER_PIN": "Enter gallery PIN",
-    "PIN": "4-digit PIN",
-    "UNLOCK": "Unlock",
-    "WRONG_PIN": "Incorrect PIN"
+    "WRONG_PIN": "Wrong PIN – please try again",
+    "EMPTY_HINT": "Photos appear here as soon as they are taken.",
+    "TAKE_PHOTO": "Take a photo",
+    "LOADING": "Loading photos…",
+    "LOAD_ERROR": "Photos could not be loaded",
+    "LOAD_ERROR_HINT": "Please try again in a moment.",
+    "RETRY": "Try again",
+    "COUNT": "{{count}} photos",
+    "PHOTO_N": "Open photo {{n}}",
+    "DELETED": "Photo deleted",
+    "DELETE_ERROR": "The photo could not be deleted.",
+    "DELETE_DIGIT": "Delete last digit",
+    "PIN_PROGRESS": "{{count}} of {{total}} digits entered"
   },
   "PHOTO_VIEW": {
     "ALT": "Captured photo",
     "PRINT": "Print",
     "SHARE": "Share",
-    "BACK": "Back"
+    "PRINTING": "Printing…",
+    "DONE": "Done",
+    "NEW_PHOTO": "New photo"
   },
   "PRINT": {
-    "ERROR": "Could not print photo. Check printer settings and that the printer is ready."
+    "ERROR": "Printing did not work. Please ask the photo booth team to check printer and paper.",
+    "STARTED": "Your photo is printing – just a moment."
   },
   "SHARE": {
     "TITLE": "Share photo",
@@ -134,7 +160,7 @@
     "EXPIRES": "Link valid until {{date}}",
     "DONE": "Done",
     "QR_ERROR": "Could not generate QR code",
-    "ERROR": "Could not create share link. Check sharing settings and network."
+    "ERROR": "The QR code could not be created right now. Please try again."
   },
   "HOME": {
     "SINGLE_LAYOUT": "Single photo",
@@ -145,14 +171,19 @@
     "SMILE": "Smile! 😊"
   },
   "RECOVERY": {
-    "TITLE": "Something went wrong",
-    "TO_SETTINGS": "Return to settings",
-    "RETRY": "Reload app",
-    "NETWORK_DEGRADED": "Connection to backend lost — tap to dismiss"
+    "TITLE": "Oops, something went wrong",
+    "TO_SETTINGS": "Go to settings",
+    "RETRY": "Restart",
+    "NETWORK_DEGRADED": "Connection to the photo booth lost – reconnecting automatically.",
+    "MESSAGE": "The photo booth needs a quick restart. Your photos are kept.",
+    "DETAILS": "Technical details",
+    "DISMISS": "Dismiss"
   },
   "CAPTURE": {
     "TAKE_PHOTO": "Take a photo",
-    "TIMEOUT": "Photo capture timed out. Please try again."
+    "TIMEOUT": "The camera is not responding right now. Please try again.",
+    "PROCESSING": "Processing photo…",
+    "FAILED": "The photo could not be taken. Please try again."
   },
   "DIRECTORY_PICKER": {
     "UP": "Parent folder",
@@ -160,5 +191,13 @@
     "CANCEL": "Cancel",
     "EMPTY": "No subfolders",
     "ERROR": "Could not load folders."
+  },
+  "LIVE_VIEW": {
+    "ALT": "Live camera image",
+    "CAMERA_ERROR": "Camera not ready",
+    "WEBCAM_ERROR": "Webcam not ready",
+    "ERROR_HINT": "Please ask the photo booth team for help.",
+    "STARTING_CAMERA": "Starting camera…",
+    "STARTING_WEBCAM": "Starting webcam…"
   }
 }

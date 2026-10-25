@@ -23,14 +23,17 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [CommonModule, TranslatePipe],
   template: `
     @if (value() !== null) {
-      <div class="countdown-overlay">
-        <div class="countdown-number" [class.smile]="value() === 0">
-          @if (value() === 0) {
-            {{ 'COUNTDOWN.SMILE' | translate }}
-          } @else {
-            {{ value() }}
-          }
-        </div>
+      <div class="countdown-overlay" aria-live="assertive">
+        <!-- Re-keyed per value so the pop animation runs for every number. -->
+        @for (current of [value()]; track current) {
+          <div class="countdown-number" [class.smile]="current === 0">
+            @if (current === 0) {
+              {{ 'COUNTDOWN.SMILE' | translate }}
+            } @else {
+              {{ current }}
+            }
+          </div>
+        }
       </div>
     }
   `,
@@ -43,7 +46,7 @@ import { TranslatePipe } from '@ngx-translate/core';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.45);
+        background: rgba(0, 0, 0, 0.35);
         z-index: 20;
       }
 
@@ -54,6 +57,14 @@ import { TranslatePipe } from '@ngx-translate/core';
         line-height: 1;
         text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
         animation: pop 1s ease-out;
+        font-variant-numeric: tabular-nums;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .countdown-number,
+        .countdown-number.smile {
+          animation: none;
+        }
       }
 
       .countdown-number.smile {

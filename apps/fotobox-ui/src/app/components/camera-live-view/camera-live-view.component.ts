@@ -9,6 +9,9 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CameraStore } from '../../store/camera.store';
 import { WebcamService } from '../../services/webcam.service';
 
@@ -22,7 +25,12 @@ import { WebcamService } from '../../services/webcam.service';
 @Component({
   selector: 'app-camera-live-view',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    TranslatePipe,
+  ],
   templateUrl: './camera-live-view.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './camera-live-view.component.scss',
@@ -45,7 +53,8 @@ export class CameraLiveViewComponent {
   readonly error = computed(
     () => this.localError() ?? this.cameraStore.error(),
   );
-  readonly statusMessage = signal('Kamera wird gestartet …');
+  /** Translation key of the loading message. */
+  readonly statusMessage = signal('LIVE_VIEW.STARTING_CAMERA');
 
   private webcamStarted = false;
 
@@ -87,7 +96,7 @@ export class CameraLiveViewComponent {
 
   private async startWebcam(element: HTMLVideoElement): Promise<void> {
     try {
-      this.statusMessage.set('Webcam wird gestartet …');
+      this.statusMessage.set('LIVE_VIEW.STARTING_WEBCAM');
       await this.webcam.start(element);
       this.localError.set(null);
     } catch (error) {

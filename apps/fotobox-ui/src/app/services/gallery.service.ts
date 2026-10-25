@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
+import { requireData } from './graphql-result';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
@@ -35,7 +36,7 @@ export class GalleryService {
         query: LIST_PHOTOS,
         fetchPolicy: 'no-cache',
       })
-      .pipe(map((result) => result.data?.photos ?? []));
+      .pipe(map((result) => requireData(result).photos ?? []));
   }
 
   deletePhoto(photoId: string): Observable<boolean> {
@@ -44,6 +45,13 @@ export class GalleryService {
         mutation: DELETE_PHOTO,
         variables: { photoId },
       })
-      .pipe(map((result) => result.data?.deletePhoto ?? false));
+      .pipe(
+        map((result) => {
+          if (!result.data?.deletePhoto) {
+            throw new Error('Photo could not be deleted');
+          }
+          return true;
+        }),
+      );
   }
 }

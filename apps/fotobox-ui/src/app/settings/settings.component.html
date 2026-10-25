@@ -5,6 +5,9 @@
       <div class="header-title">
         <mat-icon class="header-icon">settings</mat-icon>
         <h1>{{ 'SETTINGS.TITLE' | translate }}</h1>
+        @if (hasUnsavedChanges()) {
+          <span class="unsaved-chip">{{ 'SETTINGS.UNSAVED' | translate }}</span>
+        }
       </div>
       <div class="header-toolbar">
         <mat-button-toggle-group
@@ -21,7 +24,7 @@
           }
         </mat-button-toggle-group>
         <a
-          mat-icon-button
+          matIconButton
           class="debug-link-btn"
           routerLink="/debug"
           [attr.aria-label]="'DEBUG.TITLE' | translate"
@@ -29,13 +32,14 @@
           <mat-icon>bug_report</mat-icon>
         </a>
         <button
-          mat-icon-button
+          matIconButton
           class="theme-toggle-btn"
           (click)="toggleTheme()"
           [attr.aria-label]="
-            currentTheme() === 'dark'
-              ? 'Switch to light mode'
-              : 'Switch to dark mode'
+            (currentTheme() === 'dark'
+              ? 'SETTINGS.THEME_LIGHT'
+              : 'SETTINGS.THEME_DARK'
+            ) | translate
           "
         >
           <mat-icon>{{
@@ -47,67 +51,51 @@
 
     <div class="header-actions">
       <div class="header-action-group">
-        @if (settingsIsLoading()) {
-          <button mat-stroked-button class="header-action-btn" disabled>
-            <mat-icon>hourglass_empty</mat-icon>
-            <span class="header-btn-label">{{
-              'SETTINGS.RESETTING' | translate
-            }}</span>
-          </button>
-          <button
-            mat-raised-button
-            color="primary"
-            class="header-action-btn"
-            disabled
-          >
-            <mat-icon>hourglass_empty</mat-icon>
-            <span class="header-btn-label">{{
-              'SETTINGS.SAVING' | translate
-            }}</span>
-          </button>
-        } @else {
-          <button
-            mat-stroked-button
-            class="header-action-btn"
-            (click)="resetSettings()"
-            [disabled]="!hasUnsavedChanges()"
-          >
-            <mat-icon>restart_alt</mat-icon>
-            <span class="header-btn-label">{{
-              'SETTINGS.RESET' | translate
-            }}</span>
-          </button>
-          <button
-            mat-raised-button
-            color="primary"
-            class="header-action-btn"
-            (click)="saveSettings()"
-            [disabled]="!hasUnsavedChanges() || settingsForm.invalid"
-          >
-            <mat-icon>save</mat-icon>
-            <span class="header-btn-label">{{
-              'SETTINGS.SAVE' | translate
-            }}</span>
-          </button>
-        }
         <button
-          mat-raised-button
+          matButton="outlined"
+          class="header-action-btn"
+          (click)="resetSettings()"
+          [disabled]="settingsIsLoading() || !hasUnsavedChanges()"
+        >
+          <mat-icon>undo</mat-icon>
+          <span class="header-btn-label">{{
+            (settingsIsLoading() ? 'SETTINGS.RESETTING' : 'SETTINGS.RESET')
+              | translate
+          }}</span>
+        </button>
+        <button
+          matButton="tonal"
+          class="header-action-btn"
+          (click)="saveSettings()"
+          [disabled]="
+            settingsIsLoading() || !hasUnsavedChanges() || settingsForm.invalid
+          "
+        >
+          @if (settingsIsLoading()) {
+            <mat-spinner diameter="20" class="start-spinner" />
+          } @else {
+            <mat-icon>save</mat-icon>
+          }
+          <span class="header-btn-label">{{
+            (settingsIsLoading() ? 'SETTINGS.SAVING' : 'SETTINGS.SAVE')
+              | translate
+          }}</span>
+        </button>
+        <button
+          matButton="filled"
           class="start-btn header-action-btn"
           (click)="startFotobox()"
           [disabled]="isInitializingCamera()"
         >
           @if (isInitializingCamera()) {
-            <mat-spinner diameter="20" class="start-spinner"></mat-spinner>
+            <mat-spinner diameter="20" class="start-spinner" />
           } @else {
             <mat-icon>play_arrow</mat-icon>
           }
-          <span class="header-btn-label">
-            @if (isInitializingCamera()) {
-              {{ 'SETTINGS.STARTING' | translate }}
-            } @else {
-              {{ 'SETTINGS.START' | translate }}
-            }
-          </span>
+          <span class="header-btn-label">{{
+            (isInitializingCamera() ? 'SETTINGS.STARTING' : 'SETTINGS.START')
+              | translate
+          }}</span>
         </button>
       </div>
     </div>
@@ -115,10 +103,14 @@
 
   <!-- ── Status banners ─────────────────────────────────────────────── -->
   @if (startError(); as error) {
-    <div class="settings-banner settings-banner--error">
+    <div class="settings-banner settings-banner--error" role="alert">
       <mat-icon>error_outline</mat-icon>
       <div class="banner-content">
-        <span>{{ error }}</span>
+        <strong>{{ 'SETTINGS.START_FAILED' | translate }}</strong>
+        <details class="banner-details">
+          <summary>{{ 'RECOVERY.DETAILS' | translate }}</summary>
+          <code>{{ error }}</code>
+        </details>
         <a routerLink="/debug" class="banner-link">{{
           'DEBUG.VIEW_LOGS' | translate
         }}</a>
@@ -126,15 +118,21 @@
     </div>
   }
   @if (settingsError(); as error) {
-    <div class="settings-banner settings-banner--error">
+    <div class="settings-banner settings-banner--error" role="alert">
       <mat-icon>error_outline</mat-icon>
-      <span>{{ error }}</span>
+      <div class="banner-content">
+        <strong>{{ 'SETTINGS.STORE_ERROR' | translate }}</strong>
+        <details class="banner-details">
+          <summary>{{ 'RECOVERY.DETAILS' | translate }}</summary>
+          <code>{{ error }}</code>
+        </details>
+      </div>
     </div>
   }
-  @if (layoutsAutoSelectionMessage(); as message) {
-    <div class="settings-banner settings-banner--info">
+  @if (layoutsAutoSelectionMessage()) {
+    <div class="settings-banner settings-banner--info" role="status">
       <mat-icon>info_outline</mat-icon>
-      <span>{{ message }}</span>
+      <span>{{ 'SETTINGS.LAYOUTS_AUTO_SELECTED' | translate }}</span>
     </div>
   }
 
@@ -160,14 +158,14 @@
     <div class="settings-card">
       <div class="card-header">
         <mat-icon>print</mat-icon>
-        <span>{{ 'SETTINGS.USE_PRINTER' | translate }}</span>
+        <span>{{ 'SETTINGS.PRINTER' | translate }}</span>
         <button
           type="button"
-          mat-icon-button
+          matIconButton
           class="card-header__action"
           [disabled]="printersLoading()"
           (click)="refreshPrinters()"
-          [attr.aria-label]="'DEBUG.REFRESH' | translate"
+          [attr.aria-label]="'SETTINGS.REFRESH_PRINTERS' | translate"
         >
           @if (printersLoading()) {
             <mat-spinner diameter="20" />
@@ -253,7 +251,7 @@
             [placeholder]="'SETTINGS.PHOTO_DIRECTORY' | translate"
           />
           <button
-            mat-icon-button
+            matIconButton
             matSuffix
             type="button"
             [attr.aria-label]="'SETTINGS.CHOOSE_DIRECTORY' | translate"
@@ -275,7 +273,7 @@
             [class.error-input]="collageDirectoryError()"
           />
           <button
-            mat-icon-button
+            matIconButton
             matSuffix
             type="button"
             [attr.aria-label]="'SETTINGS.CHOOSE_DIRECTORY' | translate"
@@ -290,7 +288,7 @@
 
         <div class="collage-editor-action">
           <button
-            mat-stroked-button
+            matButton="outlined"
             type="button"
             (click)="openCollageEditor()"
           >

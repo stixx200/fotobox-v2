@@ -1,7 +1,7 @@
 {
   "SETTINGS": {
     "TITLE": "Fotobox Einstellungen",
-    "LOADING": "Laden...",
+    "LOADING": "Wird geladen…",
     "START": "Fotobox starten",
     "USE_PRINTER": "Drucker aktivieren",
     "SHUTTER_TIMEOUT": "Auslösezeit",
@@ -21,10 +21,10 @@
     "LAYOUTS_PREVIEW_PLACEHOLDER": "Vorschau",
     "CAMERA": "Kamera",
     "NO_CAMERA": "Keine Kameras verfügbar",
-    "SAVING": "Speichern läuft...",
+    "SAVING": "Wird gespeichert…",
     "SAVE": "Einstellungen speichern",
-    "RESETTING": "Wird zurückgesetzt...",
-    "RESET": "Einstellungen zurücksetzen",
+    "RESETTING": "Wird verworfen…",
+    "RESET": "Änderungen verwerfen",
     "LANGUAGE": "Sprache",
     "LANG_DE": "Deutsch",
     "LANG_EN": "English",
@@ -34,8 +34,8 @@
     "GALLERY_PIN": "Galerie-PIN",
     "GALLERY_PIN_HINT": "4 Ziffern. Leer lassen für freien Galerie-Zugang",
     "GALLERY_PIN_INVALID": "PIN muss genau 4 Ziffern haben",
-    "STARTING": "Wird gestartet...",
-    "START_FAILED": "Fotobox konnte nicht gestartet werden. Kamera- und Backend-Logs prüfen.",
+    "STARTING": "Wird gestartet…",
+    "START_FAILED": "Die Fotobox konnte nicht gestartet werden. Bitte Kamera prüfen (angeschlossen und eingeschaltet?) und erneut versuchen.",
     "SHARE_TITLE": "Fotos teilen",
     "USE_SHARE": "Gäste können Fotos per QR-Code aufs Handy laden",
     "SHARE_DETECTED_URL": "Adresse für Gäste (automatisch erkannt)",
@@ -54,12 +54,21 @@
     "GALLERY_STATUS_OPEN": "Freier Zugang",
     "GALLERY_STATUS_HIDDEN": "Ausgeblendet",
     "SHOW_GALLERY_BUTTON": "Galerie-Button anzeigen",
-    "SHOW_GALLERY_BUTTON_HINT": "Wenn deaktiviert, ist die Galerie für Gäste nicht erreichbar."
+    "SHOW_GALLERY_BUTTON_HINT": "Wenn deaktiviert, ist die Galerie für Gäste nicht erreichbar.",
+    "STORE_ERROR": "Einstellungen konnten nicht geladen oder gespeichert werden. Bitte erneut versuchen.",
+    "SAVED": "Einstellungen gespeichert",
+    "UNSAVED": "Nicht gespeichert",
+    "THEME_LIGHT": "Helles Design",
+    "THEME_DARK": "Dunkles Design",
+    "REFRESH_PRINTERS": "Druckerliste neu laden",
+    "REFRESH_TEMPLATES": "Collage-Vorlagen neu laden",
+    "LAYOUTS_AUTO_SELECTED": "Es war kein Layout ausgewählt – „Einzelbild“ wurde automatisch aktiviert."
   },
   "SPLASH": {
-    "CONNECTING": "Verbindung zum Backend...",
-    "API_UNAVAILABLE": "Keine Verbindung zum Backend. Stelle sicher, dass die Fotobox-App läuft.",
-    "RETRY": "Erneut versuchen"
+    "CONNECTING": "Verbindung zur Fotobox wird hergestellt…",
+    "API_UNAVAILABLE": "Die Fotobox-Software antwortet nicht. Bitte prüfen, ob die Fotobox-App läuft, und erneut versuchen.",
+    "RETRY": "Erneut versuchen",
+    "API_UNAVAILABLE_TITLE": "Keine Verbindung"
   },
   "DEBUG": {
     "TITLE": "Debug",
@@ -82,29 +91,33 @@
     "NO_LOGS": "Noch keine Log-Einträge."
   },
   "SINGLE": {
-    "PROMPT": "Berühren um ein Foto zu machen",
-    "CANCEL": "Abbrechen"
+    "PROMPT": "Bildschirm berühren, um ein Foto aufzunehmen",
+    "CANCEL": "Zurück"
   },
   "COLLAGE": {
-    "BUILDING": "Collage wird erstellt...",
-    "PHOTO_TAKEN": "Foto {{next}} von {{total}} aufgenommen – Berühren für nächstes Foto",
-    "PHOTO_PROMPT": "Foto {{next}} von {{total}} – Berühren um Foto zu machen",
+    "BUILDING": "Collage wird erstellt…",
     "USE_PHOTO": "Dieses Foto verwenden?",
-    "ACCEPT": "Ja, verwenden",
-    "RETAKE": "Nein, nochmal",
+    "ACCEPT": "Verwenden",
+    "RETAKE": "Nochmal aufnehmen",
     "PREVIEW_ALT": "Collage Vorschau",
-    "CANCEL": "Abbrechen",
+    "CANCEL": "Collage abbrechen",
     "LOAD_ERROR": "Collage-Vorlage konnte nicht geladen werden.",
     "START_ERROR": "Collage konnte nicht gestartet werden. Vorlagen-Einstellungen prüfen.",
     "ADD_PHOTO_ERROR": "Foto konnte nicht zur Collage hinzugefügt werden.",
     "PREVIEW_ERROR": "Collage-Vorschau konnte nicht geladen werden.",
-    "FINALIZE_ERROR": "Collage konnte nicht erstellt werden."
+    "FINALIZE_ERROR": "Die Collage konnte nicht erstellt werden.",
+    "PHOTO_PROGRESS": "Foto {{next}} von {{total}}",
+    "TAP_HINT": "Bildschirm berühren zum Auslösen",
+    "PHOTO_STEP": "Foto {{next}} von {{total}}",
+    "FINALIZE_ERROR_HINT": "Deine Fotos sind gespeichert. Versuche es erneut oder beginne eine neue Collage.",
+    "RETRY": "Erneut versuchen",
+    "RESTART": "Neu beginnen"
   },
   "GALLERY": {
     "TITLE": "Galerie",
     "BACK": "Zurück",
     "OPEN": "Galerie öffnen",
-    "EMPTY": "Noch keine Fotos vorhanden.",
+    "EMPTY": "Noch keine Fotos",
     "PRINT": "Drucken",
     "SHARE": "Teilen",
     "DELETE": "Löschen",
@@ -114,18 +127,31 @@
     "CLOSE": "Schließen",
     "BACK_TO_GALLERY": "Zurück zur Galerie",
     "ENTER_PIN": "Galerie-PIN eingeben",
-    "PIN": "4-stellige PIN",
-    "UNLOCK": "Entsperren",
-    "WRONG_PIN": "Falsche PIN"
+    "WRONG_PIN": "Falsche PIN – bitte erneut versuchen",
+    "EMPTY_HINT": "Sobald Fotos aufgenommen wurden, erscheinen sie hier.",
+    "TAKE_PHOTO": "Foto aufnehmen",
+    "LOADING": "Fotos werden geladen…",
+    "LOAD_ERROR": "Fotos konnten nicht geladen werden",
+    "LOAD_ERROR_HINT": "Bitte gleich noch einmal versuchen.",
+    "RETRY": "Erneut versuchen",
+    "COUNT": "{{count}} Fotos",
+    "PHOTO_N": "Foto {{n}} öffnen",
+    "DELETED": "Foto gelöscht",
+    "DELETE_ERROR": "Foto konnte nicht gelöscht werden.",
+    "DELETE_DIGIT": "Letzte Ziffer löschen",
+    "PIN_PROGRESS": "{{count}} von {{total}} Ziffern eingegeben"
   },
   "PHOTO_VIEW": {
     "ALT": "Aufgenommenes Foto",
     "PRINT": "Drucken",
     "SHARE": "Teilen",
-    "BACK": "Zurück"
+    "PRINTING": "Wird gedruckt…",
+    "DONE": "Fertig",
+    "NEW_PHOTO": "Neues Foto"
   },
   "PRINT": {
-    "ERROR": "Foto konnte nicht gedruckt werden. Druckereinstellungen und Druckerbereitschaft prüfen."
+    "ERROR": "Drucken hat nicht geklappt. Bitte das Fotobox-Team ansprechen – Drucker und Papier prüfen.",
+    "STARTED": "Foto wird gedruckt – bitte kurz warten."
   },
   "SHARE": {
     "TITLE": "Foto teilen",
@@ -134,25 +160,30 @@
     "EXPIRES": "Link gültig bis {{date}}",
     "DONE": "Fertig",
     "QR_ERROR": "QR-Code konnte nicht erzeugt werden",
-    "ERROR": "Freigabe-Link konnte nicht erstellt werden. Freigabe-Einstellungen und Netzwerk prüfen."
+    "ERROR": "QR-Code konnte gerade nicht erstellt werden. Bitte erneut versuchen."
   },
   "HOME": {
     "SINGLE_LAYOUT": "Einzelnes Foto",
     "CHOOSE_LAYOUT": "Layout auswählen",
-    "TAP_TO_START": "Tippen zum Starten"
+    "TAP_TO_START": "Antippen zum Starten"
   },
   "COUNTDOWN": {
     "SMILE": "Lächeln! 😊"
   },
   "RECOVERY": {
-    "TITLE": "Etwas ist schiefgelaufen",
-    "TO_SETTINGS": "Zu Einstellungen",
-    "RETRY": "App neu laden",
-    "NETWORK_DEGRADED": "Verbindung zum Backend verloren – tippen zum Schließen"
+    "TITLE": "Hoppla, da ist etwas schiefgelaufen",
+    "TO_SETTINGS": "Zu den Einstellungen",
+    "RETRY": "Neu starten",
+    "NETWORK_DEGRADED": "Verbindung zur Fotobox unterbrochen – wird automatisch wiederhergestellt.",
+    "MESSAGE": "Die Fotobox muss kurz neu gestartet werden. Deine bisherigen Fotos bleiben erhalten.",
+    "DETAILS": "Technische Details",
+    "DISMISS": "Hinweis schließen"
   },
   "CAPTURE": {
     "TAKE_PHOTO": "Foto aufnehmen",
-    "TIMEOUT": "Foto-Aufnahme hat zu lange gedauert. Bitte erneut versuchen."
+    "TIMEOUT": "Die Kamera reagiert gerade nicht. Bitte noch einmal versuchen.",
+    "PROCESSING": "Foto wird verarbeitet…",
+    "FAILED": "Das Foto konnte nicht aufgenommen werden. Bitte noch einmal versuchen."
   },
   "DIRECTORY_PICKER": {
     "UP": "Übergeordneter Ordner",
@@ -160,5 +191,13 @@
     "CANCEL": "Abbrechen",
     "EMPTY": "Keine Unterordner",
     "ERROR": "Ordner konnten nicht geladen werden."
+  },
+  "LIVE_VIEW": {
+    "ALT": "Live-Bild der Kamera",
+    "CAMERA_ERROR": "Kamera nicht bereit",
+    "WEBCAM_ERROR": "Webcam nicht bereit",
+    "ERROR_HINT": "Bitte das Fotobox-Team ansprechen.",
+    "STARTING_CAMERA": "Kamera wird gestartet…",
+    "STARTING_WEBCAM": "Webcam wird gestartet…"
   }
 }

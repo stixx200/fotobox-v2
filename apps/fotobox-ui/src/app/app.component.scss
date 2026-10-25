@@ -1,20 +1,24 @@
+// M3 error-container banner, floating above every screen.
 .network-banner {
-  appearance: none;
-  display: block;
-  width: 100%;
-  margin: 0;
-  border: 0;
-  font-family: inherit;
-  line-height: inherit;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 9998;
-  padding: 10px 16px;
-  background: #b71c1c;
-  color: white;
-  text-align: center;
-  font-size: 0.9rem;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 32px);
+  padding: 4px 4px 4px 20px;
+  box-sizing: border-box;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  box-shadow: var(--mat-sys-level3);
+  font: var(--mat-sys-title-medium);
+  --mat-icon-button-icon-color: var(--mat-sys-on-error-container);
+}
+
+.network-banner__text {
+  flex: 1;
 }

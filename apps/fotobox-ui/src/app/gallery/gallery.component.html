@@ -1,168 +1,282 @@
-@if (requiresPassword() && !unlocked()) {
-  <div class="gallery-pin-gate">
-    <div class="gallery-pin-card">
-      <mat-icon class="gallery-pin-icon">lock</mat-icon>
-      <h2>{{ 'GALLERY.ENTER_PIN' | translate }}</h2>
-
-      <mat-form-field class="gallery-pin-field" floatLabel="always">
-        <mat-label>{{ 'GALLERY.PIN' | translate }}</mat-label>
-        <input
-          matInput
-          type="password"
-          class="gallery-pin-input"
-          [ngModel]="pinInput()"
-          (ngModelChange)="onPinInput($event)"
-          [attr.maxlength]="pinLength"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          autocomplete="off"
-        />
-      </mat-form-field>
-
-      @if (pinError()) {
-        <p class="gallery-pin-error">
-          {{ 'GALLERY.WRONG_PIN' | translate }}
-        </p>
-      }
-
-      <div class="gallery-pin-actions">
-        <button
-          mat-raised-button
-          color="primary"
-          [disabled]="pinInput().length !== pinLength"
-          (click)="submitPin()"
-        >
-          {{ 'GALLERY.UNLOCK' | translate }}
-        </button>
-        <button mat-stroked-button (click)="goBack()">
-          {{ 'GALLERY.BACK' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
-} @else {
-  <div class="gallery-container">
-    <div class="gallery-toolbar">
-      <button
-        mat-icon-button
-        (click)="goBack()"
-        [attr.aria-label]="'GALLERY.BACK' | translate"
-      >
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <h2>{{ 'GALLERY.TITLE' | translate }}</h2>
-    </div>
-
-    @if (loading()) {
-      <div class="gallery-loading">
-        <mat-spinner diameter="48"></mat-spinner>
-      </div>
-    }
-
-    @if (!loading() && photos().length === 0) {
-      <div class="gallery-empty">
-        <mat-icon>photo_library</mat-icon>
-        <p>{{ 'GALLERY.EMPTY' | translate }}</p>
-      </div>
-    }
-
-    @if (!loading() && photos().length > 0) {
-      <div class="gallery-grid">
-        @for (photo of photos(); track photo.id) {
-          <button type="button" class="gallery-thumb" (click)="select(photo)">
-            <img [src]="photoUrl(photo)" [alt]="photo.id" loading="lazy" />
-          </button>
-        }
-      </div>
-    }
-
-    @if (selected(); as photo) {
+<div class="gallery-root kiosk-dark">
+  @if (requiresPassword() && !unlocked()) {
+    <div class="gallery-pin-gate">
       <div
-        class="gallery-detail"
-        role="dialog"
-        aria-modal="true"
-        [attr.aria-label]="photo.id"
-        (click)="onDetailBackdropClick($event)"
-        (keydown.escape)="closeDetail()"
+        class="gallery-pin-card"
+        [class.gallery-pin-card--shake]="pinError()"
       >
-        <div class="gallery-detail-toolbar">
+        <mat-icon class="gallery-pin-icon" aria-hidden="true">lock</mat-icon>
+        <h2 id="gallery-pin-title">{{ 'GALLERY.ENTER_PIN' | translate }}</h2>
+
+        <div
+          class="gallery-pin-dots"
+          role="status"
+          [attr.aria-label]="
+            'GALLERY.PIN_PROGRESS'
+              | translate: { count: pinInput().length, total: pinLength }
+          "
+        >
+          @for (filled of pinDots(); track $index) {
+            <span class="pin-dot" [class.pin-dot--filled]="filled"></span>
+          }
+        </div>
+
+        <p class="gallery-pin-error" aria-live="assertive">
+          @if (pinError()) {
+            {{ 'GALLERY.WRONG_PIN' | translate }}
+          }
+        </p>
+
+        <div
+          class="gallery-keypad"
+          role="group"
+          aria-labelledby="gallery-pin-title"
+        >
+          @for (digit of keypadDigits; track digit) {
+            <button
+              type="button"
+              class="keypad-key"
+              (pointerdown)="$event.preventDefault()"
+              matButton="tonal"
+              [attr.data-key]="digit"
+              (click)="pressDigit(digit)"
+            >
+              {{ digit }}
+            </button>
+          }
           <button
-            mat-icon-button
-            class="gallery-detail-back"
-            (click)="closeDetail()"
-            [attr.aria-label]="'GALLERY.BACK_TO_GALLERY' | translate"
+            type="button"
+            class="keypad-key keypad-key--icon"
+            (pointerdown)="$event.preventDefault()"
+            matButton="text"
+            [attr.aria-label]="'GALLERY.BACK' | translate"
+            (click)="goBack()"
           >
             <mat-icon>arrow_back</mat-icon>
           </button>
+          <button
+            type="button"
+            class="keypad-key"
+            (pointerdown)="$event.preventDefault()"
+            matButton="tonal"
+            data-key="0"
+            (click)="pressDigit('0')"
+          >
+            0
+          </button>
+          <button
+            type="button"
+            class="keypad-key keypad-key--icon"
+            (pointerdown)="$event.preventDefault()"
+            matButton="text"
+            [disabled]="pinInput().length === 0"
+            [attr.aria-label]="'GALLERY.DELETE_DIGIT' | translate"
+            (click)="deleteDigit()"
+          >
+            <mat-icon>backspace</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="gallery-container">
+      <div class="gallery-toolbar">
+        <button
+          matIconButton
+          (click)="goBack()"
+          [attr.aria-label]="'GALLERY.BACK' | translate"
+        >
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>{{ 'GALLERY.TITLE' | translate }}</h2>
+        @if (!loading() && photos().length > 0) {
+          <span class="gallery-count">{{
+            'GALLERY.COUNT' | translate: { count: photos().length }
+          }}</span>
+        }
+      </div>
 
-          @if (!deleteConfirmPending()) {
+      @if (loading()) {
+        <div class="gallery-state" role="status">
+          <mat-spinner diameter="48"></mat-spinner>
+          <p>{{ 'GALLERY.LOADING' | translate }}</p>
+        </div>
+      } @else if (loadError()) {
+        <div class="gallery-state gallery-state--error" role="alert">
+          <mat-icon>cloud_off</mat-icon>
+          <h3>{{ 'GALLERY.LOAD_ERROR' | translate }}</h3>
+          <p>{{ 'GALLERY.LOAD_ERROR_HINT' | translate }}</p>
+          <div class="gallery-state__actions">
+            <button matButton="filled" class="kiosk-action" (click)="reload()">
+              <mat-icon>refresh</mat-icon>
+              {{ 'GALLERY.RETRY' | translate }}
+            </button>
             <button
-              mat-icon-button
-              class="gallery-detail-delete"
-              (click)="requestDelete()"
-              [attr.aria-label]="'GALLERY.DELETE' | translate"
+              matButton="outlined"
+              class="kiosk-action"
+              (click)="goBack()"
             >
-              <mat-icon>delete_outline</mat-icon>
+              {{ 'GALLERY.BACK' | translate }}
+            </button>
+          </div>
+        </div>
+      } @else if (photos().length === 0) {
+        <div class="gallery-state">
+          <mat-icon>photo_library</mat-icon>
+          <h3>{{ 'GALLERY.EMPTY' | translate }}</h3>
+          <p>{{ 'GALLERY.EMPTY_HINT' | translate }}</p>
+          <div class="gallery-state__actions">
+            <button matButton="filled" class="kiosk-action" (click)="goBack()">
+              <mat-icon>photo_camera</mat-icon>
+              {{ 'GALLERY.TAKE_PHOTO' | translate }}
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="gallery-grid">
+          @for (photo of photos(); track photo.id; let i = $index) {
+            <button
+              type="button"
+              class="gallery-thumb"
+              [attr.aria-label]="'GALLERY.PHOTO_N' | translate: { n: i + 1 }"
+              (click)="select(photo)"
+            >
+              @if (brokenIds().has(photo.id)) {
+                <mat-icon class="gallery-thumb__broken" aria-hidden="true"
+                  >hide_image</mat-icon
+                >
+              } @else {
+                <img
+                  [src]="photoUrl(photo)"
+                  alt=""
+                  loading="lazy"
+                  (error)="markBroken(photo)"
+                />
+              }
             </button>
           }
         </div>
+      }
 
-        <div class="gallery-detail-image-wrap">
-          <img [src]="selectedUrl()" [alt]="photo.id" />
-        </div>
+      @if (selected(); as photo) {
+        <div
+          class="gallery-detail"
+          role="dialog"
+          aria-modal="true"
+          [attr.aria-label]="'PHOTO_VIEW.ALT' | translate"
+          (click)="onDetailBackdropClick($event)"
+          (keydown.escape)="closeDetail()"
+        >
+          <div class="gallery-detail-toolbar">
+            <button
+              matIconButton
+              class="gallery-detail-back"
+              (click)="closeDetail()"
+              [attr.aria-label]="'GALLERY.BACK_TO_GALLERY' | translate"
+            >
+              <mat-icon>arrow_back</mat-icon>
+            </button>
 
-        <div class="gallery-detail-footer">
-          @if (deleteConfirmPending()) {
-            <div class="gallery-delete-confirm">
-              <p>{{ 'GALLERY.DELETE_CONFIRM' | translate }}</p>
-              <div class="gallery-delete-confirm-actions">
-                <button mat-stroked-button (click)="cancelDelete()">
-                  {{ 'GALLERY.CANCEL' | translate }}
-                </button>
+            @if (!deleteConfirmPending()) {
+              <button
+                matButton="text"
+                class="gallery-detail-delete"
+                (click)="requestDelete()"
+              >
+                <mat-icon>delete_outline</mat-icon>
+                {{ 'GALLERY.DELETE' | translate }}
+              </button>
+            }
+          </div>
+
+          <div class="gallery-detail-image-wrap">
+            <img
+              [src]="selectedUrl()"
+              [attr.alt]="'PHOTO_VIEW.ALT' | translate"
+            />
+          </div>
+
+          <div class="gallery-detail-footer">
+            @if (deleteConfirmPending()) {
+              <div class="gallery-delete-confirm" role="alertdialog">
+                <p>{{ 'GALLERY.DELETE_CONFIRM' | translate }}</p>
+                <div class="gallery-detail-actions">
+                  <button
+                    matButton="outlined"
+                    class="kiosk-action"
+                    (click)="cancelDelete()"
+                  >
+                    {{ 'GALLERY.CANCEL' | translate }}
+                  </button>
+                  <button
+                    matButton="filled"
+                    class="kiosk-action gallery-delete-confirm__action"
+                    [disabled]="deleting()"
+                    (click)="confirmDelete()"
+                  >
+                    <mat-icon>delete_forever</mat-icon>
+                    {{ 'GALLERY.DELETE_CONFIRM_ACTION' | translate }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="gallery-detail-actions">
+                @if (showPrint()) {
+                  <button
+                    matButton="filled"
+                    class="kiosk-action"
+                    [disabled]="actions.printing()"
+                    (click)="print()"
+                  >
+                    @if (actions.printing()) {
+                      <mat-spinner diameter="24" class="button-spinner" />
+                    } @else {
+                      <mat-icon>print</mat-icon>
+                    }
+                    {{
+                      (actions.printing()
+                        ? 'PHOTO_VIEW.PRINTING'
+                        : 'GALLERY.PRINT'
+                      ) | translate
+                    }}
+                  </button>
+                }
+                @if (showShare()) {
+                  <button
+                    [matButton]="showPrint() ? 'tonal' : 'filled'"
+                    class="kiosk-action"
+                    [disabled]="actions.sharing()"
+                    (click)="share()"
+                  >
+                    @if (actions.sharing()) {
+                      <mat-spinner diameter="24" class="button-spinner" />
+                    } @else {
+                      <mat-icon>qr_code_2</mat-icon>
+                    }
+                    {{ 'GALLERY.SHARE' | translate }}
+                  </button>
+                }
                 <button
-                  mat-raised-button
-                  color="warn"
-                  (click)="confirmDelete()"
+                  matButton="outlined"
+                  class="kiosk-action"
+                  (click)="closeDetail()"
                 >
-                  {{ 'GALLERY.DELETE_CONFIRM_ACTION' | translate }}
+                  <mat-icon>grid_view</mat-icon>
+                  {{ 'GALLERY.BACK_TO_GALLERY' | translate }}
                 </button>
               </div>
-            </div>
-          } @else {
-            <div class="gallery-detail-actions">
-              <button
-                mat-raised-button
-                color="primary"
-                class="gallery-detail-primary-action"
-                (click)="closeDetail()"
-              >
-                <mat-icon>arrow_back</mat-icon>
-                {{ 'GALLERY.BACK_TO_GALLERY' | translate }}
-              </button>
-              @if (showPrint()) {
-                <button mat-stroked-button (click)="print()">
-                  <mat-icon>print</mat-icon>
-                  {{ 'GALLERY.PRINT' | translate }}
-                </button>
-              }
-              @if (showShare()) {
-                <button mat-stroked-button (click)="share()">
-                  <mat-icon>qr_code_2</mat-icon>
-                  {{ 'GALLERY.SHARE' | translate }}
-                </button>
-              }
-            </div>
+            }
+          </div>
+
+          @if (actions.shareLink(); as link) {
+            <app-share-qr-overlay
+              [shareUrl]="link.url"
+              [expiresAt]="link.expiresAt"
+              (closed)="actions.closeShare()"
+            ></app-share-qr-overlay>
           }
         </div>
-
-        @if (activeShareLink(); as link) {
-          <app-share-qr-overlay
-            [shareUrl]="link.url"
-            [expiresAt]="link.expiresAt"
-            (closed)="closeShare()"
-          ></app-share-qr-overlay>
-        }
-      </div>
-    }
-  </div>
-}
+      }
+    </div>
+  }
+</div>

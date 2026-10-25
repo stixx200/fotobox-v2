@@ -24,7 +24,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   ],
   template: `
     <div
-      class="share-qr-overlay"
+      class="share-qr-overlay kiosk-dark"
       role="dialog"
       aria-modal="true"
       aria-labelledby="share-qr-title"
@@ -53,7 +53,11 @@ import { TranslatePipe } from '@ngx-translate/core';
           </p>
         }
 
-        <button mat-raised-button color="primary" (click)="onClose($event)">
+        <button
+          matButton="filled"
+          class="kiosk-action"
+          (click)="onClose($event)"
+        >
           <mat-icon>check</mat-icon>
           {{ 'SHARE.DONE' | translate }}
         </button>
@@ -69,57 +73,70 @@ import { TranslatePipe } from '@ngx-translate/core';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.88);
+        padding: 24px;
+        background: color-mix(in srgb, var(--mat-sys-scrim) 72%, transparent);
         z-index: 60;
+        cursor: default;
+        animation: fade-in 0.2s ease-out;
       }
 
       .share-qr-panel {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
-        max-width: min(90vw, 28rem);
-        padding: 2rem;
+        gap: 16px;
+        max-width: min(92vw, 34rem);
+        padding: 32px 40px;
         text-align: center;
-        color: #fff;
+        color: var(--mat-sys-on-surface);
+        background: var(--mat-sys-surface-container-high);
+        border-radius: var(--mat-sys-corner-extra-large);
+        box-shadow: var(--mat-sys-level3);
       }
 
       h2 {
         margin: 0;
-        font-size: 1.75rem;
-        font-weight: 600;
+        font: var(--mat-sys-headline-medium);
       }
 
       .share-qr-hint {
         margin: 0;
-        font-size: 1.125rem;
-        color: rgba(255, 255, 255, 0.8);
+        font: var(--mat-sys-title-medium);
+        color: var(--mat-sys-on-surface-variant);
       }
 
       .share-qr-image {
-        width: min(70vw, 16rem);
-        height: min(70vw, 16rem);
+        width: min(60vh, 70vw, 20rem);
+        height: min(60vh, 70vw, 20rem);
         background: #fff;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
+        padding: 12px;
+        border-radius: var(--mat-sys-corner-large);
+        box-sizing: border-box;
       }
 
       .share-qr-expiry {
         margin: 0;
-        font-size: 0.95rem;
-        color: rgba(255, 255, 255, 0.65);
+        font: var(--mat-sys-body-medium);
+        color: var(--mat-sys-on-surface-variant);
       }
 
       .share-qr-error {
         margin: 0;
-        color: #ff8a80;
+        font: var(--mat-sys-body-large);
+        color: var(--mat-sys-error);
       }
 
       button {
-        min-width: 12rem;
-        min-height: 3.5rem;
-        font-size: 1.125rem;
-        margin-top: 0.5rem;
+        margin-top: 8px;
+      }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
     `,
   ],

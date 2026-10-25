@@ -2,26 +2,30 @@
   @if (isClient()) {
     <video #videoEl class="live-frame" autoplay playsinline muted></video>
     @if (error()) {
-      <div class="error-state">
-        <p class="error-title">Webcam-Fehler</p>
-        <p class="error-message">{{ error() }}</p>
+      <div class="error-state" role="alert">
+        <mat-icon class="state-icon" aria-hidden="true">videocam_off</mat-icon>
+        <p class="error-title">{{ 'LIVE_VIEW.WEBCAM_ERROR' | translate }}</p>
+        <p class="error-message">{{ 'LIVE_VIEW.ERROR_HINT' | translate }}</p>
+        <p class="error-detail">{{ error() }}</p>
       </div>
     }
   } @else if (liveFrame(); as frame) {
     <img
       [src]="'data:image/jpeg;base64,' + frame"
-      alt="Live camera view"
+      [attr.alt]="'LIVE_VIEW.ALT' | translate"
       class="live-frame"
     />
   } @else if (error()) {
-    <div class="error-state">
-      <p class="error-title">Kamera-Fehler</p>
-      <p class="error-message">{{ error() }}</p>
+    <div class="error-state" role="alert">
+      <mat-icon class="state-icon" aria-hidden="true">no_photography</mat-icon>
+      <p class="error-title">{{ 'LIVE_VIEW.CAMERA_ERROR' | translate }}</p>
+      <p class="error-message">{{ 'LIVE_VIEW.ERROR_HINT' | translate }}</p>
+      <p class="error-detail">{{ error() }}</p>
     </div>
   } @else {
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>{{ statusMessage() }}</p>
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="48" />
+      <p>{{ statusMessage() | translate }}</p>
     </div>
   }
 </div>

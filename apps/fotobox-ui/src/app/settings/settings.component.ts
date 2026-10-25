@@ -55,6 +55,7 @@ import {
 import { LayoutNavigationService } from '../services/layout-navigation.service';
 import { ClientLogService } from '../services/client-log.service';
 import { ShareService } from '../services/share.service';
+import { NotificationService } from '../services/notification.service';
 import { SettingsCameraLayoutsComponent } from './components/settings-camera-layouts.component';
 import { SettingsShareGalleryComponent } from './components/settings-share-gallery.component';
 
@@ -98,6 +99,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(MatDialog);
   private readonly clientLogService = inject(ClientLogService);
   private readonly shareService = inject(ShareService);
+  private readonly notification = inject(NotificationService);
+  /** A user-initiated save waits for its result to confirm it. */
+  private saveFeedbackPending = false;
 
   readonly currentLang = signal<string>(
     this.translateService.currentLang() || 'de',
@@ -198,6 +202,25 @@ export class SettingsComponent implements OnInit, OnDestroy {
   readonly isDesktopHost = isDesktopHost();
 
   constructor() {
+    // Overlays (select panels, dialogs, snackbars) live outside the page, so
+    // the chosen scheme is mirrored onto <html> while settings are open.
+    effect(() => {
+      document.documentElement.style.colorScheme = this.currentTheme();
+    });
+
+    // Confirm a save once the store has finished (errors show a banner).
+    effect(() => {
+      if (this.settingsIsLoading() || !this.saveFeedbackPending) {
+        return;
+      }
+      this.saveFeedbackPending = false;
+      if (!this.settingsError()) {
+        this.notification.success(
+          this.translateService.instant('SETTINGS.SAVED'),
+        );
+      }
+    });
+
     // Update form with loaded settings when they become available
     effect(() => {
       const settingsArray = this.settings();
@@ -401,6 +424,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.documentElement.style.colorScheme = '';
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -551,8 +575,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   startFotobox(): void {
-    // Save settings first
-    this.saveSettings();
+    // Save settings first (no "saved" toast — we are leaving the page).
+    this.saveSettings(false);
 
     this.startError.set(null);
     // Mark that we're initializing
@@ -660,7 +684,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  saveSettings(): void {
+  saveSettings(confirm = true): void {
     if (this.settingsForm.controls.galleryPassword.invalid) {
       this.settingsForm.controls.galleryPassword.markAsTouched();
       this.cdr.markForCheck();
@@ -680,9 +704,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         { layouts: layoutsValue },
         { emitEvent: false },
       );
-      this.layoutsAutoSelectionMessage.set(
-        'Einzelbild wurde automatisch ausgewählt, da keine Layouts angegeben waren.',
-      );
+      this.layoutsAutoSelectionMessage.set('SETTINGS.LAYOUTS_AUTO_SELECTED');
     }
 
     const settingsArray = Object.entries(formValue).map(([key, value]) => {
@@ -692,6 +714,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return { key, value: JSON.stringify(value) };
     });
 
+    this.saveFeedbackPending = confirm;
     this.settingsStore.updateSettings(settingsArray);
 
     // Refresh available layouts after save

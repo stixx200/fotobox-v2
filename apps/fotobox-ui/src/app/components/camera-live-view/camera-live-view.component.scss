@@ -35,61 +35,47 @@
 .error-state,
 .loading-state {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
+  gap: 12px;
+  padding: 0 32px;
+  background-color: var(--mat-sys-surface-container-lowest, #000);
+  color: var(--mat-sys-on-surface, #fff);
   z-index: 10;
+  text-align: center;
 
   p {
     margin: 0;
-    padding: 0 2rem;
-    text-align: center;
+    max-width: 36rem;
   }
 }
 
-.loading-state {
-  color: #fff;
-  font-size: 1.2rem;
+.loading-state p {
+  font: var(--mat-sys-title-large);
+}
+
+.state-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: var(--mat-sys-error);
 }
 
 .error-state {
-  color: #f44336;
-
   .error-title {
-    font-size: 1.5rem;
-    font-weight: bold;
+    font: var(--mat-sys-headline-small);
   }
 
   .error-message {
-    font-size: 1rem;
+    font: var(--mat-sys-body-large);
+    color: var(--mat-sys-on-surface-variant);
   }
 
-  .debug-message {
-    font-size: 0.9rem;
-    color: #999;
-    font-family: monospace;
-  }
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #999;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  .error-detail {
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-outline);
   }
 }
