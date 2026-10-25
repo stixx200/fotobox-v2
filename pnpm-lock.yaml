@@ -261,6 +261,9 @@ importers:
       '@nestjs/common':
         specifier: ^12.2.0
         version: 12.2.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/config':
+        specifier: ^12.0.1
+        version: 12.0.1(@nestjs/common@12.2.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: ^12.2.0
         version: 12.2.0(@nestjs/common@12.2.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.2.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -400,9 +403,6 @@ importers:
       '@graphql-codegen/typescript-operations':
         specifier: ^6.0.3
         version: 6.1.10(graphql@16.14.2)
-      '@nestjs/config':
-        specifier: ^12.0.1
-        version: 12.0.1(@nestjs/common@12.2.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)
       '@nestjs/schematics':
         specifier: ^12.0.10
         version: 12.0.10(chokidar@5.0.0)(prettier@3.6.2)(typescript@6.0.3)

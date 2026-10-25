@@ -19,6 +19,7 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
+import { isBuiltin } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,6 +92,36 @@ for (const unused of ['.bin', 'typescript']) {
     recursive: true,
     force: true,
   });
+}
+
+// 3. Every package the bundle requires must be in the staged node_modules
+// (the generated package.json only lists the workspace's runtime
+// `dependencies`), otherwise the API fails on the kiosk PC. Checked on disk:
+// Node's resolution would also find the workspace's own node_modules.
+const bundle = await readFile(join(apiOut, 'main.js'), 'utf8');
+const packageName = (request) =>
+  request
+    .split('/')
+    .slice(0, request.startsWith('@') ? 2 : 1)
+    .join('/');
+const required = new Set(
+  [...bundle.matchAll(/require\("([^".][^"]*)"\)/g)]
+    .map(([, request]) => request)
+    .filter((request) => !request.startsWith('node:') && !isBuiltin(request))
+    .map(packageName),
+);
+const missing = [];
+for (const name of required) {
+  const manifest = join(apiOut, 'node_modules', name, 'package.json');
+  if (!(await stat(manifest).catch(() => null))) {
+    missing.push(name);
+  }
+}
+if (missing.length > 0) {
+  throw new Error(
+    `API sidecar misses runtime packages: ${missing.join(', ')}. ` +
+      'Move them to "dependencies" in the root package.json.',
+  );
 }
 
 console.log(`Staged API sidecar in ${apiOut}`);
