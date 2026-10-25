@@ -29,6 +29,38 @@ html {
     )
   );
 
+  // Flatter shapes than the M3 default (less rounded buttons, cards and
+  // dialogs). Round controls such as switches and icon buttons keep
+  // `corner-full`. Same scale in apps/fotobox-ui/src/styles.scss.
+  @include mat.theme-overrides(
+    (
+      corner-extra-small: 2px,
+      corner-extra-small-top: 2px 2px 0 0,
+      corner-small: 4px,
+      corner-medium: 6px,
+      corner-large: 8px,
+      corner-large-top: 8px 8px 0 0,
+      corner-large-start: 8px 0 0 8px,
+      corner-large-end: 0 8px 8px 0,
+      corner-extra-large: 12px,
+      corner-extra-large-top: 12px 12px 0 0,
+    )
+  );
+  @include mat.button-overrides(
+    (
+      filled-container-shape: var(--mat-sys-corner-small),
+      outlined-container-shape: var(--mat-sys-corner-small),
+      protected-container-shape: var(--mat-sys-corner-small),
+      text-container-shape: var(--mat-sys-corner-small),
+      tonal-container-shape: var(--mat-sys-corner-small),
+    )
+  );
+  @include mat.button-toggle-overrides(
+    (
+      shape: var(--mat-sys-corner-small),
+    )
+  );
+
   color-scheme: light;
 
   // M3 has no warning role; tonal amber pair (M3 yellow 90 / 10).

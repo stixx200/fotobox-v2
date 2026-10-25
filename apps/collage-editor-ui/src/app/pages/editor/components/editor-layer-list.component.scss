@@ -19,7 +19,7 @@
 
 .group-count {
   padding: 0 6px;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-surface-container-highest);
   font: var(--mat-sys-label-small);
   line-height: 18px;
@@ -43,7 +43,7 @@
   min-height: 44px;
   margin-bottom: 2px;
   padding-right: 4px;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-surface-container-low);
   transition: background-color 120ms ease;
 
@@ -70,7 +70,7 @@
   align-self: stretch;
   padding: 4px 8px 4px 12px;
   border: 0;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -117,7 +117,7 @@
   justify-content: center;
   min-width: 22px;
   height: 22px;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);
   font: var(--mat-sys-label-medium);

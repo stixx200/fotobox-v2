@@ -156,7 +156,7 @@ export interface DirectoryPickerData {
       min-height: 48px;
       padding: 0 12px;
       border: 0;
-      border-radius: 8px;
+      border-radius: var(--mat-sys-corner-small);
       background: none;
       color: inherit;
       font: inherit;

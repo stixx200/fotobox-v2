@@ -76,7 +76,7 @@ export class ShareController {
       max-width: 100%;
       max-height: 70vh;
       object-fit: contain;
-      border-radius: 0.5rem;
+      border-radius: 0.25rem;
       margin: 1.5rem 0;
     }
     a.download {
@@ -85,7 +85,7 @@ export class ShareController {
       color: #fff;
       text-decoration: none;
       padding: 1rem 2rem;
-      border-radius: 2rem;
+      border-radius: 0.25rem;
       font-size: 1.125rem;
       font-weight: 600;
     }

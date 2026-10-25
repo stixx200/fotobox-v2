@@ -115,7 +115,7 @@ $sidebar-width: 320px;
   align-items: center;
   gap: 12px;
   padding: 8px 8px 8px 16px;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-inverse-surface);
   color: var(--mat-sys-inverse-on-surface);
   box-shadow: var(--mat-sys-level2);
@@ -135,7 +135,7 @@ $sidebar-width: 320px;
   align-items: center;
   gap: 2px;
   padding: 2px 4px;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-surface-container-high);
   box-shadow: var(--mat-sys-level2);
 }
@@ -145,7 +145,7 @@ $sidebar-width: 320px;
   height: 32px;
   padding: 0 8px;
   border: 0;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: transparent;
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-label-large);
@@ -279,7 +279,7 @@ $sidebar-width: 320px;
 
   .preview-badge {
     padding: 0 8px;
-    border-radius: var(--mat-sys-corner-full);
+    border-radius: var(--mat-sys-corner-small);
     background: var(--mat-sys-surface-container-highest);
     color: var(--mat-sys-on-surface-variant);
     font: var(--mat-sys-label-small);

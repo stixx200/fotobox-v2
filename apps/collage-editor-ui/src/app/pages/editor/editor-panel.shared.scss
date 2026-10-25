@@ -148,7 +148,7 @@
 
 .issue-count {
   padding: 0 6px;
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-error-container);
   color: var(--mat-sys-on-error-container);
   font: var(--mat-sys-label-small);
@@ -210,7 +210,7 @@ button.validation-issue {
   margin-left: 26px;
   padding: 2px 8px;
   border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--mat-sys-corner-full);
+  border-radius: var(--mat-sys-corner-small);
   background: transparent;
   color: var(--mat-sys-primary);
   font: var(--mat-sys-label-medium);
