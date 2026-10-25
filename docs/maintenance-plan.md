@@ -20,13 +20,13 @@ npm exec nx run collage-editor-ui-e2e:e2e
 
 ## Progress summary
 
-| Phase | Description | Tasks | Done |
-|-------|-------------|-------|------|
-| 0 | Setup tracking | 0 | 1/1 |
-| 1 | P0 — broken / incorrect | 1–5 | 5/5 |
-| 2 | P1 — consistency & coupling | 6–12 | 7/7 |
-| 3 | P1 — frontend decomposition | 14–17 | 4/4 |
-| 4 | P2/P3 — structure, tests, polish | 13, 18–25 | 9/9 |
+| Phase | Description                      | Tasks     | Done                 |
+| ----- | -------------------------------- | --------- | -------------------- |
+| 0     | Setup tracking                   | 0         | 1/1                  |
+| 1     | P0 — broken / incorrect          | 1–5       | 5/5                  |
+| 2     | P1 — consistency & coupling      | 6–12      | 7/7                  |
+| 3     | P1 — frontend decomposition      | 14–17     | 2/4 (15, 16 partial) |
+| 4     | P2/P3 — structure, tests, polish | 13, 18–25 | 9/9                  |
 
 ---
 
@@ -109,17 +109,17 @@ npm exec nx run collage-editor-ui-e2e:e2e
 
 ## Phase 3 — P1: Frontend decomposition (behavior-preserving)
 
-- [x] **Task 14:** Split `fabric-canvas.service.ts` (~2400 lines)
+- [x] **Task 14:** Split `fabric-canvas.service.ts` (~2400 lines → ~1700; snapping, history, decorations extracted)
   - **Extract:** snapping, history, viewport, layers, serialization modules
   - **Verify after each sub-step:** `npm exec nx run collage-editor-ui:build` + `collage-editor-ui-e2e:e2e`
   - **Commit:** one per extraction, e.g. `refactor(editor): extract snapping from FabricCanvasService`
 
-- [x] **Task 15:** Decompose `editor.component.ts` (~1150 lines)
+- [ ] **Task 15:** Decompose `editor.component.ts` (~1150 lines) — **partial:** still ~1180 lines (2026-10 review)
   - **Extract:** toolbar, layers panel, property panels, `EditorFacade`
   - **Verify:** `npm exec nx run collage-editor-ui-e2e:e2e` after each extraction
   - **Commit:** one per component
 
-- [x] **Task 16:** Break up `settings.component` (~688 lines)
+- [ ] **Task 16:** Break up `settings.component` (~688 lines) — **partial:** section components exist but the parent is still ~750 lines (2026-10 review)
   - **Extract:** general, layouts, camera, share/gallery section components
   - **Verify:** `npm exec nx run fotobox-ui:build`
   - **Commit:** one per section
@@ -179,8 +179,19 @@ npm exec nx run collage-editor-ui-e2e:e2e
 
 ## Definition of done (entire plan)
 
-- [x] All tasks above checked
+- [ ] All tasks above checked (Tasks 15, 16 partial)
 - [ ] `npm exec nx run-many -t lint test build` passes (lint: pre-existing warning debt on some libs and Angular apps)
 - [x] `npm exec nx run collage-editor-ui-e2e:e2e` passes
 - [x] `npm exec nx run fotobox-ui-e2e:e2e` passes (after Task 24)
 - [x] No `.bak` files; no broken specs; module boundaries enforced
+
+---
+
+## Phase 5 — 2026-10 review follow-up
+
+- [x] **Task 26:** Enforce API access policy on graphql-ws (WebSocket upgrades bypassed the LAN middleware), require a token for tablet mode, restrict CORS
+- [x] **Task 27:** Contain collage template ids / photo paths (no traversal or sibling-prefix escapes)
+- [x] **Task 28:** Electron API supervision (start watch even after failed boot, no overlapping restarts, relaunch on uncaught exception, close API before quit)
+- [x] **Task 29:** Camera capture correlation, unique photo ids, JPEG validation
+- [x] **Task 30:** Migrate test targets from deprecated `@nx/vite:test` to `@nx/vitest:test`; lint clean with `maxWarnings: 0`
+- [ ] **Task 31:** Finish Tasks 15/16 (needs e2e coverage of the editor toolbar/panels first)
