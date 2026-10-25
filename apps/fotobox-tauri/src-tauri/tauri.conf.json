@@ -16,7 +16,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "app", "dmg"],
+    "targets": ["nsis", "app", "dmg"],
     "category": "Photography",
     "shortDescription": "Fotobox photo booth",
     "icon": [
@@ -29,7 +29,20 @@
     "externalBin": ["binaries/node"],
     "resources": {
       "../../../dist/apps/fotobox-tauri/api/": "api/",
-      "../../../scripts/windows/setup-kiosk.ps1": "setup-kiosk.ps1"
+      "../../../scripts/windows/setup-kiosk.ps1": "setup-kiosk.ps1",
+      "../../../scripts/windows/FotoboxKiosk.psm1": "FotoboxKiosk.psm1"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "./windows/hooks.nsh",
+        "languages": ["German", "English"],
+        "startMenuFolder": "Fotobox"
+      }
     }
   }
 }

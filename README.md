@@ -12,9 +12,9 @@ It supports Sony cameras (via gphoto2), a browser webcam fallback, collage templ
 3. [Development – starting the app](#development--starting-the-app)
 4. [Debugging](#debugging)
 5. [Building a production release](#building-a-production-release)
-6. [Releasing (versioning + Windows MSI)](#releasing-versioning--windows-msi)
+6. [Releasing (versioning + Windows setup)](#releasing-versioning--windows-setup)
 7. [Deploying to a Windows Surface tablet](#deploying-to-a-windows-surface-tablet)
-8. [Kiosk auto-start on Windows](#kiosk-auto-start-on-windows)
+8. [Kiosk mode on Windows](#kiosk-mode-on-windows)
 9. [Configuration reference](#configuration-reference)
 10. [Useful nx commands](#useful-nx-commands)
 
@@ -176,7 +176,7 @@ Build outputs:
 
 ---
 
-## Releasing (versioning + Windows MSI)
+## Releasing (versioning + Windows setup)
 
 Versions are managed with **Nx Release** (`fotobox` group). Root `package.json` and `apps/fotobox-tauri/package.json`
 stay in sync; the Tauri app reads its version from the latter.
@@ -198,28 +198,31 @@ pnpm run release
 git push origin main --tags
 ```
 
-This creates tag `fotobox-vX.Y.Z`. GitHub Actions builds the MSI on `windows-latest` and publishes it to
-**GitHub Releases** with a SHA256 checksum.
+This creates tag `fotobox-vX.Y.Z`. GitHub Actions builds the Windows setup (`Fotobox_<version>_x64-setup.exe`) on
+`windows-latest` and publishes it to **GitHub Releases** with a SHA256 checksum.
+
+The `Windows` workflow (`.github/workflows/windows.yml`) tests every change to the desktop app or the kiosk scripts:
+PSScriptAnalyzer + Pester unit tests for the scripts, then it builds the setup, installs it silently in kiosk mode on
+the runner, checks user, auto-logon, task, firewall, `host.json` and power settings, starts the app and its API, runs
+the setup again (update) and uninstalls. The built setup is attached to the run for manual testing.
 
 ### Building the installer yourself
 
 Installers are built on the target OS:
 
 ```bash
-pnpm nx run fotobox-release:package --configuration=production   # Windows: MSI, macOS: .app + DMG
-pnpm nx run fotobox-tauri:bundle:debug                           # faster unoptimized bundle for testing
+pnpm nx run fotobox-release:package --configuration=windows   # Windows: NSIS setup
+pnpm nx run fotobox-tauri:bundle                              # macOS: .app + DMG
+pnpm nx run fotobox-tauri:bundle:debug                        # faster unoptimized bundle for testing
 ```
 
-Output: `apps/fotobox-tauri/src-tauri/target/release/bundle/` (`msi/Fotobox_<version>_x64_en-US.msi`,
-`macos/Fotobox.app`, `dmg/…`). The bundle configuration lives in
-[`apps/fotobox-tauri/src-tauri/tauri.conf.json`](apps/fotobox-tauri/src-tauri/tauri.conf.json).
+Output: `apps/fotobox-tauri/src-tauri/target/release/bundle/` (`nsis/Fotobox_<version>_x64-setup.exe`,
+`macos/Fotobox.app`, `dmg/…`). Bundle configuration: [`tauri.conf.json`](apps/fotobox-tauri/src-tauri/tauri.conf.json);
+installer hooks: [`windows/hooks.nsh`](apps/fotobox-tauri/src-tauri/windows/hooks.nsh); kiosk setup:
+[`scripts/windows/FotoboxKiosk.psm1`](scripts/windows/FotoboxKiosk.psm1).
 
-On first launch in kiosk mode, the app:
-
-- Configures **start at login**
-- On Windows, offers to run the bundled [`setup-kiosk.ps1`](scripts/windows/setup-kiosk.ps1) elevated (Startup
-  shortcut fallback, Assigned Access guidance, firewall rule for LAN QR sharing)
-- Imports settings, share links and the photo index of a previous **Electron** install (the old files are kept)
+On its first start the app imports settings, share links and the photo index of a previous **Electron** install
+(the old files are kept).
 
 ---
 
@@ -227,65 +230,71 @@ On first launch in kiosk mode, the app:
 
 ### Requirements
 
-- Windows 10 / 11 (x64) — Home and Pro both work; WebView2 is preinstalled (the installer adds it if missing)
+- Windows 10 / 11 (x64), Home, Pro, Enterprise or Education; WebView2 is preinstalled (the setup adds it if missing)
+- An administrator account to run the setup
 - No extra drivers required for webcam mode
-- For Sony cameras: install the [gphoto2 Windows port](https://github.com/gphoto2/gphoto2) and add it to the system PATH
+- For Sony cameras: install the [gphoto2 Windows port](https://github.com/gphoto2/gphoto2) and add it to the
+  **system** PATH; install printer drivers for all users (the kiosk user is a standard user)
 
-### Installation steps
+### Installation
 
-1. Copy `Fotobox_<version>_x64_en-US.msi` from GitHub Releases.
-2. Double-click the `.msi` and follow the wizard.
-   Default install path: `C:\Program Files\Fotobox\`
-3. **First launch**: the app starts in full-screen kiosk mode automatically.
-   Configure on the Settings screen:
-   - **Camera** – `webcam` (built-in Surface camera) or `gphoto2` (Sony)
-   - **Photo storage folder**
-   - **Printer** (optional; printing is silent, via the API on the host)
-   - **Active layouts**
-4. Tap **"Fotobox starten"** – the app navigates to the home screen and live preview starts.
+1. Download `Fotobox_<version>_x64-setup.exe` from GitHub Releases. The setup is not code-signed yet: if Windows
+   SmartScreen warns, choose **More info → Run anyway**.
+2. Run it and confirm the administrator prompt. It installs to `C:\Program Files\Fotobox\`.
+3. Answer **"Diesen PC als Fotobox-Kiosk einrichten?"**:
+   - **Yes (kiosk):** see [Kiosk mode on Windows](#kiosk-mode-on-windows). Restart Windows when the setup finishes.
+   - **No (normal):** Fotobox is started from the Start menu like any app.
+4. Configure the booth on the Settings screen (camera, photo folder, printer, layouts), then tap
+   **"Fotobox starten"**.
+
+Running a newer setup later updates the app and keeps the chosen mode, kiosk user and settings.
 
 ---
 
-## Kiosk auto-start on Windows
+## Kiosk mode on Windows
 
-On first production launch, Fotobox configures **start at login** automatically. The bundled `setup-kiosk.ps1`
-(installed next to the app) provides additional setup:
+In kiosk mode the setup ([`FotoboxKiosk.psm1`](scripts/windows/FotoboxKiosk.psm1)) prepares Windows so the booth runs
+without any input after power-on:
+
+| What                | How                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Kiosk account       | Standard (non-admin) user `Fotobox` with a random password                                                        |
+| Automatic sign-in   | Auto-logon for that user; the password is stored as LSA secret (like Sysinternals Autologon), never in plain text |
+| Start and restart   | Scheduled task `\Fotobox\Kiosk` starts Fotobox at sign-in and restarts it within a minute if it exits             |
+| Full screen         | Fotobox runs as kiosk (full screen, can't be closed) for the kiosk user only; admins get a normal window          |
+| Awake               | No sleep, screen-off or password on wake (AC and battery)                                                         |
+| Fewer interruptions | Notifications, tips, lock screen and edge swipes off; no Windows Update restarts while signed in                  |
+| Fewer ways out      | Task Manager, Win key, Run and lock disabled for the kiosk user                                                   |
+| Network             | Firewall rule for the bundled `node.exe` on TCP 3000 (QR share links work on private and public Wi-Fi)            |
+| App settings        | `%ProgramData%\Fotobox\host.json` (mode, kiosk user, port, tablet mode)                                           |
+
+Edge-swipe, lock-screen and update policies are best effort on Windows **Home**. Ctrl+Alt+Del can't be blocked on
+Home/Pro; it only leads to the sign-in screen of a standard user.
+
+**Operator access:** press **Ctrl+Alt+Del → Switch user** and sign in with an administrator account. Fotobox opens as
+a normal window there.
+
+**Change mode later** (as administrator, from the Start menu folder _Fotobox_): **Fotobox Kiosk einrichten** /
+**Fotobox Kiosk deaktivieren**, or:
 
 ```powershell
-# From the install directory (or via the in-app prompt)
-powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1
-
-# Optional: open firewall for LAN QR sharing (requires admin)
-powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Elevated
+powershell -ExecutionPolicy Bypass -File "C:\Program Files\Fotobox\setup-kiosk.ps1" -Mode Kiosk   # or -Mode Normal
 ```
 
-### Manual options (if needed)
+**Silent install** (e.g. for several booths):
 
-#### Option A — Startup folder (manual fallback)
+```powershell
+Fotobox_<version>_x64-setup.exe /S /KIOSK=1                    # kiosk mode
+Fotobox_<version>_x64-setup.exe /S /KIOSK=1 /LANTOKEN=auto     # + tablet mode with a generated token
+Fotobox_<version>_x64-setup.exe /S /KIOSK=1 /KIOSKUSER=Booth   # other kiosk account name
+```
 
-1. Press **Win + R**, type `shell:startup`, press **Enter**.
-2. Right-click → **New → Shortcut**.
-3. Target: `C:\Program Files\Fotobox\Fotobox.exe`
-4. Click **Finish**.
+Without `/KIOSK`, a first silent install is a normal install and an update keeps the current mode.
 
-The app launches automatically after Windows login.
+**Uninstall** (Settings → Apps → Fotobox) removes the kiosk configuration and restores the previous Windows settings.
+It asks whether to also delete the `Fotobox` user with its photos (silent uninstalls keep them).
 
-### Option B — Task Scheduler (runs at boot)
-
-1. Open **Task Scheduler** → "Create Basic Task".
-2. Trigger: **When the computer starts**.
-3. Action: **Start a program** → `C:\Program Files\Fotobox\Fotobox.exe`
-4. Check **Run whether user is logged on or not** and **Run with highest privileges**.
-
-### Option C — Auto-login + startup folder (recommended for kiosk)
-
-Combines unattended boot with automatic app start:
-
-1. Enable auto-login: **Win + R** → `netplwiz` → uncheck "Users must enter a user name and password" → set the password.
-2. Add the shortcut to the startup folder (Option A).
-
-> **Tip**: Enable Windows **Assigned Access** (Settings → Accounts → Family & other users → Set up a kiosk) to lock
-> the tablet to the Fotobox app only, preventing users from accessing the desktop.
+Setup log: `%ProgramData%\Fotobox\setup.log`.
 
 ---
 
@@ -315,12 +324,13 @@ Database location:
 
 ### Desktop app environment
 
-| Environment variable                | Description                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------ |
-| `PORT`                              | Port of the embedded API (default `3000`)                                                  |
-| `FOTOBOX_KIOSK`                     | `1`/`0` forces kiosk mode on/off (default: on in release, off in debug builds)             |
-| `FOTOBOX_API_URL`                   | Use an external API instead of the embedded sidecar (sends `FOTOBOX_LAN_API_TOKEN` if set) |
-| `FOTOBOX_COLLAGE_EDITOR_DEV_SERVER` | Collage editor URL in debug builds (default `http://localhost:4201`)                       |
+| Environment variable                | Description                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `PORT`                              | Port of the embedded API (default `3000`)                                                         |
+| `FOTOBOX_KIOSK`                     | `1`/`0` forces kiosk mode on/off (default: `host.json`, else on in release / off in debug builds) |
+| `FOTOBOX_HOST_CONFIG`               | Path of the machine config written by the setup (default `%ProgramData%\Fotobox\host.json`)       |
+| `FOTOBOX_API_URL`                   | Use an external API instead of the embedded sidecar (sends `FOTOBOX_LAN_API_TOKEN` if set)        |
+| `FOTOBOX_COLLAGE_EDITOR_DEV_SERVER` | Collage editor URL in debug builds (default `http://localhost:4201`)                              |
 
 ### Network access
 

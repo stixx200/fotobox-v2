@@ -17,7 +17,8 @@
         "command": "echo Fotobox release bundle complete"
       },
       "configurations": {
-        "production": {}
+        "production": {},
+        "windows": {}
       },
       "defaultConfiguration": "production"
     }

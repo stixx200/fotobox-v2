@@ -27,7 +27,7 @@ fn open_collage_editor(
 }
 
 pub fn run() {
-    let config = HostConfig::from_env();
+    let config = HostConfig::load();
 
     let app = tauri::Builder::default()
         // Must be registered first so a second launch only focuses the kiosk.
@@ -73,7 +73,7 @@ pub fn run() {
             windows::create_main_window(&handle, &config)?;
 
             if config.kiosk {
-                kiosk::run_first_start_setup(&handle);
+                kiosk::run_first_start_setup(&handle, &config);
             }
             Ok(())
         })

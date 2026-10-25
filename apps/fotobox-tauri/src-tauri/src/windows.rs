@@ -112,8 +112,10 @@ mod tests {
         HostConfig {
             api_port: 3000,
             external_api_url: external.map(String::from),
+            allow_lan_api: false,
             lan_api_token: token.map(String::from),
             kiosk,
+            managed_by_installer: false,
             collage_editor_dev_server: None,
         }
     }

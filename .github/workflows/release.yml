@@ -59,24 +59,20 @@ jobs:
           fi
 
       # Builds the UIs and API, stages the Node sidecar (this runner's Node
-      # 24) and bundles the Tauri app as an MSI.
-      - name: Build Windows MSI
-        run: pnpm exec nx run fotobox-release:package --configuration=production
+      # 24) and bundles the Tauri app as an NSIS setup (kiosk setup hooks).
+      - name: Build Windows setup
+        run: pnpm exec nx run fotobox-release:package --configuration=windows
 
-      - name: Collect installer
+      - name: Collect installer and checksum
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist/packages | Out-Null
-          Copy-Item apps/fotobox-tauri/src-tauri/target/release/bundle/msi/*.msi dist/packages/
-
-      - name: Generate checksum
-        shell: pwsh
-        run: |
-          $msi = Get-ChildItem -Path dist/packages -Filter *.msi | Select-Object -First 1
-          if (-not $msi) { throw "No MSI found in dist/packages" }
-          $hash = Get-FileHash -Path $msi.FullName -Algorithm SHA256
-          "$($hash.Hash)  $($msi.Name)" | Out-File -FilePath "$($msi.FullName).sha256" -Encoding ascii
-          echo "MSI_PATH=$($msi.FullName)" >> $env:GITHUB_ENV
+          $setup = Get-ChildItem apps/fotobox-tauri/src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          if (-not $setup) { throw 'No NSIS setup found' }
+          Copy-Item $setup.FullName dist/packages/
+          $target = Join-Path dist/packages $setup.Name
+          $hash = Get-FileHash -Path $target -Algorithm SHA256
+          "$($hash.Hash)  $($setup.Name)" | Out-File -FilePath "$target.sha256" -Encoding ascii
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -85,6 +81,6 @@ jobs:
           name: Fotobox v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
-            dist/packages/*.msi
-            dist/packages/*.msi.sha256
+            dist/packages/*-setup.exe
+            dist/packages/*-setup.exe.sha256
           fail_on_unmatched_files: true

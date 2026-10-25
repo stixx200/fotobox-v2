@@ -82,6 +82,15 @@ fn api_env(paths: &SidecarPaths, config: &HostConfig) -> Vec<(String, String)> {
     // Always bind on all interfaces so guest phones can open QR share links;
     // the API's access policy restricts what LAN clients may do.
     env.push(("PORT".into(), config.api_port.to_string()));
+    // Tablet mode from host.json / environment (the API keeps LAN access
+    // restricted to share links unless both are set).
+    env.push((
+        "FOTOBOX_ALLOW_LAN_API".into(),
+        if config.allow_lan_api { "1" } else { "0" }.into(),
+    ));
+    if let Some(token) = &config.lan_api_token {
+        env.push(("FOTOBOX_LAN_API_TOKEN".into(), token.clone()));
+    }
     env.push(("HOST".into(), "0.0.0.0".into()));
     env.push(("NODE_ENV".into(), "production".into()));
     // The API exits when this pipe closes, i.e. whenever the host process

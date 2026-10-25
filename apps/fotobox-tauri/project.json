@@ -17,7 +17,10 @@
       "cache": true,
       "inputs": [
         "{projectRoot}/scripts/prepare-web.mjs",
-        { "dependentTasksOutputFiles": "**/*", "transitive": false }
+        {
+          "dependentTasksOutputFiles": "**/*",
+          "transitive": false
+        }
       ],
       "outputs": ["{workspaceRoot}/dist/apps/fotobox-tauri/web"],
       "options": {
@@ -26,13 +29,25 @@
     },
     "prepare-sidecar": {
       "executor": "nx:run-commands",
-      "dependsOn": [{ "projects": ["fotobox-api"], "target": "build" }],
+      "dependsOn": [
+        {
+          "projects": ["fotobox-api"],
+          "target": "build"
+        }
+      ],
       "cache": true,
       "inputs": [
         "{projectRoot}/scripts/prepare-sidecar.mjs",
-        { "dependentTasksOutputFiles": "**/*", "transitive": false },
-        { "runtime": "node --version" },
-        { "runtime": "rustc -vV" }
+        {
+          "dependentTasksOutputFiles": "**/*",
+          "transitive": false
+        },
+        {
+          "runtime": "node --version"
+        },
+        {
+          "runtime": "rustc -vV"
+        }
       ],
       "outputs": [
         "{workspaceRoot}/dist/apps/fotobox-tauri/api",
@@ -47,8 +62,14 @@
       "continuous": true,
       "dependsOn": [
         "prepare-sidecar",
-        { "projects": ["fotobox-ui"], "target": "serve" },
-        { "projects": ["fotobox-api"], "target": "serve" }
+        {
+          "projects": ["fotobox-ui"],
+          "target": "serve"
+        },
+        {
+          "projects": ["fotobox-api"],
+          "target": "serve"
+        }
       ],
       "options": {
         "cwd": "apps/fotobox-tauri",
@@ -69,6 +90,9 @@
       "configurations": {
         "debug": {
           "command": "tauri build --debug"
+        },
+        "windows": {
+          "command": "tauri build --bundles nsis"
         }
       }
     },

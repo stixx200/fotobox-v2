@@ -1,122 +1,99 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Advanced kiosk setup for the Fotobox Windows install.
+  Sets up this PC for Fotobox: kiosk mode (booth starts automatically after
+  Windows starts) or a normal install. Also undoes the setup.
 
 .DESCRIPTION
-  - Ensures a Startup-folder shortcut exists (fallback for open-at-login).
-  - Prints guidance for auto-login and Windows Assigned Access.
-  - Optionally opens the Windows firewall port for LAN QR sharing (API on 3000).
+  Called by the Fotobox installer; can also be run manually as administrator
+  (Start menu: "Fotobox Kiosk einrichten" / "Kiosk deaktivieren").
 
-.PARAMETER Elevated
-  When set, attempts firewall rule creation (requires admin).
+  Kiosk mode creates a standard user (default "Fotobox") that signs in
+  automatically and starts the booth, restarts it if it exits, keeps the PC
+  awake and blocks common ways out of the app. Restart Windows afterwards.
 
-.PARAMETER ExePath
-  Path to Fotobox.exe. Passed by the app when it launches this script;
-  otherwise the default install locations are searched.
+  To get to the Windows desktop as operator: press Ctrl+Alt+Del, choose
+  "Switch user" and sign in with an administrator account.
 
+  Log: %ProgramData%\Fotobox\setup.log
+
+.PARAMETER Mode
+  Kiosk (default) or Normal. Normal removes kiosk settings applied earlier.
+.PARAMETER Uninstall
+  Remove everything this script configured (keeps the kiosk user and photos
+  unless -RemoveKioskUser is given).
+.PARAMETER LanToken
+  Tablet mode: 'none' (default), 'auto' to generate a token, or a token.
 .EXAMPLE
-  .\setup-kiosk.ps1
+  powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Mode Kiosk
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Elevated
+  powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Mode Normal
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Uninstall -RemoveKioskUser
 #>
 [CmdletBinding()]
 param(
-  [switch]$Elevated,
-  [string]$ExePath
+    [ValidateSet('Kiosk', 'Normal')][string]$Mode = 'Kiosk',
+    [switch]$Uninstall,
+    [string]$InstallDir,
+    [string]$KioskUser = 'Fotobox',
+    [string]$LanToken = 'none',
+    [ValidateRange(1, 65535)][int]$Port = 3000,
+    [switch]$RemoveKioskUser,
+    [string]$LogPath
 )
 
 $ErrorActionPreference = 'Stop'
 
-function Write-Step([string]$Message) {
-  Write-Host "`n==> $Message" -ForegroundColor Cyan
-}
-
-function Find-FotoboxExe {
-  if ($ExePath -and (Test-Path -LiteralPath $ExePath)) {
-    return (Resolve-Path -LiteralPath $ExePath).Path
-  }
-
-  $candidates = @(
-    (Join-Path $env:ProgramFiles 'Fotobox\Fotobox.exe'),
-    (Join-Path $env:LOCALAPPDATA 'Programs\Fotobox\Fotobox.exe')
-  )
-
-  foreach ($path in $candidates) {
-    if (Test-Path -LiteralPath $path) {
-      return $path
+# Started from the Start menu without admin rights: ask for elevation (UAC)
+# and run again with the same parameters.
+$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    foreach ($entry in $PSBoundParameters.GetEnumerator()) {
+        if ($entry.Value -is [switch]) {
+            if ($entry.Value) { $arguments += "-$($entry.Key)" }
+        }
+        else {
+            $arguments += "-$($entry.Key)", "`"$($entry.Value)`""
+        }
     }
-  }
+    $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -Verb RunAs -Wait -PassThru
+    exit $process.ExitCode
+}
 
-  $searchRoot = Join-Path $env:LOCALAPPDATA 'Programs'
-  if (Test-Path $searchRoot) {
-    $found = Get-ChildItem -Path $searchRoot -Filter 'Fotobox.exe' -Recurse -ErrorAction SilentlyContinue |
-      Select-Object -First 1
-    if ($found) {
-      return $found.FullName
+if (-not $LogPath) {
+    $LogPath = Join-Path (Join-Path $env:ProgramData 'Fotobox') 'setup.log'
+}
+if (-not $InstallDir) {
+    # The script is installed next to Fotobox.exe.
+    $InstallDir = $PSScriptRoot
+    if (-not (Test-Path -LiteralPath (Join-Path $InstallDir 'Fotobox.exe'))) {
+        $InstallDir = Split-Path -Parent $PSScriptRoot
     }
-  }
-
-  return $null
 }
 
-Write-Step 'Locating Fotobox installation'
-$exePath = Find-FotoboxExe
-if (-not $exePath) {
-  Write-Host 'Could not find Fotobox.exe (pass -ExePath or install the MSI first).' -ForegroundColor Red
-  exit 1
+New-Item -ItemType Directory -Path (Split-Path -Parent $LogPath) -Force | Out-Null
+Start-Transcript -LiteralPath $LogPath -Append | Out-Null
+$exitCode = 0
+try {
+    Import-Module (Join-Path $PSScriptRoot 'FotoboxKiosk.psm1') -Force
+    if ($Uninstall) {
+        Uninstall-FotoboxKiosk -RemoveKioskUser:$RemoveKioskUser
+    }
+    else {
+        $result = Install-FotoboxKiosk -Mode $Mode -InstallDir $InstallDir -KioskUser $KioskUser -LanToken $LanToken -Port $Port
+        if ($result.LanToken) {
+            Write-Output "Tablet mode token: $($result.LanToken) (also in %ProgramData%\Fotobox\host.json)"
+        }
+    }
 }
-Write-Host "Found: $exePath" -ForegroundColor Green
-
-Write-Step 'Creating Startup shortcut (login auto-start fallback)'
-$startupDir = [Environment]::GetFolderPath('Startup')
-$shortcutPath = Join-Path $startupDir 'Fotobox.lnk'
-$wsh = New-Object -ComObject WScript.Shell
-$shortcut = $wsh.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = $exePath
-$shortcut.WorkingDirectory = Split-Path $exePath -Parent
-$shortcut.Description = 'Fotobox photo booth kiosk'
-$shortcut.Save()
-Write-Host "Shortcut: $shortcutPath" -ForegroundColor Green
-
-if ($Elevated) {
-  Write-Step 'Configuring firewall for LAN API access (TCP 3000)'
-  $ruleName = 'Fotobox API (TCP 3000)'
-  $existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
-  if ($existing) {
-    Write-Host 'Firewall rule already exists.' -ForegroundColor Yellow
-  } else {
-    New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort 3000 | Out-Null
-    Write-Host 'Firewall rule created.' -ForegroundColor Green
-  }
-} else {
-  Write-Host 'Tip: re-run with -Elevated as Administrator to allow LAN QR sharing (port 3000).' -ForegroundColor Yellow
+catch {
+    Write-Error -Message "Fotobox setup failed: $($_.Exception.Message)" -ErrorAction Continue
+    Write-Output $_.ScriptStackTrace
+    $exitCode = 1
 }
-
-Write-Step 'Auto-login (optional, requires administrator)'
-Write-Host @"
-1. Press Win+R, type netplwiz, press Enter.
-2. Uncheck 'Users must enter a user name and password'.
-3. Select the kiosk user account and enter its password.
-4. Reboot to verify unattended login.
-"@
-
-Write-Step 'Windows Assigned Access (full desktop lockdown)'
-Write-Host @"
-1. Settings -> Accounts -> Other users (or Family & other users).
-2. Choose 'Set up a kiosk' / Assigned Access.
-3. Select the kiosk user and choose 'Fotobox' as the allowed app.
-4. Sign in with the kiosk account to verify single-app mode.
-
-Note: Assigned Access requires Windows 10/11 Pro, Enterprise, or Education.
-"@
-
-$assignedAccessKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AssignedAccessConfiguration'
-if (Test-Path $assignedAccessKey) {
-  Write-Host 'Assigned Access registry key is present on this system.' -ForegroundColor Green
-} else {
-  Write-Host 'Assigned Access may not be available on this Windows edition.' -ForegroundColor Yellow
+finally {
+    Stop-Transcript | Out-Null
 }
-
-Write-Step 'Done'
-Write-Host 'Basic kiosk startup is configured. Launch Fotobox once to complete in-app first-run setup.' -ForegroundColor Green
+exit $exitCode

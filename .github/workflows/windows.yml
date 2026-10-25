@@ -1,0 +1,100 @@
+name: Windows
+
+# Kiosk setup scripts and the NSIS installer. The installer job really
+# installs Fotobox in kiosk mode on the (disposable) runner, checks the
+# result and uninstalls it again.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/fotobox-tauri/**'
+      - 'apps/fotobox-api/**'
+      - 'scripts/windows/**'
+      - 'libs/nest/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/windows.yml'
+  pull_request:
+    paths:
+      - 'apps/fotobox-tauri/**'
+      - 'apps/fotobox-api/**'
+      - 'scripts/windows/**'
+      - 'libs/nest/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kiosk-scripts:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The installer runs the scripts with Windows PowerShell 5.1.
+      - name: Analyze and unit-test kiosk scripts (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-Module Pester -MinimumVersion 5.6 -Force -SkipPublisherCheck -Scope CurrentUser
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $issues = Invoke-ScriptAnalyzer -Path scripts/windows -Recurse -Settings scripts/windows/PSScriptAnalyzerSettings.psd1
+          $issues | Format-Table -AutoSize RuleName, Severity, ScriptName, Line, Message | Out-String -Width 200
+          if ($issues) { throw "PSScriptAnalyzer found $(@($issues).Count) issue(s)" }
+          Import-Module Pester -MinimumVersion 5.6
+          $config = New-PesterConfiguration
+          $config.Run.Path = 'scripts/windows/tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+  installer:
+    needs: kiosk-scripts
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/fotobox-tauri/src-tauri
+
+      - name: Install dependencies
+        env:
+          SKIP_PLAYWRIGHT_INSTALL: 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build NSIS installer
+        run: pnpm exec nx run fotobox-tauri:bundle:windows
+
+      - name: Install, verify and uninstall (kiosk mode)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = Get-ChildItem apps/fotobox-tauri/src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          if (-not $setup) { throw 'No NSIS installer found' }
+          $env:FOTOBOX_SETUP_EXE = $setup.FullName
+          Install-Module Pester -MinimumVersion 5.6 -Force -SkipPublisherCheck -Scope CurrentUser
+          Import-Module Pester -MinimumVersion 5.6
+          $config = New-PesterConfiguration
+          $config.Run.Path = 'scripts/windows/tests/integration'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+      - name: Upload installer for manual testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: fotobox-setup
+          path: apps/fotobox-tauri/src-tauri/target/release/bundle/nsis/*-setup.exe
+          retention-days: 7
