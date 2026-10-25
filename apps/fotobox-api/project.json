@@ -6,9 +6,8 @@
   "tags": ["scope:server", "type:app", "platform:node"],
   "targets": {
     "lint": {
-      "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": ["apps/fotobox-api/**/*.ts"]
+        "args": ["**/*.ts"]
       }
     },
     "build": {

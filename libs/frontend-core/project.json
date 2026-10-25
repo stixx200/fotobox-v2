@@ -4,9 +4,5 @@
   "sourceRoot": "libs/frontend-core/src",
   "projectType": "library",
   "tags": ["scope:shared", "type:util", "platform:angular"],
-  "targets": {
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    }
-  }
+  "targets": {}
 }

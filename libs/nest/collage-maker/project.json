@@ -5,13 +5,10 @@
   "projectType": "library",
   "tags": ["scope:server", "type:feature", "platform:node"],
   "targets": {
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    },
     "test": {
-      "executor": "@nx/vitest:test",
       "options": {
-        "configFile": "libs/nest/collage-maker/vitest.config.ts"
+        "passWithNoTests": false,
+        "config": "./vitest.config.ts"
       }
     }
   }

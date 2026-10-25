@@ -5,13 +5,10 @@
   "projectType": "library",
   "tags": ["scope:shared", "type:util", "platform:node"],
   "targets": {
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    },
     "test": {
-      "executor": "@nx/vitest:test",
       "options": {
-        "configFile": "libs/cameras/vite.config.ts"
+        "passWithNoTests": false,
+        "config": "./vite.config.ts"
       }
     }
   }

@@ -20,31 +20,10 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "@nx/eslint:lint": {
-      "cache": true,
-      "inputs": [
-        "default",
-        "^default",
-        "{workspaceRoot}/.eslintrc.json",
-        "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.mjs",
-        "{workspaceRoot}/tools/eslint-rules/**/*"
-      ],
-      "options": {
-        "maxWarnings": 0
-      }
-    },
     "@nx/js:tsc": {
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
-    },
-    "@nx/vitest:test": {
-      "cache": true,
-      "inputs": ["default", "^production"],
-      "options": {
-        "passWithNoTests": false
-      }
     },
     "@angular/build:application": {
       "cache": true,
@@ -54,6 +33,22 @@
     "@angular/build:unit-test": {
       "cache": true,
       "inputs": ["default", "^production"]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.mjs",
+        "{workspaceRoot}/eslint.base.config.mjs",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ],
+      "options": {
+        "max-warnings": 0
+      }
     }
   },
   "generators": {
@@ -81,12 +76,6 @@
     },
     "@schematics/angular:service": {
       "type": "service"
-    },
-    "@nx/angular:scam": {
-      "type": "component"
-    },
-    "@nx/angular:scam-directive": {
-      "type": "directive"
     },
     "@nx/angular:guard": {
       "typeSeparator": "."
@@ -120,6 +109,14 @@
     }
   },
   "plugins": [
+    {
+      "plugin": "@nx/js/typescript",
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
+      }
+    },
     {
       "plugin": "@nx/vite/plugin",
       "options": {
@@ -172,6 +169,61 @@
         "ciTargetName": "test-ci",
         "testMode": "watch"
       }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testMode": "run",
+        "testTargetName": "test"
+      },
+      "include": [
+        "libs/cameras/**/*",
+        "libs/collage-editor/**/*",
+        "libs/collage-maker/**/*",
+        "libs/logging/**/*",
+        "libs/nest/api/**/*",
+        "libs/nest/cameras-api/**/*",
+        "libs/nest/collage-maker/**/*",
+        "libs/nest/database/**/*",
+        "libs/nest/photo-storage/**/*",
+        "libs/nest/printer-api/**/*",
+        "libs/nest/settings/**/*",
+        "libs/nest/share-api/**/*",
+        "libs/photo-storage/**/*"
+      ]
+    },
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint"
+      },
+      "include": [
+        "apps/collage-editor-ui/**/*",
+        "apps/fotobox-api/**/*",
+        "apps/fotobox-electron/**/*",
+        "apps/fotobox-ui/**/*",
+        "libs/cameras/**/*",
+        "libs/collage-editor/**/*",
+        "libs/collage-maker/**/*",
+        "libs/electron/window/**/*",
+        "libs/error/**/*",
+        "libs/frontend-core/**/*",
+        "libs/graphql-operations/**/*",
+        "libs/logging/**/*",
+        "libs/nest/api/**/*",
+        "libs/nest/app-service/**/*",
+        "libs/nest/cameras-api/**/*",
+        "libs/nest/collage-maker/**/*",
+        "libs/nest/database/**/*",
+        "libs/nest/graphql/**/*",
+        "libs/nest/logger/**/*",
+        "libs/nest/photo-storage/**/*",
+        "libs/nest/printer-api/**/*",
+        "libs/nest/settings/**/*",
+        "libs/nest/share-api/**/*",
+        "libs/photo-storage/**/*",
+        "libs/workspace-paths/**/*"
+      ]
     }
   ],
   "defaultProject": "fotobox-electron",
@@ -199,5 +251,8 @@
         }
       }
     }
+  },
+  "affected": {
+    "legacy": true
   }
 }

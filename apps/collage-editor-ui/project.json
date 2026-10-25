@@ -4,24 +4,17 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/collage-editor-ui/src",
-  "tags": [
-    "scope:client",
-    "type:app",
-    "platform:angular"
-  ],
+  "tags": ["scope:client", "type:app", "platform:angular"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/collage-editor-ui",
         "baseHref": "./",
         "browser": "apps/collage-editor-ui/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/collage-editor-ui/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -30,9 +23,7 @@
             "input": "apps/collage-editor-ui/public"
           }
         ],
-        "styles": [
-          "apps/collage-editor-ui/src/styles.scss"
-        ]
+        "styles": ["apps/collage-editor-ui/src/styles.scss"]
       },
       "configurations": {
         "production": {
@@ -56,12 +47,15 @@
           "extractLicenses": false,
           "sourceMap": true
         }
-      },
-      "defaultConfiguration": "production"
+      }
     },
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
+      "defaultConfiguration": "development",
+      "readyWhen": {
+        "signal": true
+      },
       "options": {
         "port": 4201,
         "proxyConfig": "apps/collage-editor-ui/proxy.conf.json"
@@ -73,11 +67,7 @@
         "development": {
           "buildTarget": "collage-editor-ui:build:development"
         }
-      },
-      "defaultConfiguration": "development"
-    },
-    "lint": {
-      "executor": "@nx/eslint:lint"
+      }
     },
     "test": {
       "executor": "@angular/build:unit-test",
@@ -91,7 +81,11 @@
         "port": 4201,
         "staticFilePath": "dist/apps/collage-editor-ui/browser",
         "spa": true
-      }
+      },
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"]
     }
   }
 }

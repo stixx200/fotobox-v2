@@ -5,13 +5,10 @@
   "projectType": "library",
   "tags": ["scope:server", "type:data-access", "platform:node"],
   "targets": {
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    },
     "test": {
-      "executor": "@nx/vitest:test",
       "options": {
-        "configFile": "libs/nest/database/vitest.config.ts"
+        "passWithNoTests": false,
+        "config": "./vitest.config.ts"
       }
     },
     "migrate": {

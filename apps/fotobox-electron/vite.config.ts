@@ -1,11 +1,12 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { nxReadySignal } from '@nx/vite/plugins/nx-ready-signal.plugin';
 
 export default defineConfig(() => ({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/fotobox-electron',
-  plugins: [tsconfigPaths()],
+  plugins: [tsconfigPaths(), nxReadySignal()],
   test: {
     passWithNoTests: true,
     watch: false,

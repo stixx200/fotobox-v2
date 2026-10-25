@@ -3,27 +3,21 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/fotobox-electron/src",
   "projectType": "application",
-  "implicitDependencies": [
-    "fotobox-ui",
-    "collage-editor-ui"
-  ],
+  "tags": ["scope:server", "type:app", "platform:electron"],
+  "implicitDependencies": ["fotobox-ui", "collage-editor-ui"],
   "targets": {
     "lint": {
-      "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": [
-          "apps/fotobox-electron/**/*.ts"
-        ]
+        "args": ["**/*.ts"]
       }
     },
     "serve": {
       "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
       "options": {
         "buildTarget": "fotobox-electron:build",
         "inspect": false,
-        "runtimeArgs": [
-          "./apps/fotobox-electron/tools/serve-electron.mjs"
-        ],
+        "runtimeArgs": ["./apps/fotobox-electron/tools/serve-electron.mjs"],
         "runBuildTargetDependencies": true
       },
       "configurations": {
@@ -36,12 +30,12 @@
         "nest-only": {
           "runtimeArgs": []
         }
-      },
-      "defaultConfiguration": "development"
+      }
     },
     "build": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
+      "defaultConfiguration": "development",
       "options": {
         "cwd": "apps/fotobox-electron",
         "commands": [
@@ -71,8 +65,7 @@
             }
           ]
         }
-      },
-      "defaultConfiguration": "development"
+      }
     },
     "verify-dist": {
       "executor": "nx:run-commands",
@@ -94,16 +87,14 @@
           "params": "forward"
         }
       ],
+      "defaultConfiguration": "production",
       "options": {
         "name": "fotobox-electron",
         "frontendProject": "fotobox-ui",
         "extraProjects": ["collage-editor-ui"],
         "sourcePath": "dist/apps",
         "outputPath": "dist/packages",
-        "platform": [
-          "mac",
-          "windows"
-        ]
+        "platform": ["mac", "windows"]
       },
       "configurations": {
         "production": {
@@ -114,13 +105,7 @@
             }
           ]
         }
-      },
-      "defaultConfiguration": "production"
+      }
     }
-  },
-  "tags": [
-    "scope:server",
-    "type:app",
-    "platform:electron"
-  ]
+  }
 }
