@@ -50,6 +50,11 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: ${{ steps.playwright-cache.outputs.cache-hit == 'true' && '1' || '' }}
         run: pnpm install --frozen-lockfile
 
+      # Chromium's system libraries, once: the e2e-ci targets of both e2e
+      # projects run in parallel and would compete for the apt lock.
+      - name: Install Playwright system dependencies
+        run: pnpm exec playwright install --with-deps chromium
+
       - uses: nrwl/nx-set-shas@v4
 
       # Use the nx-cloud CLI bundled with the workspace's nx package; the

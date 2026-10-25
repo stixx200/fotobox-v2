@@ -21,7 +21,7 @@
     "e2e-ci": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "playwright install --with-deps chromium && playwright test --config=apps/fotobox-ui-e2e/playwright.config.ts"
+        "command": "playwright test --config=apps/fotobox-ui-e2e/playwright.config.ts"
       }
     }
   }
