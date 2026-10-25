@@ -73,6 +73,20 @@ const GET_COLLAGE_PREVIEW = gql`
   }
 `;
 
+/**
+ * The API reports a failed collage step as `success: false` (or a GraphQL
+ * error, i.e. no data); both must reach the caller's error handler.
+ */
+function requireSuccess(
+  result: { success: boolean; message?: string | null } | null | undefined,
+  action: string,
+): true {
+  if (!result?.success) {
+    throw new Error(result?.message || `Failed to ${action} collage`);
+  }
+  return true;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -172,7 +186,9 @@ export class CollageService {
         mutation: START_COLLAGE,
         variables: { input: { templateId } },
       })
-      .pipe(map((result) => result.data?.startCollage.success ?? false));
+      .pipe(
+        map((result) => requireSuccess(result.data?.startCollage, 'start')),
+      );
   }
 
   /**
@@ -185,7 +201,11 @@ export class CollageService {
         mutation: ADD_PHOTO_TO_COLLAGE,
         variables: { input: { photoPath } },
       })
-      .pipe(map((result) => result.data?.addPhotoToCollage.success ?? false));
+      .pipe(
+        map((result) =>
+          requireSuccess(result.data?.addPhotoToCollage, 'add photo to'),
+        ),
+      );
   }
 
   /**

@@ -35,6 +35,10 @@ export default defineConfig({
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,
     cwd: workspaceRoot,
+    // The Angular dev server disables its cache (and with it dependency
+    // prebundling) when CI is set; CommonJS packages loaded lazily, such as
+    // `qrcode` for the share QR code, then fail to import.
+    env: { ...process.env, CI: '' } as Record<string, string>,
   },
   projects: [
     {

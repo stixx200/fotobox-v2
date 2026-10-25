@@ -1,5 +1,6 @@
 import {
   ApolloClientOptions,
+  CombinedGraphQLErrors,
   InMemoryCache,
   split,
   ApolloLink,
@@ -9,7 +10,6 @@ import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from 'graphql-ws';
-import { GraphQLError } from 'graphql';
 import {
   getApiAuthHeaders,
   getGraphqlHttpUri,
@@ -51,31 +51,26 @@ export function createApolloOptions(
     }),
   );
 
-  const errorLink = onError((errorResponse) => {
-    const { graphQLErrors, networkError, operation } = errorResponse as {
-      graphQLErrors?: GraphQLError[];
-      networkError?: Error;
-      operation?: { operationName?: string };
-    };
-
-    if (graphQLErrors) {
-      graphQLErrors.forEach((error: GraphQLError) => {
+  // Apollo Client 4 passes a single `error`: GraphQL errors come as
+  // CombinedGraphQLErrors, anything else means the API was not reached.
+  const errorLink = onError(({ error, operation }) => {
+    if (CombinedGraphQLErrors.is(error)) {
+      error.errors.forEach((graphQLError) => {
         const detail = {
-          message: error.message,
-          path: error.path,
-          extensions: error.extensions,
-          operation: operation?.operationName,
+          message: graphQLError.message,
+          path: graphQLError.path,
+          extensions: graphQLError.extensions,
+          operation: operation.operationName,
         };
         console.error('[GraphQL error]', detail);
-        clientLog?.error(`GraphQL: ${error.message}`, detail);
+        clientLog?.error(`GraphQL: ${graphQLError.message}`, detail);
       });
+      return;
     }
 
-    if (networkError) {
-      console.error(`[Network error]: ${networkError.message}`, networkError);
-      clientLog?.error(`Network: ${networkError.message}`, networkError);
-      recovery?.reportNetworkError(networkError.message);
-    }
+    console.error(`[Network error]: ${error.message}`, error);
+    clientLog?.error(`Network: ${error.message}`, error);
+    recovery?.reportNetworkError(error.message);
   });
 
   // Split traffic based on operation type
