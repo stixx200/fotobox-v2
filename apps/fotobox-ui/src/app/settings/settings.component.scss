@@ -294,13 +294,26 @@
     padding: 0 max(32px, env(safe-area-inset-right)) 0
       max(32px, env(safe-area-inset-left));
     min-height: 68px;
+    gap: 16px;
 
+    // Title, actions, then the toolbar pinned to the right edge: the
+    // language-dependent button labels must not move the toolbar.
     .header-top {
-      flex: 1;
+      display: contents;
+    }
+
+    .header-title {
+      order: 0;
     }
 
     .header-actions {
+      order: 1;
       width: auto;
+      flex-shrink: 0;
+    }
+
+    .header-toolbar {
+      order: 2;
       flex-shrink: 0;
     }
 
