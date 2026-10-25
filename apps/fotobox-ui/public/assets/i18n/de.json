@@ -30,6 +30,8 @@
     "LANG_EN": "English",
     "VERSION": "Version: {{version}}",
     "GALLERY": "Galerie",
+    "CHOOSE_DIRECTORY": "Ordner wählen",
+    "GALLERY_PIN": "Galerie-PIN",
     "GALLERY_PIN_HINT": "4 Ziffern. Leer lassen für freien Galerie-Zugang",
     "GALLERY_PIN_INVALID": "PIN muss genau 4 Ziffern haben",
     "STARTING": "Wird gestartet...",
@@ -151,5 +153,12 @@
   "CAPTURE": {
     "TAKE_PHOTO": "Foto aufnehmen",
     "TIMEOUT": "Foto-Aufnahme hat zu lange gedauert. Bitte erneut versuchen."
+  },
+  "DIRECTORY_PICKER": {
+    "UP": "Übergeordneter Ordner",
+    "SELECT": "Diesen Ordner verwenden",
+    "CANCEL": "Abbrechen",
+    "EMPTY": "Keine Unterordner",
+    "ERROR": "Ordner konnten nicht geladen werden."
   }
 }

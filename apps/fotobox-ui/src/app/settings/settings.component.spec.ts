@@ -60,8 +60,8 @@ describe('SettingsComponent', () => {
         {
           provide: CollageService,
           useValue: {
-            getAvailableLayoutIds: () => of(['Einzelbild']),
-            getLayoutPreview: () => of(''),
+            getAvailableLayoutIds: () => of(['Einzelbild', '2x2', 'Strip']),
+            getLayoutPreview: (layout: string) => of(`preview:${layout}`),
           },
         },
         {
@@ -103,5 +103,43 @@ describe('SettingsComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
     expect(fixture.componentInstance.layouts()).toEqual(['Einzelbild']);
     expect(fixture.componentInstance.cameras).toEqual(['Sony', 'Demo']);
+  });
+
+  describe('layout preview', () => {
+    /** Layouts load once settings arrive; trigger that load directly. */
+    function createWithLayouts(): SettingsComponent {
+      const component =
+        TestBed.createComponent(SettingsComponent).componentInstance;
+      component.refreshTemplates();
+      return component;
+    }
+
+    it('shows the first layout without opening the list', () => {
+      const component = createWithLayouts();
+      expect(component.layoutPreview()).toEqual({
+        layout: 'Einzelbild',
+        url: 'preview:Einzelbild',
+      });
+    });
+
+    it('prefers the first selected layout', () => {
+      const component = createWithLayouts();
+      component.settingsForm.patchValue({ layouts: ['Strip', '2x2'] });
+      component.refreshTemplates();
+      expect(component.layoutPreview()?.layout).toBe('Strip');
+    });
+
+    it('shows the hovered layout and returns to the selection on close', () => {
+      const component = createWithLayouts();
+      component.settingsForm.patchValue({ layouts: ['2x2'] });
+      component.onLayoutsSelectOpened();
+      component.showLayoutPreview('Strip');
+      expect(component.layoutPreview()).toEqual({
+        layout: 'Strip',
+        url: 'preview:Strip',
+      });
+      component.onLayoutsSelectClosed();
+      expect(component.layoutPreview()?.layout).toBe('2x2');
+    });
   });
 });

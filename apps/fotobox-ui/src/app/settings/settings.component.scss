@@ -443,3 +443,8 @@
     }
   }
 }
+
+/* Path settings are chosen with the folder picker, not typed. */
+.directory-input {
+  cursor: pointer;
+}

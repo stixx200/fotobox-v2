@@ -245,42 +245,44 @@
         <mat-form-field floatLabel="always">
           <mat-label>{{ 'SETTINGS.PHOTO_DIRECTORY' | translate }}</mat-label>
           <input
-            [readonly]="isDesktopHost"
+            readonly
+            class="directory-input"
             (click)="handleDirectoryClick('photoDirectory')"
             formControlName="photoDirectory"
             matInput
             [placeholder]="'SETTINGS.PHOTO_DIRECTORY' | translate"
           />
-          @if (isDesktopHost) {
-            <button
-              mat-icon-button
-              matSuffix
-              (click)="openPicker('photoDirectory'); $event.stopPropagation()"
-            >
-              <mat-icon>folder_open</mat-icon>
-            </button>
-          }
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            [attr.aria-label]="'SETTINGS.CHOOSE_DIRECTORY' | translate"
+            (click)="openPicker('photoDirectory'); $event.stopPropagation()"
+          >
+            <mat-icon>folder_open</mat-icon>
+          </button>
         </mat-form-field>
 
         <mat-form-field floatLabel="always">
           <mat-label>{{ 'SETTINGS.COLLAGE_DIRECTORY' | translate }}</mat-label>
           <input
-            [readonly]="isDesktopHost"
+            readonly
+            class="directory-input"
             (click)="handleDirectoryClick('collageDirectory')"
             formControlName="collageDirectory"
             matInput
             [placeholder]="'SETTINGS.COLLAGE_DIRECTORY' | translate"
             [class.error-input]="collageDirectoryError()"
           />
-          @if (isDesktopHost) {
-            <button
-              mat-icon-button
-              matSuffix
-              (click)="openPicker('collageDirectory'); $event.stopPropagation()"
-            >
-              <mat-icon>folder_open</mat-icon>
-            </button>
-          }
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            [attr.aria-label]="'SETTINGS.CHOOSE_DIRECTORY' | translate"
+            (click)="openPicker('collageDirectory'); $event.stopPropagation()"
+          >
+            <mat-icon>folder_open</mat-icon>
+          </button>
           @if (collageDirectoryError(); as error) {
             <mat-error>{{ error }}</mat-error>
           }

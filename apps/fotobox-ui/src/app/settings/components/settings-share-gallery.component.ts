@@ -146,7 +146,7 @@ import { TranslatePipe } from '@ngx-translate/core';
             </p>
 
             <mat-form-field floatLabel="always">
-              <mat-label>{{ 'SETTINGS.GALLERY' | translate }}</mat-label>
+              <mat-label>{{ 'SETTINGS.GALLERY_PIN' | translate }}</mat-label>
               <input
                 matInput
                 type="password"

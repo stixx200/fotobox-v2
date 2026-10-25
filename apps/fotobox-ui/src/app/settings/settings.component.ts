@@ -27,7 +27,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, filter, finalize, merge, take } from 'rxjs';
+import { Subject, filter, finalize, firstValueFrom, merge, take } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   SettingsStore,
@@ -35,6 +35,11 @@ import {
   AppMetadataStore,
   PrinterStore,
 } from '../store';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  DirectoryPickerData,
+  DirectoryPickerDialogComponent,
+} from './components/directory-picker-dialog.component';
 import {
   isDesktopHost,
   openCollageEditorWindow,
@@ -90,6 +95,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly layoutNavigation = inject(LayoutNavigationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translateService = inject(TranslateService);
+  private readonly dialog = inject(MatDialog);
   private readonly clientLogService = inject(ClientLogService);
   private readonly shareService = inject(ShareService);
 
@@ -432,6 +438,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
           this.layouts.set(layoutIds);
           this.collageDirectoryError.set(null);
           this.layoutPreviews.set(new Map());
+          this.showDefaultLayoutPreview();
           this.loadLayoutPreviews(layoutIds, collageDirectory);
         },
         error: (error) => {
@@ -440,6 +447,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
           const fallbackLayouts = ['Einzelbild'];
           this.layouts.set(fallbackLayouts);
           this.layoutPreviews.set(new Map());
+          this.showDefaultLayoutPreview();
           this.loadLayoutPreviews(fallbackLayouts, collageDirectory);
           this.collageDirectoryError.set(
             this.translateService.instant('SETTINGS.COLLAGE_DIRECTORY_ERROR'),
@@ -458,18 +466,31 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  onLayoutsSelectOpened(): void {
-    const selected = this.settingsForm.get('layouts')?.value ?? [];
-    const firstSelected = selected[0];
-    const layoutToPreview = firstSelected ?? this.layouts()[0];
+  /**
+   * The preview pane always shows a collage: the first selected layout, or the
+   * first available one when nothing is selected. Hovering an option in the
+   * open list temporarily shows that option instead.
+   */
+  showDefaultLayoutPreview(): void {
+    const selected: string[] = this.settingsForm.get('layouts')?.value ?? [];
+    const layouts = this.layouts();
+    const layoutToPreview =
+      selected.find((layout) => layouts.includes(layout)) ?? layouts[0];
     if (layoutToPreview) {
       this.showLayoutPreview(layoutToPreview);
+    } else {
+      this.layoutPreview.set(null);
+      this.cdr.markForCheck();
     }
   }
 
+  onLayoutsSelectOpened(): void {
+    this.showDefaultLayoutPreview();
+  }
+
   onLayoutsSelectClosed(): void {
-    this.layoutPreview.set(null);
-    this.cdr.markForCheck();
+    // Back to the (possibly changed) selection after hovering other options.
+    this.showDefaultLayoutPreview();
   }
 
   /** On touch devices, tap the preview pane to step through layouts. */
@@ -685,9 +706,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   handleDirectoryClick(fieldName: string): void {
-    if (this.isDesktopHost) {
-      void this.openPicker(fieldName);
-    }
+    void this.openPicker(fieldName);
   }
 
   openCollageEditor(): void {
@@ -702,9 +721,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Folder picker for path settings: the native dialog in the desktop app,
+   * otherwise a dialog that browses the host's folders through the API (a web
+   * page cannot read the host's filesystem itself).
+   */
   async openPicker(fieldName: string): Promise<void> {
     try {
-      const selectedPath = await pickDirectory();
+      const selectedPath = this.isDesktopHost
+        ? await pickDirectory()
+        : await this.pickDirectoryViaApi(fieldName);
       if (selectedPath) {
         this.settingsForm.patchValue({ [fieldName]: selectedPath });
         this.cdr.markForCheck();
@@ -712,6 +738,25 @@ export class SettingsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error opening directory picker:', error);
     }
+  }
+
+  private pickDirectoryViaApi(fieldName: string): Promise<string | undefined> {
+    const titleKey =
+      fieldName === 'collageDirectory'
+        ? 'SETTINGS.COLLAGE_DIRECTORY'
+        : 'SETTINGS.PHOTO_DIRECTORY';
+    const dialogRef = this.dialog.open<
+      DirectoryPickerDialogComponent,
+      DirectoryPickerData,
+      string
+    >(DirectoryPickerDialogComponent, {
+      data: {
+        title: this.translateService.instant(titleKey),
+        initialPath: this.settingsForm.get(fieldName)?.value,
+      },
+      autoFocus: 'first-tabbable',
+    });
+    return firstValueFrom(dialogRef.afterClosed());
   }
 
   isLayoutOptionDisabled(layout: string): boolean {

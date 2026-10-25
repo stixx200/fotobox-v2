@@ -19,6 +19,11 @@ export class CaptureWatchdogService {
   private readonly notification = inject(NotificationService);
   private readonly translate = inject(TranslateService);
   private readonly recovery = inject(RecoveryService);
+  /**
+   * Created once in the injection context: `start()` runs from click
+   * handlers, where `toObservable()` throws NG0203.
+   */
+  private readonly cameraError$ = toObservable(this.cameraStore.error);
 
   start(onRecover: () => void): () => void {
     let finished = false;
@@ -37,9 +42,15 @@ export class CaptureWatchdogService {
       recover(this.translate.instant('CAPTURE.TIMEOUT'));
     }, CAPTURE_TIMEOUT_MS);
 
-    const errorSub: Subscription = toObservable(this.cameraStore.error)
+    // toObservable replays the current value first; an error left over from
+    // a previous capture must not abort this one.
+    const errorAtStart = this.cameraStore.error();
+    const errorSub: Subscription = this.cameraError$
       .pipe(
-        filter((err): err is string => !!err),
+        filter(
+          (err, index): err is string =>
+            !!err && !(index === 0 && err === errorAtStart),
+        ),
         take(1),
       )
       .subscribe((err) => recover(err));

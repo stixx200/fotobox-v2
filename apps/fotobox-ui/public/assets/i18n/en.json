@@ -29,7 +29,9 @@
     "LANG_DE": "Deutsch",
     "LANG_EN": "English",
     "VERSION": "Version: {{version}}",
-    "GALLERY": "Gallery PIN",
+    "GALLERY": "Gallery",
+    "CHOOSE_DIRECTORY": "Choose folder",
+    "GALLERY_PIN": "Gallery PIN",
     "GALLERY_PIN_HINT": "4 digits. Leave empty to allow open gallery access",
     "GALLERY_PIN_INVALID": "PIN must be exactly 4 digits",
     "STARTING": "Starting...",
@@ -151,5 +153,12 @@
   "CAPTURE": {
     "TAKE_PHOTO": "Take a photo",
     "TIMEOUT": "Photo capture timed out. Please try again."
+  },
+  "DIRECTORY_PICKER": {
+    "UP": "Parent folder",
+    "SELECT": "Use this folder",
+    "CANCEL": "Cancel",
+    "EMPTY": "No subfolders",
+    "ERROR": "Could not load folders."
   }
 }
