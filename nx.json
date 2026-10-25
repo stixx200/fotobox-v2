@@ -142,6 +142,7 @@
         "testTargetName": "test"
       },
       "include": [
+        "apps/fotobox-api/**/*",
         "libs/cameras/**/*",
         "libs/collage-editor/**/*",
         "libs/collage-maker/**/*",

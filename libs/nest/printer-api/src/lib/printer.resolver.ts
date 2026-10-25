@@ -1,4 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import * as fs from 'node:fs';
 import {
   PhotoStorageProviderService,
   resolvePhotoPath,
@@ -42,6 +43,9 @@ export class PrinterResolver {
       this.photoStorage.getPhotoDirectory(),
       input.filename,
     );
+    if (!fs.existsSync(filePath)) {
+      return { success: false, message: `Photo not found: ${input.filename}` };
+    }
     try {
       await this.printerService.printImage(filePath, {
         printerName: input.printerName,

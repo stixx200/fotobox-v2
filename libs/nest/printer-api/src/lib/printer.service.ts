@@ -112,6 +112,12 @@ export class PrinterService {
         windowsHide: true,
       });
     } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new Error(
+          `Print command '${command}' not found — no print system (CUPS) installed?`,
+          { cause: error },
+        );
+      }
       const stderr = (error as { stderr?: string }).stderr?.trim();
       throw new Error(stderr || (error as Error).message, { cause: error });
     }

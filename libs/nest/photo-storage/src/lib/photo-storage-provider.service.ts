@@ -1,12 +1,34 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { PhotoStorageService } from '@fotobox/photo-storage';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
+import { Subscription } from 'rxjs';
+import {
+  PhotoStorageService,
+  getDefaultPhotoStorageConfig,
+} from '@fotobox/photo-storage';
 import { PhotoRepository } from '@fotobox/nest-database';
 import { SettingsService } from '@fotobox/nest-settings';
 
+/** Settings store JSON-encoded values; tolerate a raw path as well. */
+function parseDirectory(value: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return typeof parsed === 'string' ? parsed : null;
+  } catch {
+    return value;
+  }
+}
+
 @Injectable()
-export class PhotoStorageProviderService implements OnApplicationBootstrap {
+export class PhotoStorageProviderService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(PhotoStorageProviderService.name);
   private photoStorageService: PhotoStorageService;
+  private settingsSubscription?: Subscription;
 
   constructor(
     private readonly settingsService: SettingsService,
@@ -18,20 +40,42 @@ export class PhotoStorageProviderService implements OnApplicationBootstrap {
   /**
    * Called after all modules are initialised and settings are loaded.
    * Applies the user-configured photoDirectory (if any) so saves, lists,
-   * and serves all use the same directory.
+   * and serves all use the same directory — at startup and whenever the
+   * operator changes the setting.
    */
   async onApplicationBootstrap(): Promise<void> {
     const directory = await this.settingsService.getParsed<string | null>(
       'photoDirectory',
       null,
     );
-    if (directory?.trim()) {
-      this.setPhotoDirectory(directory.trim());
+    this.applyPhotoDirectorySetting(directory);
+    this.settingsSubscription = this.settingsService.changes$.subscribe(
+      (changed) => {
+        const setting = changed.find((item) => item.key === 'photoDirectory');
+        if (setting) {
+          this.applyPhotoDirectorySetting(parseDirectory(setting.value));
+        }
+      },
+    );
+  }
+
+  onModuleDestroy(): void {
+    this.settingsSubscription?.unsubscribe();
+  }
+
+  /** An empty setting means the default folder. */
+  private applyPhotoDirectorySetting(directory: string | null): void {
+    const target =
+      directory?.trim() || getDefaultPhotoStorageConfig().photoDirectory;
+    if (!target || target === this.getPhotoDirectory()) {
+      this.logger.log(`Photo storage at: ${this.getPhotoDirectory()}`);
       return;
     }
-    this.logger.log(
-      `Photo storage initialized at: ${this.photoStorageService.getPhotoDirectory()}`,
-    );
+    try {
+      this.setPhotoDirectory(target);
+    } catch (error) {
+      this.logger.error(`Cannot use photo directory ${target}`, error);
+    }
   }
 
   /**

@@ -1,18 +1,76 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { Observable, Subject } from 'rxjs';
 import { getLogger } from '@fotobox/logging';
 import { DRIZZLE, settings, type DrizzleDb } from '@fotobox/nest-database';
 import { Setting, SettingInput } from './models/settings.model';
 
 const logger = getLogger('SettingsService');
 
+/** Hash of the last applied provisioning file (see applyProvisionedSettings). */
+export const PROVISIONED_HASH_KEY = 'provisionedSettingsHash';
+
 @Injectable()
 export class SettingsService implements OnModuleInit {
   private settings: Map<string, Setting> = new Map();
+  private readonly changes = new Subject<Setting[]>();
+
+  /** Settings written via updateSetting(s) or reloaded by resetSettings(). */
+  readonly changes$: Observable<Setting[]> = this.changes.asObservable();
 
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
 
   async onModuleInit(): Promise<void> {
     await this.loadSettings();
+    this.applyProvisionedSettings(process.env['FOTOBOX_SETTINGS_SEED']);
+  }
+
+  /**
+   * Settings provisioned by the Windows setup script
+   * (scripts/windows/provision-fotobox.ps1 writes `provisioning.json`, the
+   * desktop host passes its path as FOTOBOX_SETTINGS_SEED). They are applied
+   * once per file content: re-running the script with other values applies
+   * them again, while changes the operator makes in the app are kept.
+   * Format: `{ "settings": { "<key>": <plain JSON value>, … } }`.
+   */
+  applyProvisionedSettings(path: string | undefined): void {
+    if (!path || !existsSync(path)) {
+      return;
+    }
+    let content: string;
+    let provisioned: unknown;
+    try {
+      // Tolerate a UTF-8 BOM (Windows PowerShell 5 writes one).
+      content = readFileSync(path, 'utf8').replace(/^\uFEFF/, '');
+      provisioned = (JSON.parse(content) as { settings?: unknown }).settings;
+    } catch (error) {
+      logger.error(`Ignoring unreadable provisioning file ${path}`, error);
+      return;
+    }
+    if (!provisioned || typeof provisioned !== 'object') {
+      logger.warn(`No "settings" object in ${path}`);
+      return;
+    }
+    const hash = createHash('sha256').update(content).digest('hex');
+    if (this.settings.get(PROVISIONED_HASH_KEY)?.value === hash) {
+      return;
+    }
+    const entries = Object.entries(provisioned as Record<string, unknown>);
+    for (const [key, value] of entries) {
+      this.storeLoaded({ key, value: JSON.stringify(value ?? null) });
+    }
+    this.storeLoaded({ key: PROVISIONED_HASH_KEY, value: hash });
+    logger.info(`Applied ${entries.length} provisioned settings from ${path}`);
+  }
+
+  private storeLoaded(input: SettingInput): void {
+    const setting: Setting = {
+      ...input,
+      description: this.settings.get(input.key)?.description,
+    };
+    this.settings.set(input.key, setting);
+    this.upsertSetting(setting);
   }
 
   private async loadSettings(): Promise<void> {
@@ -85,6 +143,7 @@ export class SettingsService implements OnModuleInit {
     this.settings.set(input.key, setting);
     this.upsertSetting(setting);
     logger.info(`Updated setting: ${input.key}`);
+    this.changes.next([setting]);
 
     return setting;
   }
@@ -105,6 +164,7 @@ export class SettingsService implements OnModuleInit {
     }
 
     logger.info(`Updated ${inputs.length} settings`);
+    this.changes.next(updatedSettings);
 
     return updatedSettings;
   }
@@ -113,6 +173,7 @@ export class SettingsService implements OnModuleInit {
     this.settings.clear();
     await this.loadSettings();
     logger.info('Settings reloaded from database');
+    this.changes.next(Array.from(this.settings.values()));
     return true;
   }
 }
