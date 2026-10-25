@@ -13,17 +13,24 @@ export function close() {
   getBufferTransport().close?.();
 }
 
-export function getLogger(context?: string) {
-  const consoleTransport = getConsoleTransport();
-  const fileTransport = getFileTransport();
-  const bufferTransport = getBufferTransport();
+let rootLogger: winston.Logger | undefined;
 
-  return winston.createLogger({
+/**
+ * Loggers share one root logger and its transports; each context is a child
+ * logger. Creating a full logger per context attached another set of
+ * listeners to the shared transports (MaxListenersExceededWarning).
+ */
+export function getLogger(context?: string): winston.Logger {
+  rootLogger ??= winston.createLogger({
     level: 'info',
     format: winston.format.json(),
-    transports: [consoleTransport, fileTransport, bufferTransport],
-    defaultMeta: { context },
+    transports: [
+      getConsoleTransport(),
+      getFileTransport(),
+      getBufferTransport(),
+    ],
   });
+  return rootLogger.child({ context });
 }
 
 const transports: Map<string, Transport> = new Map();

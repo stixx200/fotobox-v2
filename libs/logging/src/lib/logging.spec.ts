@@ -10,6 +10,11 @@ describe('logging', () => {
     expect(typeof log.debug).toBe('function');
   });
 
+  it('shares transports instead of adding listeners per logger', () => {
+    const loggers = Array.from({ length: 20 }, (_, i) => getLogger(`ctx-${i}`));
+    expect(loggers[0].transports).toBe(loggers[19].transports);
+  });
+
   it('exposes close without throwing', () => {
     expect(() => close()).not.toThrow();
   });

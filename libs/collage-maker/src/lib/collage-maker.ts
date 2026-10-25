@@ -27,7 +27,9 @@ async function createComposite(photoToAdd: string, space: Space) {
     space.height,
     space.border,
   );
-  let input: sharp.Sharp | Buffer = sharp(convertPhotoPath(photoToAdd))
+  let input: ReturnType<typeof sharp> | Buffer = sharp(
+    convertPhotoPath(photoToAdd),
+  )
     .png()
     .resize(width, height, { fit: 'inside' });
   if (space.border) {
@@ -82,7 +84,9 @@ export class CollageMaker {
       }
       return await sharpInstance.composite(composites).jpeg().toBuffer();
     } catch (error: unknown) {
-      throw new Error(`Failed to create collage: ${(error as Error).message}`);
+      throw new Error(`Failed to create collage: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
 
@@ -99,6 +103,7 @@ export class CollageMaker {
           } catch (error: unknown) {
             throw new Error(
               `Can't add ${photoToAdd}: ${(error as Error).message}`,
+              { cause: error },
             );
           }
         }),

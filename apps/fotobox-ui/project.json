@@ -7,7 +7,7 @@
   "tags": ["scope:client", "type:app", "platform:angular"],
   "targets": {
     "build": {
-      "executor": "@angular-devkit/build-angular:application",
+      "executor": "@angular/build:application",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
@@ -55,7 +55,7 @@
       }
     },
     "serve": {
-      "executor": "@angular-devkit/build-angular:dev-server",
+      "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
       "continuous": true,
       "readyWhen": {
@@ -74,7 +74,7 @@
       }
     },
     "extract-i18n": {
-      "executor": "@angular-devkit/build-angular:extract-i18n",
+      "executor": "@angular/build:extract-i18n",
       "options": {
         "buildTarget": "fotobox-ui:build"
       }
