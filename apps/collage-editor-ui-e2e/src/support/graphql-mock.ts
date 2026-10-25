@@ -86,7 +86,16 @@ export class CollageEditorGraphqlMock {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              data: { collageEditorProjects: [...this.projects] },
+              // Like the real API, return every queried field (null when
+              // unset); Apollo warns about fields missing from a response.
+              data: {
+                collageEditorProjects: this.projects.map((project) => ({
+                  name: null,
+                  updatedAt: null,
+                  thumbnailBase64: null,
+                  ...project,
+                })),
+              },
             }),
           });
           return;
@@ -155,7 +164,9 @@ export class CollageEditorGraphqlMock {
             layerMetaJson: JSON.stringify(project['layerMeta'] ?? []),
           });
 
-          const existingIndex = this.projects.findIndex((p) => p.id === templateId);
+          const existingIndex = this.projects.findIndex(
+            (p) => p.id === templateId,
+          );
           const summary: MockProjectSummary = {
             id: templateId,
             name,
@@ -203,7 +214,9 @@ export class CollageEditorGraphqlMock {
         }
         case 'DuplicateCollageEditorProject': {
           const templateId = String(variables['templateId'] ?? '');
-          const newTemplateId = String(variables['newTemplateId'] ?? `${templateId}-copy`);
+          const newTemplateId = String(
+            variables['newTemplateId'] ?? `${templateId}-copy`,
+          );
           const source = this.savedProjects.get(templateId);
           if (source) {
             this.savedProjects.set(newTemplateId, {
@@ -214,7 +227,9 @@ export class CollageEditorGraphqlMock {
           }
           this.projects.unshift({
             id: newTemplateId,
-            name: source ? `${String(source['name'] ?? templateId)} (copy)` : newTemplateId,
+            name: source
+              ? `${String(source['name'] ?? templateId)} (copy)`
+              : newTemplateId,
             width: Number(source?.['width'] ?? 1796),
             height: Number(source?.['height'] ?? 1200),
             updatedAt: new Date().toISOString(),
@@ -269,7 +284,9 @@ export class CollageEditorGraphqlMock {
   }
 }
 
-export async function mockCollageEditorGraphql(page: Page): Promise<CollageEditorGraphqlMock> {
+export async function mockCollageEditorGraphql(
+  page: Page,
+): Promise<CollageEditorGraphqlMock> {
   const mock = new CollageEditorGraphqlMock(page);
   await mock.install();
   return mock;

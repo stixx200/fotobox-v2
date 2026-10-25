@@ -52,7 +52,9 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
-      - run: pnpm dlx nx-cloud record -- pnpm exec nx format:check
+      # Use the nx-cloud CLI bundled with the workspace's nx package; the
+      # standalone `nx-cloud` npm package is outdated and rejects Nx 24.
+      - run: pnpm exec nx-cloud record -- nx format:check
       - run: pnpm exec nx affected -t lint test build e2e-ci
 
       - run: pnpm exec nx fix-ci
