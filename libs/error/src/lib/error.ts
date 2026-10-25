@@ -1,12 +1,12 @@
 export interface ErrorOptions {
   cause?: Error;
   code?: string;
-  info?: Record<string, any>;
+  info?: Record<string, unknown>;
 }
 
 export class FotoboxError extends Error {
   code?: string;
-  info: Record<string, any>;
+  info: Record<string, unknown>;
 
   constructor(message: string, options?: ErrorOptions) {
     super(message);

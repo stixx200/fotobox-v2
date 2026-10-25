@@ -17,7 +17,7 @@ export class DemoCamera implements CameraInterface {
   private giraffe!: Buffer;
   private rabbit!: Buffer;
   private currentPicture!: Buffer;
-  private liveViewTimer: any;
+  private liveViewTimer?: ReturnType<typeof setInterval>;
 
   constructor() {
     this.takePicture = this.takePicture.bind(this);
@@ -53,7 +53,7 @@ export class DemoCamera implements CameraInterface {
   async deinit(): Promise<void> {
     if (this.liveViewTimer) {
       clearInterval(this.liveViewTimer);
-      this.liveViewTimer = null;
+      this.liveViewTimer = undefined;
     }
     logger.info('Demo camera deinitialized');
   }
@@ -77,7 +77,7 @@ export class DemoCamera implements CameraInterface {
 
     if (this.liveViewTimer) {
       clearInterval(this.liveViewTimer);
-      this.liveViewTimer = null;
+      this.liveViewTimer = undefined;
     }
 
     this.liveViewTimer = setInterval(() => {
@@ -113,7 +113,7 @@ export class DemoCamera implements CameraInterface {
   async stopLiveView(): Promise<void> {
     if (this.liveViewTimer) {
       clearInterval(this.liveViewTimer);
-      this.liveViewTimer = null;
+      this.liveViewTimer = undefined;
       logger.info('Live view stopped');
     }
   }

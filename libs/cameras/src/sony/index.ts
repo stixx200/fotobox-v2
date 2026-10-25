@@ -1,7 +1,6 @@
 import { getLogger } from '@fotobox/logging';
 import { Client as SsdpClient, SsdpHeaders } from 'node-ssdp';
 import { Observable, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { FotoboxError } from '@fotobox/error';
 import { CameraInterface } from '../camera.interface';
 import { SonyCameraCommunication } from './camera';
@@ -137,11 +136,15 @@ export class SonyCamera implements CameraInterface {
       }, 1000);
 
       const found = (headers: SsdpHeaders) => {
-        logger.info(`Found a camera: ${headers.LOCATION}`);
+        const location = headers.LOCATION;
+        if (!location) {
+          return;
+        }
+        logger.info(`Found a camera: ${location}`);
         ssdpClient.stop();
         if (this.ssdpInterval) clearInterval(this.ssdpInterval);
         ssdpClient.removeListener('response', found);
-        resolve(headers.LOCATION!);
+        resolve(location);
       };
 
       ssdpClient.on('response', found);

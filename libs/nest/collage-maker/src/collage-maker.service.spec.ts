@@ -16,7 +16,7 @@ describe('CollageMakerService', () => {
       },
     };
 
-    service = new CollageMakerService(mockConfigService as any);
+    service = new CollageMakerService(mockConfigService as never);
   });
 
   it('should be defined', () => {

@@ -1,14 +1,16 @@
-export class AppService {
-  private app: any;
+import type { INestApplicationContext } from '@nestjs/common';
 
-  setApp(app: any) {
+export class AppService {
+  private app?: INestApplicationContext;
+
+  setApp(app: INestApplicationContext) {
     this.app = app;
   }
 
-  getApp(): any {
+  getApp(): INestApplicationContext {
     if (!this.app) {
       throw new Error(
-        'App has not been set. Call AppService.setApp(app) first.'
+        'App has not been set. Call AppService.setApp(app) first.',
       );
     }
     return this.app;

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import {
   CollageEditorProject,
   CollageEditorProjectSummary,
@@ -27,12 +26,6 @@ import { getLogger } from '@fotobox/logging';
 import { resolveBuiltInTemplateDirectory } from './template-paths';
 
 const logger = getLogger('CollageEditorService');
-
-declare const __non_webpack_require__: NodeRequire | undefined;
-const nodeRequire: NodeRequire =
-  typeof __non_webpack_require__ !== 'undefined'
-    ? __non_webpack_require__
-    : createRequire(import.meta.url);
 
 /**
  * Resolve `<directory>/<templateId>` and make sure it is a direct child of the

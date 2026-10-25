@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { FotoboxError } from '@fotobox/error';
+import { workspacePaths } from '@fotobox/workspace-paths';
 import {
   PhotoStorageConfig,
   getDefaultPhotoStorageConfig,
@@ -10,7 +11,7 @@ import {
  * Singleton service for managing photo storage
  */
 export class PhotoStorageService {
-  private static instance: PhotoStorageService;
+  private static instance: PhotoStorageService | null = null;
   private config: PhotoStorageConfig;
 
   private constructor(config?: PhotoStorageConfig) {
@@ -25,9 +26,7 @@ export class PhotoStorageService {
    * Get or create the singleton instance
    */
   static getInstance(config?: PhotoStorageConfig): PhotoStorageService {
-    if (!PhotoStorageService.instance) {
-      PhotoStorageService.instance = new PhotoStorageService(config);
-    }
+    PhotoStorageService.instance ??= new PhotoStorageService(config);
     return PhotoStorageService.instance;
   }
 
@@ -35,7 +34,7 @@ export class PhotoStorageService {
    * Reset singleton instance (mainly for testing)
    */
   static reset(): void {
-    PhotoStorageService.instance = null as any;
+    PhotoStorageService.instance = null;
   }
 
   /**
@@ -63,9 +62,7 @@ export class PhotoStorageService {
    * @returns Path where the photo was saved
    */
   savePhoto(photoId: string, photoBuffer: Buffer): string {
-    const photoDirectory =
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory = this.getPhotoDirectory();
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
 
     try {
@@ -85,9 +82,7 @@ export class PhotoStorageService {
    * @returns Buffer containing the photo data
    */
   getPhoto(photoId: string): Buffer {
-    const photoDirectory =
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory = this.getPhotoDirectory();
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
 
     try {
@@ -111,9 +106,7 @@ export class PhotoStorageService {
    * @param photoId Unique identifier for the photo
    */
   photoExists(photoId: string): boolean {
-    const photoDirectory =
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory = this.getPhotoDirectory();
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
     return fs.existsSync(filePath);
   }
@@ -123,9 +116,7 @@ export class PhotoStorageService {
    * @param photoId Unique identifier for the photo
    */
   deletePhoto(photoId: string): void {
-    const photoDirectory =
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory = this.getPhotoDirectory();
     const filePath = path.join(photoDirectory, `${photoId}.jpg`);
 
     try {
@@ -146,9 +137,7 @@ export class PhotoStorageService {
    * UI's getPhotoUrl() helper, and the file modification timestamp.
    */
   listPhotos(): { id: string; path: string; timestamp: string }[] {
-    const photoDirectory =
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory = this.getPhotoDirectory();
     if (!fs.existsSync(photoDirectory)) {
       return [];
     }
@@ -171,19 +160,14 @@ export class PhotoStorageService {
    * Get the current photo directory path
    */
   getPhotoDirectory(): string {
-    return (
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!
-    );
+    return this.config.photoDirectory || workspacePaths.photos();
   }
 
   /**
    * Ensure the photo directory exists, creating it if necessary
    */
   private ensureDirectoryExists(): void {
-    const photoDirectory =
-      this.config.photoDirectory ||
-      getDefaultPhotoStorageConfig().photoDirectory!;
+    const photoDirectory = this.getPhotoDirectory();
     if (!fs.existsSync(photoDirectory)) {
       try {
         fs.mkdirSync(photoDirectory, { recursive: true });
@@ -192,7 +176,10 @@ export class PhotoStorageService {
           `Failed to create photo directory ${photoDirectory}: ${
             error instanceof Error ? error.message : String(error)
           }`,
-          { code: 'MAIN.PHOTO-STORAGE.DIRECTORY_CREATE_FAILED', info: { photoDirectory } },
+          {
+            code: 'MAIN.PHOTO-STORAGE.DIRECTORY_CREATE_FAILED',
+            info: { photoDirectory },
+          },
         );
       }
     }

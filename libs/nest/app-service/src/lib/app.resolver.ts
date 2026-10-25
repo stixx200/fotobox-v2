@@ -8,16 +8,16 @@ const logger = getLogger('AppResolver');
 
 @Resolver(() => AppMetadata)
 export class AppResolver {
-  @Query(() => AppMetadata, { 
-    description: 'Get application metadata including version, name, and platform' 
+  @Query(() => AppMetadata, {
+    description:
+      'Get application metadata including version, name, and platform',
   })
   appMetadata(): AppMetadata {
     logger.debug('Fetching app metadata');
-    
+
     // Get version from package.json
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const packageJson = require('../../../../../package.json');
-    
+
     return {
       version: packageJson.version || '0.0.0',
       name: packageJson.name || 'fotobox',
@@ -26,12 +26,11 @@ export class AppResolver {
     };
   }
 
-  @Query(() => String, { 
-    description: 'Get application version' 
+  @Query(() => String, {
+    description: 'Get application version',
   })
   appVersion(): string {
     logger.debug('Fetching app version');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const packageJson = require('../../../../../package.json');
     return packageJson.version || '0.0.0';
   }

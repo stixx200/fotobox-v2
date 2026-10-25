@@ -12,7 +12,9 @@ export class LogBufferTransport extends Transport {
       this.emit('logged', info);
     });
 
-    const { level, message, timestamp, context, splat, ...rest } = info;
+    const { level, message, timestamp, context, ...rest } = info;
+    // `splat` holds the raw format arguments that are already in `message`.
+    delete rest['splat'];
     const meta =
       rest && Object.keys(rest).length > 0
         ? JSON.stringify(rest, (_, value) =>
@@ -23,8 +25,7 @@ export class LogBufferTransport extends Transport {
     addLogRecord({
       timestamp: String(timestamp ?? new Date().toISOString()),
       level: String(level),
-      message:
-        typeof message === 'string' ? message : JSON.stringify(message),
+      message: typeof message === 'string' ? message : JSON.stringify(message),
       context: context ? String(context) : undefined,
       metaJson: meta,
     });

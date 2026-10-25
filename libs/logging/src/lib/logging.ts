@@ -27,42 +27,44 @@ export function getLogger(context?: string) {
 }
 
 const transports: Map<string, Transport> = new Map();
+
+function getOrCreateTransport(key: string, create: () => Transport): Transport {
+  let transport = transports.get(key);
+  if (!transport) {
+    transport = create();
+    transports.set(key, transport);
+  }
+  return transport;
+}
+
 function getConsoleTransport(): Transport {
-  if (!transports.has('console')) {
-    transports.set(
-      'console',
+  return getOrCreateTransport(
+    'console',
+    () =>
       new winston.transports.Console({
         format: winston.format.combine(
           winston.format.timestamp(),
           winston.format.colorize(),
-          winston.format.simple()
+          winston.format.simple(),
         ),
-      })
-    );
-  }
-  return transports.get('console')!;
+      }),
+  );
 }
+
 function getFileTransport(): Transport {
-  if (!transports.has('file')) {
+  return getOrCreateTransport('file', () => {
     const filename = getWorkspaceLogFile();
     fs.mkdirSync(path.dirname(filename), { recursive: true });
-    transports.set(
-      'file',
-      new winston.transports.File({
-        filename,
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json()
-        ),
-      })
-    );
-  }
-  return transports.get('file')!;
+    return new winston.transports.File({
+      filename,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json(),
+      ),
+    });
+  });
 }
 
 function getBufferTransport(): Transport {
-  if (!transports.has('buffer')) {
-    transports.set('buffer', new LogBufferTransport());
-  }
-  return transports.get('buffer')!;
+  return getOrCreateTransport('buffer', () => new LogBufferTransport());
 }

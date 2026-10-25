@@ -31,12 +31,14 @@ describe('PhotoStorageService', () => {
   });
 
   it('should create directory if it does not exist', () => {
-    const service = PhotoStorageService.getInstance({ photoDirectory: testDir });
+    PhotoStorageService.getInstance({ photoDirectory: testDir });
     expect(fs.existsSync(testDir)).toBe(true);
   });
 
   it('should save and retrieve a photo', () => {
-    const service = PhotoStorageService.getInstance({ photoDirectory: testDir });
+    const service = PhotoStorageService.getInstance({
+      photoDirectory: testDir,
+    });
     const photoId = 'test-photo-1';
     const photoBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
 
@@ -48,7 +50,9 @@ describe('PhotoStorageService', () => {
   });
 
   it('should check if photo exists', () => {
-    const service = PhotoStorageService.getInstance({ photoDirectory: testDir });
+    const service = PhotoStorageService.getInstance({
+      photoDirectory: testDir,
+    });
     const photoId = 'test-photo-2';
     const photoBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
@@ -59,7 +63,9 @@ describe('PhotoStorageService', () => {
   });
 
   it('should delete a photo', () => {
-    const service = PhotoStorageService.getInstance({ photoDirectory: testDir });
+    const service = PhotoStorageService.getInstance({
+      photoDirectory: testDir,
+    });
     const photoId = 'test-photo-3';
     const photoBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
@@ -80,8 +86,9 @@ describe('PhotoStorageService', () => {
   });
 
   it('should throw error when getting non-existent photo', () => {
-    const service = PhotoStorageService.getInstance({ photoDirectory: testDir });
+    const service = PhotoStorageService.getInstance({
+      photoDirectory: testDir,
+    });
     expect(() => service.getPhoto('non-existent')).toThrow();
   });
 });
-

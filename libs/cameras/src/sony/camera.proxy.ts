@@ -17,8 +17,8 @@ export class CameraProxy {
   async call(
     endpoint: string,
     method: string,
-    params: any[] = [],
-    version = '1.0'
+    params: unknown[] = [],
+    version = '1.0',
   ) {
     const service = this.getService(endpoint);
     const response = await axios.post(service.url, {
@@ -33,19 +33,19 @@ export class CameraProxy {
           service.url
         } - method: ${method} - params: ${JSON.stringify(params)}': ${
           response.data.error
-        }`
+        }`,
       );
     }
     return response.data.result;
   }
 
   private getService(type: string): IService {
-    const service = this.services.find(s => s.type === type);
+    const service = this.services.find((s) => s.type === type);
     if (!service) {
       throw new Error(
         `service '${type}' not found. Available are: '${this.services
           .map((s) => s.type)
-          .join("', '")}'`
+          .join("', '")}'`,
       );
     }
     return service;

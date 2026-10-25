@@ -11,14 +11,11 @@ const enum RECEIVING_TYPE {
 }
 
 const typeToLength = {
-  [RECEIVING_TYPE.commonHeader]: (paddingSize: number, payloadSize: number) =>
-    8,
-  [RECEIVING_TYPE.payloadHeader]: (paddingSize: number, payloadSize: number) =>
-    128,
+  [RECEIVING_TYPE.commonHeader]: () => 8,
+  [RECEIVING_TYPE.payloadHeader]: () => 128,
   [RECEIVING_TYPE.jpegData]: (paddingSize: number, payloadSize: number) =>
     paddingSize + payloadSize,
-  [RECEIVING_TYPE.frameData]: (paddingSize: number, payloadSize: number) =>
-    16 + paddingSize,
+  [RECEIVING_TYPE.frameData]: (paddingSize: number) => 16 + paddingSize,
 };
 
 class ReceivingInfo {
@@ -35,7 +32,7 @@ class ReceivingInfo {
       payloadSize?: number;
       frameCount?: number;
       frameSize?: number;
-    } = {}
+    } = {},
   ) {
     this.payloadType = data.payloadType ?? this.payloadType;
     this.paddingSize = data.paddingSize ?? this.paddingSize;
@@ -55,7 +52,7 @@ export class LiveStreamParser {
   private reset(
     receivingType: RECEIVING_TYPE,
     bufferOverlap: Buffer,
-    receivingInfo?: ReceivingInfo
+    receivingInfo?: ReceivingInfo,
   ) {
     this.receivingType = receivingType;
     this.buffer = bufferOverlap;
@@ -69,7 +66,7 @@ export class LiveStreamParser {
     if (data) {
       this.buffer = Buffer.concat(
         [this.buffer, data],
-        this.buffer.length + data.length
+        this.buffer.length + data.length,
       );
     }
     // skip if not enough data are available
@@ -77,7 +74,7 @@ export class LiveStreamParser {
       this.buffer.length <
       typeToLength[this.receivingType](
         this.receivingInfo.paddingSize,
-        this.receivingInfo.payloadSize
+        this.receivingInfo.payloadSize,
       )
     ) {
       return;
@@ -102,7 +99,7 @@ export class LiveStreamParser {
       this.buffer.length >=
       typeToLength[this.receivingType](
         this.receivingInfo.paddingSize,
-        this.receivingInfo.payloadSize
+        this.receivingInfo.payloadSize,
       )
     ) {
       this.onNewChunk();
@@ -116,7 +113,7 @@ export class LiveStreamParser {
     this.reset(
       RECEIVING_TYPE.payloadHeader,
       this.buffer.slice(8),
-      receivingInfo
+      receivingInfo,
     );
   }
 
@@ -143,7 +140,7 @@ export class LiveStreamParser {
       this.reset(
         RECEIVING_TYPE.jpegData,
         this.buffer.slice(128),
-        receivingInfo
+        receivingInfo,
       );
     } else if (this.receivingInfo.payloadType === 2) {
       receivingInfo.frameCount = this.buffer.readIntBE(10, 2);
@@ -151,7 +148,7 @@ export class LiveStreamParser {
       this.reset(
         RECEIVING_TYPE.frameData,
         this.buffer.slice(128),
-        receivingInfo
+        receivingInfo,
       );
     } else {
       throw new Error(`Payloadtype unknown: ${this.receivingInfo.payloadType}`);
@@ -163,8 +160,8 @@ export class LiveStreamParser {
     this.reset(
       RECEIVING_TYPE.commonHeader,
       this.buffer.slice(
-        this.receivingInfo.payloadSize + this.receivingInfo.paddingSize
-      )
+        this.receivingInfo.payloadSize + this.receivingInfo.paddingSize,
+      ),
     );
   }
 
@@ -173,16 +170,13 @@ export class LiveStreamParser {
       this.receivingInfo.payloadSize + this.receivingInfo.paddingSize;
 
     if (this.receivingInfo.frameCount === 1) {
-      this.reset(
-        RECEIVING_TYPE.commonHeader,
-        this.buffer.slice(packageSize)
-      );
+      this.reset(RECEIVING_TYPE.commonHeader, this.buffer.slice(packageSize));
     } else {
       this.receivingInfo.frameCount = this.receivingInfo.frameCount - 1;
       this.reset(
         RECEIVING_TYPE.frameData,
         this.buffer.slice(packageSize),
-        this.receivingInfo
+        this.receivingInfo,
       );
     }
   }
