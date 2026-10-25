@@ -2,7 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 import { workspaceRoot } from '@nx/devkit';
 import { workspacePaths } from '@fotobox/workspace-paths';
 
-const baseURL = process.env['BASE_URL'] ?? 'http://localhost:4200';
+/** Override with E2E_PORT when 4200 is taken by another dev server. */
+const port = Number(process.env['E2E_PORT'] ?? 4200);
+const baseURL = process.env['BASE_URL'] ?? `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: './src',
@@ -17,7 +19,10 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { open: 'never', outputFolder: workspacePaths.playwrightReport() }],
+    [
+      'html',
+      { open: 'never', outputFolder: workspacePaths.playwrightReport() },
+    ],
   ],
   use: {
     baseURL,
@@ -25,7 +30,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'npx nx run fotobox-ui:serve:development',
+    command: `pnpm exec nx run fotobox-ui:serve:development --port=${port}`,
     url: baseURL,
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,

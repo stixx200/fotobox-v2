@@ -42,13 +42,13 @@ libs/
 | Tool               | Version                                        |
 | ------------------ | ---------------------------------------------- |
 | Node.js            | ≥ 22 LTS                                       |
-| npm                | ≥ 10                                           |
+| pnpm               | 12 (via `corepack enable pnpm`)                |
 | gphoto2 (optional) | latest – required only for Sony camera support |
 
 Install dependencies once:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ---
@@ -61,14 +61,14 @@ Run **two terminals** when developing:
 **Terminal 1 – Angular dev server** (must be started first):
 
 ```bash
-npx nx serve fotobox-ui
+pnpm nx serve fotobox-ui
 # Wait for: "Local: http://localhost:4200/"
 ```
 
 **Terminal 2 – Electron shell** (starts the NestJS backend + opens the window):
 
 ```bash
-npx nx serve fotobox-electron
+pnpm nx serve fotobox-electron
 ```
 
 The Electron shell detects the dev server via the `FOTOBOX_DEV_SERVER` environment variable (set automatically by the Nx serve target) and loads `http://localhost:4200` instead of the bundled UI. Dev tools are enabled automatically in dev mode.
@@ -76,7 +76,7 @@ The Electron shell detects the dev server via the `FOTOBOX_DEV_SERVER` environme
 ### Standalone API (without Electron)
 
 ```bash
-npx nx serve fotobox-api
+pnpm nx serve fotobox-api
 # API available at http://localhost:3000
 # GraphQL playground at http://localhost:3000/graphql
 ```
@@ -99,7 +99,7 @@ By default the API bootstraps these paths under `tmp/` automatically (see `tmp/R
 
 ### Angular UI (Chrome DevTools)
 
-Dev tools open automatically when running via `npx nx serve fotobox-electron` (dev mode).  
+Dev tools open automatically when running via `pnpm nx serve fotobox-electron` (dev mode).  
 You can also press `Ctrl+Shift+I` / `Cmd+Option+I` in the Electron window during development.
 
 > **Note**: Dev tools are disabled in production builds (kiosk mode). Build with `--configuration=development` to re-enable them in a built binary.
@@ -127,7 +127,7 @@ The backend runs inside the Electron process. Use VS Code's debugger:
 }
 ```
 
-2. Build in development mode: `npx nx build fotobox-api --configuration=development`
+2. Build in development mode: `pnpm nx build fotobox-api --configuration=development`
 3. Start the "Debug fotobox-api" configuration in VS Code.
 
 ### GraphQL playground
@@ -140,11 +140,11 @@ Available in development at `http://localhost:3000/graphql`.
 
 ```bash
 # Build all apps (or use the release package target below)
-npx nx run-many -t build --projects=fotobox-ui,collage-editor-ui,fotobox-electron --configuration=production
+pnpm nx run-many -t build --projects=fotobox-ui,collage-editor-ui,fotobox-electron --configuration=production
 
 # Lint + test before releasing
-npx nx run-many -t lint
-npx nx run-many -t test
+pnpm nx run-many -t lint
+pnpm nx run-many -t test
 ```
 
 Build outputs:
@@ -172,14 +172,14 @@ Versions are managed with **Nx Release** (`fotobox` group). Root `package.json` 
 
 ```bash
 # 1. Ensure tests pass
-npx nx run-many -t lint test
+pnpm nx run-many -t lint test
 
 # 2. Preview version bump (optional)
-npx nx release version --group=fotobox --dry-run --first-release
+pnpm nx release version --group=fotobox --dry-run --first-release
 
 # 3. Create version bump, changelog, commit, and tag
 npm run release
-# equivalent to: npx nx release --group=fotobox --skip-publish
+# equivalent to: pnpm nx release --group=fotobox --skip-publish
 # On the first release, add: --first-release
 
 # 4. Push to trigger CI packaging on Windows
@@ -191,7 +191,7 @@ This creates tag `fotobox-vX.Y.Z`. GitHub Actions builds the MSI on `windows-lat
 ### Manual MSI build (on Windows)
 
 ```bash
-npx nx run fotobox-release:package --configuration=production
+pnpm nx run fotobox-release:package --configuration=production
 ```
 
 Output: `dist/packages/Fotobox-<version>-x64.msi`
@@ -207,7 +207,7 @@ The `fotobox-release:package` target builds both Angular apps, bundles Electron,
 Run this on a **Windows machine** (or via the release CI workflow):
 
 ```bash
-npx nx run fotobox-release:package --configuration=production
+pnpm nx run fotobox-release:package --configuration=production
 ```
 
 Output: `dist/packages/Fotobox-<version>-x64.msi`
@@ -228,8 +228,8 @@ Bundled kiosk script: [`scripts/windows/setup-kiosk.ps1`](scripts/windows/setup-
 Run on a **macOS machine**:
 
 ```bash
-npx nx build fotobox-electron
-npx nx run fotobox-electron:package
+pnpm nx build fotobox-electron
+pnpm nx run fotobox-electron:package
 ```
 
 Output: `dist/packages/fotobox-electron-<version>.dmg`
@@ -344,30 +344,30 @@ Tablet/browser clients send the token as the `x-fotobox-token` header, the `toke
 
 ```bash
 # Development
-npx nx serve fotobox-ui           # Angular dev server  (port 4200)
-npx nx serve fotobox-electron     # Electron + API      (port 3000)
-npx nx serve fotobox-api          # Standalone API only (port 3000)
+pnpm nx serve fotobox-ui           # Angular dev server  (port 4200)
+pnpm nx serve fotobox-electron     # Electron + API      (port 3000)
+pnpm nx serve fotobox-api          # Standalone API only (port 3000)
 
 # Build
-npx nx build fotobox-ui
-npx nx build fotobox-api
-npx nx build fotobox-electron
-npx nx run-many -t build --projects=fotobox-api,fotobox-ui,fotobox-electron
+pnpm nx build fotobox-ui
+pnpm nx build fotobox-api
+pnpm nx build fotobox-electron
+pnpm nx run-many -t build --projects=fotobox-api,fotobox-ui,fotobox-electron
 
 # Lint
-npx nx run-many -t lint
+pnpm nx run-many -t lint
 
 # Test
-npx nx run-many -t test
+pnpm nx run-many -t test
 
 # Package Electron installer (build + verify + package)
-npx nx run fotobox-release:package --configuration=production
+pnpm nx run fotobox-release:package --configuration=production
 
 # Create a release (version bump + changelog + tag)
 npm run release
 
 # Dependency graph
-npx nx graph
+pnpm nx graph
 ```
 
 [Click here to finish setting up your workspace!](https://cloud.nx.app/connect/kJeAeEOyWZ)
@@ -377,19 +377,19 @@ npx nx graph
 To run the dev server for your app, use:
 
 ```sh
-npx nx serve fotobox-ui
+pnpm nx serve fotobox-ui
 ```
 
 To create a production bundle:
 
 ```sh
-npx nx build fotobox-ui
+pnpm nx build fotobox-ui
 ```
 
 To see all available targets to run for a project, run:
 
 ```sh
-npx nx show project fotobox-ui
+pnpm nx show project fotobox-ui
 ```
 
 These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
@@ -405,16 +405,16 @@ Use the plugin's generator to create new projects.
 To generate a new application, use:
 
 ```sh
-npx nx g @nx/angular:app demo
+pnpm nx g @nx/angular:app demo
 ```
 
 To generate a new library, use:
 
 ```sh
-npx nx g @nx/angular:lib mylib
+pnpm nx g @nx/angular:lib mylib
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+You can use `pnpm nx list` to get a list of installed plugins. Then, run `pnpm nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
 
 [Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 

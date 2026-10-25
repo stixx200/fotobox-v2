@@ -17,7 +17,11 @@ describe('createTestDatabase', () => {
       })
       .run();
 
-    const row = db.select().from(settings).where(eq(settings.key, 'layouts')).get();
+    const row = db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, 'layouts'))
+      .get();
     expect(row?.value).toBe('["Einzelbild"]');
 
     sqlite.close();

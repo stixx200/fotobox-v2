@@ -1,4 +1,9 @@
-import { Component, input, output } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -7,6 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   standalone: true,
   imports: [FormsModule, TranslatePipe],
   styleUrl: '../editor-panel.shared.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="project-settings">
       <label>

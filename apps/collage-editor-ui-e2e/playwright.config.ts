@@ -5,10 +5,12 @@ import { workspacePaths } from '@fotobox/workspace-paths';
 
 /**
  * Nx-style Playwright e2e for collage-editor-ui.
- * Run: npm exec nx run collage-editor-ui-e2e:e2e
- * UI mode: npm exec nx run collage-editor-ui-e2e:e2e-ui
+ * Run: pnpm nx run collage-editor-ui-e2e:e2e
+ * UI mode: pnpm nx run collage-editor-ui-e2e:e2e-ui
  */
-const baseURL = process.env['BASE_URL'] ?? 'http://localhost:4201';
+/** Override with E2E_PORT when 4201 is taken by another dev server. */
+const port = Number(process.env['E2E_PORT'] ?? 4201);
+const baseURL = process.env['BASE_URL'] ?? `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: './src',
@@ -23,7 +25,10 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { open: 'never', outputFolder: workspacePaths.playwrightReport() }],
+    [
+      'html',
+      { open: 'never', outputFolder: workspacePaths.playwrightReport() },
+    ],
   ],
   use: {
     baseURL,
@@ -31,7 +36,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'npx nx run collage-editor-ui:serve:development',
+    command: `pnpm exec nx run collage-editor-ui:serve:development --port=${port}`,
     url: baseURL,
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,

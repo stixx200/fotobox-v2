@@ -1,4 +1,10 @@
-import { Global, Inject, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Global,
+  Inject,
+  Module,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { getLogger } from '@fotobox/logging';
 import { getDatabasePath } from '@fotobox/workspace-paths';
 import { drizzle } from 'drizzle-orm/node-sqlite';
@@ -14,7 +20,6 @@ import {
 } from './database.tokens';
 import { getMigrationsFolder } from './migrations';
 import { PhotoRepository } from './photo.repository';
-import { schema } from './schema';
 
 const logger = getLogger('DatabaseModule');
 
@@ -37,7 +42,7 @@ const logger = getLogger('DatabaseModule');
       provide: DRIZZLE,
       inject: [SQLITE_CONNECTION],
       useFactory: (sqlite: SqliteConnection): DrizzleDb =>
-        drizzle({ client: sqlite, schema }),
+        drizzle({ client: sqlite }),
     },
   ],
   exports: [DRIZZLE, PhotoRepository],

@@ -6,6 +6,15 @@ import { clearLogBuffer, getLogger, getRecentLogs } from '@fotobox/logging';
 
 const logger = getLogger('AppResolver');
 
+/**
+ * The workspace package.json is the app's version source; webpack inlines it
+ * into the API bundle at build time.
+ */
+function readWorkspacePackageJson(): { name?: string; version?: string } {
+  // eslint-disable-next-line @nx/enforce-module-boundaries -- build-time inline of the root manifest, not a project import
+  return require('../../../../../package.json');
+}
+
 @Resolver(() => AppMetadata)
 export class AppResolver {
   @Query(() => AppMetadata, {
@@ -15,8 +24,7 @@ export class AppResolver {
   appMetadata(): AppMetadata {
     logger.debug('Fetching app metadata');
 
-    // Get version from package.json
-    const packageJson = require('../../../../../package.json');
+    const packageJson = readWorkspacePackageJson();
 
     return {
       version: packageJson.version || '0.0.0',
@@ -31,8 +39,7 @@ export class AppResolver {
   })
   appVersion(): string {
     logger.debug('Fetching app version');
-    const packageJson = require('../../../../../package.json');
-    return packageJson.version || '0.0.0';
+    return readWorkspacePackageJson().version || '0.0.0';
   }
 
   @Query(() => LogList, {

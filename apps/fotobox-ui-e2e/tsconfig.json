@@ -3,7 +3,8 @@
   "compilerOptions": {
     "allowJs": true,
     "outDir": "../../dist/out-tsc",
-    "types": ["node", "@playwright/test"]
+    "types": ["node", "@playwright/test"],
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*.ts", "playwright.config.ts"]
 }

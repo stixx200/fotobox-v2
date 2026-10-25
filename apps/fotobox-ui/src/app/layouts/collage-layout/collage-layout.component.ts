@@ -7,6 +7,7 @@ import {
   signal,
   computed,
   viewChild,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -49,6 +50,7 @@ interface ReviewPhoto {
     ShareQrOverlayComponent,
   ],
   templateUrl: './collage-layout.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './collage-layout.component.scss',
 })
 export class CollageLayoutComponent implements OnInit, OnDestroy {

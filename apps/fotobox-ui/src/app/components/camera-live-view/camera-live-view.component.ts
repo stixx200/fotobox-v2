@@ -6,6 +6,7 @@ import {
   effect,
   viewChild,
   ElementRef,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CameraStore } from '../../store/camera.store';
@@ -23,6 +24,7 @@ import { WebcamService } from '../../services/webcam.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './camera-live-view.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './camera-live-view.component.scss',
 })
 export class CameraLiveViewComponent {

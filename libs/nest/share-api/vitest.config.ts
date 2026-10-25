@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   root: import.meta.dirname,
-  plugins: [nxViteTsPaths()],
+  plugins: [tsconfigPaths()],
   test: {
     globals: true,
     environment: 'node',

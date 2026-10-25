@@ -1,0 +1,34 @@
+# Single-package workspace; pnpm (>= 11) reads its settings from this file.
+
+catalog:
+  '@apollo/server': ^5.4.0
+
+overrides:
+  # The GraphQL playground plugin must share the app's Apollo Server instance.
+  '@apollo/server-plugin-landing-page-graphql-playground>@apollo/server': 'catalog:'
+
+# Dependency lifecycle scripts must be reviewed explicitly (strictDepBuilds).
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  nx: true
+  sharp: true
+  unrs-resolver: true
+  # Only prints a notice.
+  '@apollo/protobufjs': false
+  '@nestjs/core': false
+  # Optional Node backend of fabric; the editor only uses fabric in the browser.
+  canvas: false
+  # Electron is being replaced by Tauri; its binary download is not needed.
+  electron: false
+  electron-winstaller: false
+
+packageExtensions:
+  # Its typings import `express` but don't declare @types/express, so pnpm
+  # would resolve the hoisted v4 types (from webpack-dev-server) instead of v5.
+  '@nestjs/platform-express':
+    peerDependencies:
+      '@types/express': '*'

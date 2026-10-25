@@ -7,6 +7,7 @@ import {
   ViewChild,
   inject,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -82,6 +83,7 @@ const TEXT_FONT_OPTIONS = [
   ],
   providers: [FabricCanvasService],
   templateUrl: './editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './editor.component.scss',
 })
 export class EditorComponent implements AfterViewInit, OnDestroy {

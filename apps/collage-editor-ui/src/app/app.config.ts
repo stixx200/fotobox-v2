@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideApollo } from 'apollo-angular';
 import { provideFotoboxI18n } from '@fotobox/frontend-core';
 import { appRoutes } from './app.routes';
@@ -10,7 +10,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
-    provideHttpClient(),
+    provideHttpClient(withXhr()),
     provideApollo(createApolloOptions),
     provideFotoboxI18n(),
   ],

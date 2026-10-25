@@ -6,6 +6,7 @@ import {
   signal,
   computed,
   viewChild,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -41,6 +42,7 @@ import { CaptureWatchdogService } from '../../services/capture-watchdog.service'
     ShareQrOverlayComponent,
   ],
   templateUrl: './single-layout.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './single-layout.component.scss',
 })
 export class SingleLayoutComponent implements OnInit {

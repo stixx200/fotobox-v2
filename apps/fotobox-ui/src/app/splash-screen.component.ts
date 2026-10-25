@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,7 +14,13 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-splash-screen',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatIconModule, TranslatePipe],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    TranslatePipe,
+  ],
   template: `
     <div class="splash-screen">
       <div class="splash-content">
@@ -32,6 +44,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .splash-screen {

@@ -14,15 +14,27 @@ const DEFAULT_SETTINGS = [
   { key: 'usePrinter', value: 'true', description: 'Use printer' },
   { key: 'useShare', value: 'false', description: 'Use share' },
   { key: 'shareBaseUrl', value: '""', description: 'Share base URL' },
-  { key: 'shareTokenExpiryHours', value: '24', description: 'Share token expiry' },
+  {
+    key: 'shareTokenExpiryHours',
+    value: '24',
+    description: 'Share token expiry',
+  },
   { key: 'printerName', value: '"printer1"', description: 'Printer name' },
   { key: 'showPrintDialog', value: 'false', description: 'Show print dialog' },
-  { key: 'photoDirectory', value: '"/tmp/photos"', description: 'Photo directory' },
+  {
+    key: 'photoDirectory',
+    value: '"/tmp/photos"',
+    description: 'Photo directory',
+  },
   { key: 'collageDirectory', value: '""', description: 'Collage directory' },
   { key: 'layouts', value: '["Einzelbild"]', description: 'Active layouts' },
   { key: 'camera', value: '"demo"', description: 'Camera driver' },
   { key: 'galleryPassword', value: '""', description: 'Gallery PIN' },
-  { key: 'showGalleryButton', value: 'false', description: 'Show gallery button' },
+  {
+    key: 'showGalleryButton',
+    value: 'false',
+    description: 'Show gallery button',
+  },
 ];
 
 function resolveOperationName(body: GraphqlBody): string {
@@ -33,8 +45,10 @@ function resolveOperationName(body: GraphqlBody): string {
   return match?.[1] ?? '';
 }
 
+/** The API health probe sends exactly `{ __typename }`; Apollo adds
+ * `__typename` to every selection set, so match the whole query. */
 function isTypenameHealthCheck(body: GraphqlBody): boolean {
-  return body.query?.includes('__typename') ?? false;
+  return /^\s*(query\s*)?\{\s*__typename\s*\}\s*$/.test(body.query ?? '');
 }
 
 export class FotoboxUiGraphqlMock {

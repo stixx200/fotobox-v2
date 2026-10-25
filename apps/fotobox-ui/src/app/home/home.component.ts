@@ -1,4 +1,12 @@
-import { Component, OnInit, inject, computed, signal, effect } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  computed,
+  signal,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -24,6 +32,7 @@ import { GalleryAccessService } from '../services/gallery-access.service';
     SettingsEscapeZoneComponent,
   ],
   templateUrl: './home.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit {

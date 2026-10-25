@@ -25,6 +25,6 @@ if (process.env.SKIP_PLAYWRIGHT_INSTALL !== 'true') {
       'Skipping Playwright browser download (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD).',
     );
   } else {
-    run('npx playwright install chromium');
+    run('playwright install chromium');
   }
 }

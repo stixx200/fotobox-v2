@@ -1,4 +1,11 @@
-import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -37,6 +44,7 @@ import {
     ShareQrOverlayComponent,
   ],
   templateUrl: './gallery.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './gallery.component.scss',
 })
 export class GalleryComponent implements OnDestroy {

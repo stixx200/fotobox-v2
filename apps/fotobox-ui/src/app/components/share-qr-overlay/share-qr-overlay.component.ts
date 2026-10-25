@@ -5,6 +5,7 @@ import {
   OnChanges,
   Output,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -59,6 +60,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .share-qr-overlay {

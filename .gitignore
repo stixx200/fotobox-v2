@@ -70,3 +70,6 @@ vitest.config.*.timestamp*
 .claude/settings.local.json
 
 __screenshots__/
+
+.nx/self-healing
+.nx/migrate-runs

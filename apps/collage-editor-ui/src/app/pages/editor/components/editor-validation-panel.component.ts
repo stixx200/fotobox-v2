@@ -1,4 +1,9 @@
-import { Component, input, output } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import type { ProjectValidationIssue } from '@fotobox/collage-editor/browser';
 
@@ -7,6 +12,7 @@ import type { ProjectValidationIssue } from '@fotobox/collage-editor/browser';
   standalone: true,
   imports: [TranslatePipe],
   styleUrl: '../editor-panel.shared.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (issues().length) {
       <div class="props validation">
@@ -22,9 +28,13 @@ import type { ProjectValidationIssue } from '@fotobox/collage-editor/browser';
                   type="button"
                   class="validation-issue"
                   [class.validation-issue--error]="issue.severity === 'error'"
-                  [class.validation-issue--warning]="issue.severity === 'warning'"
+                  [class.validation-issue--warning]="
+                    issue.severity === 'warning'
+                  "
                   [attr.title]="'editor.validationSelectLayer' | translate"
-                  (click)="layerSelect.emit({ layerId: issue.layerId!, event: $event })"
+                  (click)="
+                    layerSelect.emit({ layerId: issue.layerId!, event: $event })
+                  "
                 >
                   {{ issue.message }}
                 </button>

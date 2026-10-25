@@ -1,11 +1,11 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/libs/nest/printer-api',
-  plugins: [nxViteTsPaths()],
+  plugins: [tsconfigPaths()],
   test: {
     name: 'printer-api',
     watch: false,

@@ -39,7 +39,10 @@
       "@fotobox/workspace-paths": ["libs/workspace-paths/src/index.ts"],
       "@fotobox/graphql-operations": ["libs/graphql-operations/src/index.ts"],
       "@fotobox/frontend-core": ["libs/frontend-core/src/index.ts"]
-    }
+    },
+    "noUncheckedSideEffectImports": false,
+    "types": ["*"],
+    "ignoreDeprecations": "6.0"
   },
   "include": [],
   "exclude": ["node_modules", "tmp", "dist"]

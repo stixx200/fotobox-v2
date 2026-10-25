@@ -20,13 +20,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
 
       - name: Install dependencies
         env:
           SKIP_PLAYWRIGHT_INSTALL: 'true'
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Resolve release version from tag
         id: version
@@ -52,7 +53,7 @@ jobs:
           fi
 
       - name: Build Windows MSI
-        run: npx nx run fotobox-release:package --configuration=production
+        run: pnpm exec nx run fotobox-release:package --configuration=production
 
       - name: Generate checksum
         shell: pwsh

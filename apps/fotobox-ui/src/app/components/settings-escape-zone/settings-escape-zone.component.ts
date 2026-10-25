@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { SettingsEscapeService } from '../../services/settings-escape.service';
 
 @Component({
@@ -12,6 +12,7 @@ import { SettingsEscapeService } from '../../services/settings-escape.service';
       aria-hidden="true"
     ></div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .escape-zone {

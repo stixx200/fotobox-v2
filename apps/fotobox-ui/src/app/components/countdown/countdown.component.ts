@@ -4,6 +4,7 @@ import {
   OnDestroy,
   Output,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -33,6 +34,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .countdown-overlay {
