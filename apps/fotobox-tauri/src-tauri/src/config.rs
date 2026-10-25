@@ -1,5 +1,5 @@
-//! Host configuration from environment variables (same names as the former
-//! Electron shell, so existing kiosk setups keep working).
+//! Host configuration from environment variables. The names match the ones
+//! the previous Electron shell used, so existing kiosk setups keep working.
 
 use std::env;
 

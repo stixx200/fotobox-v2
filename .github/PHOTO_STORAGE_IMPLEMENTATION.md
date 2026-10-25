@@ -14,6 +14,7 @@ A complete photo storage solution has been implemented for the Fotobox applicati
 A standalone Node.js library that handles photo persistence operations:
 
 **Key Features:**
+
 - Singleton pattern for resource-efficient photo management
 - Default storage location: `{cwd}/photos` (overridable)
 - Automatic directory creation
@@ -21,6 +22,7 @@ A standalone Node.js library that handles photo persistence operations:
 - Comprehensive error handling
 
 **Core Service:** `PhotoStorageService`
+
 - `getInstance(config?)` - Get singleton instance
 - `savePhoto(photoId, photoBuffer)` - Save photo to disk
 - `getPhoto(photoId)` - Retrieve photo from disk
@@ -30,6 +32,7 @@ A standalone Node.js library that handles photo persistence operations:
 - `getPhotoDirectory()` - Get current directory
 
 **Configuration:**
+
 ```typescript
 interface PhotoStorageConfig {
   photoDirectory?: string; // Default: {cwd}/photos
@@ -43,23 +46,26 @@ interface PhotoStorageConfig {
 A NestJS integration layer providing GraphQL endpoints for the underlying photo storage service:
 
 **Components:**
+
 - `NestPhotoStorageModule` - Easily importable NestJS module
 - `PhotoStorageProviderService` - NestJS wrapper around core service
 - `PhotoStorageResolver` - GraphQL resolver exposing photo operations
 
 **GraphQL Queries:**
+
 ```graphql
 query {
-  photoDirectory  # Get current storage path
-  photoExists(photoId: "photo-123")  # Check if photo exists
+  photoDirectory # Get current storage path
+  photoExists(photoId: "photo-123") # Check if photo exists
 }
 ```
 
 **GraphQL Mutations:**
+
 ```graphql
 mutation {
-  setPhotoDirectory(directory: "/new/path")  # Update storage path
-  deletePhoto(photoId: "photo-123")  # Delete a photo
+  setPhotoDirectory(directory: "/new/path") # Update storage path
+  deletePhoto(photoId: "photo-123") # Delete a photo
 }
 ```
 
@@ -68,21 +74,24 @@ mutation {
 ### Settings Component Integration
 
 The `settings.component.html` has been updated to:
+
 - Display the "Speicherort für Fotos" (photo storage location) setting field
 - Connect to the photoDirectory form control
 - Provide a save settings button that triggers GraphQL mutations
 
 **How It Works:**
+
 1. User updates the photo storage location in settings UI
 2. Form value is captured in the `photoDirectory` FormControl
 3. On save, settings are persisted via the SettingsService (GraphQL)
 4. Backend updates the PhotoStorageService configuration
 5. All subsequent photos are saved to the new location
 
-### Electron Backend
+### API Backend
 
 The NestJS photo storage module is:
-1. Imported in the Electron app's NestJS backend
+
+1. Imported in the NestJS API (standalone server and desktop sidecar)
 2. Exposed via GraphQL endpoints
 3. Available for use by other NestJS services
 
@@ -160,7 +169,7 @@ query CheckPhoto {
 import { PhotoStorageService } from '@fotobox/photo-storage';
 
 const storage = PhotoStorageService.getInstance({
-  photoDirectory: '/custom/path'
+  photoDirectory: '/custom/path',
 });
 
 const savedPath = storage.savePhoto('my-photo', imageBuffer);

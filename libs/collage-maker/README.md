@@ -17,10 +17,10 @@ my-template/
 Author templates with the **Collage Template Editor** app (`collage-editor-ui`):
 
 ```bash
-npm exec nx serve collage-editor-ui   # http://localhost:4201
-npm exec nx serve fotobox-api         # GraphQL API on :3000
+pnpm nx serve collage-editor-ui   # http://localhost:4201
+pnpm nx serve fotobox-api         # GraphQL API on :3000
 ```
 
-From fotobox settings, use **Open template editor** (Electron opens a second window; browser opens a new tab).
+From fotobox settings, use **Open template editor** (the desktop app opens a second window; a browser opens a new tab).
 
 Built-in example: [`src/templates/2x2`](src/templates/2x2/index.json).

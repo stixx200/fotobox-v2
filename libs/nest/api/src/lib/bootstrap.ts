@@ -67,8 +67,8 @@ export interface BootstrapApiOptions {
 }
 
 /**
- * Creates and starts the Fotobox API server. Shared by the standalone API app
- * and the Electron host so both run an identical backend.
+ * Creates and starts the Fotobox API server, both standalone and as the
+ * desktop app's sidecar.
  */
 export async function bootstrapApiServer(
   options: BootstrapApiOptions = {},
@@ -83,7 +83,7 @@ export async function bootstrapApiServer(
   const policy = resolveAccessPolicy();
   const lanApiEnabled = isLanApiEnabled(policy);
 
-  // Browser clients on the host (Electron renderer, dev servers) are trusted.
+  // Browser clients on the host (Tauri webview, dev servers) are trusted.
   // In tablet mode any origin may call the API, but must present the token.
   app.enableCors({
     origin: (origin, callback) =>

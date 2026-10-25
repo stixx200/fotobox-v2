@@ -54,7 +54,7 @@ import { PhotoStorageService } from '@fotobox/photo-storage';
 
 // Initialize with custom directory
 const photoStorage = PhotoStorageService.getInstance({
-  photoDirectory: '/custom/photo/path'
+  photoDirectory: '/custom/photo/path',
 });
 
 // Update configuration
@@ -132,9 +132,9 @@ The service throws errors in the following cases:
 - `deletePhoto()`: Failed to delete photo
 - Directory creation: Failed to create photo directory
 
-## Integration with Electron
+## Integration with the API
 
-When used in the Electron application with NestJS backend, use the `@fotobox/nest-photo-storage` module which provides GraphQL resolvers and a provider service that wraps this library.
+When used in the NestJS API, use the `@fotobox/nest-photo-storage` module which provides GraphQL resolvers and a provider service that wraps this library.
 
 ## Running Tests
 

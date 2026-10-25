@@ -53,11 +53,12 @@ function authorizeGraphqlWsConnection(
 
 /**
  * Shared backend module for the Fotobox API. Used by both the standalone
- * `fotobox-api` server and the embedded Electron host so there is a single
- * source of truth for the GraphQL/REST surface and its feature modules.
+ * `fotobox-api` server and the desktop app's API sidecar (same bundle) so there
+ * is a single source of truth for the GraphQL/REST surface and its feature
+ * modules.
  *
- * Note: deliberately does NOT include any Electron window concerns — those
- * live in the Electron shell only.
+ * Note: deliberately does NOT include any desktop window concerns — those
+ * live in the Tauri host (apps/fotobox-tauri) only.
  */
 @Module({
   imports: [
