@@ -161,6 +161,11 @@ pnpm nx run-many -t build --projects=fotobox-ui,collage-editor-ui,fotobox-api
 # Lint + test before releasing (Rust: rust-lint / rust-test)
 pnpm nx run-many -t lint test
 pnpm nx run-many -t rust-lint rust-test -p fotobox-tauri
+
+# All tests in a clean Linux container (unit, API integration, e2e);
+# Playwright reports land in tmp/docker/playwright
+pnpm run test:docker
+pnpm run test:docker e2e           # only some targets
 ```
 
 Build outputs:
@@ -248,6 +253,49 @@ On its first start the app imports settings, share links and the photo index of 
    **"Fotobox starten"**.
 
 Running a newer setup later updates the app and keeps the chosen mode, kiosk user and settings.
+
+### Automated setup of a fresh PC (provisioning)
+
+`scripts/windows/provision-fotobox.ps1` turns a freshly installed Windows PC into a ready booth in one run:
+computer name and time zone, power plan **Höchstleistung** (or the best performance mode on devices without it),
+never sleep/hibernate/dim/turn off the screen (AC and battery, no USB selective suspend, lid does nothing), optional
+Wi-Fi and printer driver, Fotobox installed silently in kiosk mode (kiosk user, auto-logon, autostart, lockdown),
+photo/collage folders writable by the kiosk user, and the Fotobox settings (camera, printer, layouts, PINs,
+auto-start, ...).
+
+The settings are written to `%ProgramData%\Fotobox\provisioning.json`; the app applies them on its next start and
+again whenever the script is run with other values. Changes made on the settings screen are kept otherwise.
+
+Each release contains `Fotobox_<version>_provisioning.zip` with the scripts, an example configuration and the
+setup. Copy `fotobox-provision.example.psd1` to `fotobox-provision.psd1` and adjust it (keep it UTF-8 with BOM if
+you use umlauts; Windows PowerShell 5.1 reads files without BOM as ANSI).
+
+**Locally** (USB stick, as administrator):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\provision-fotobox.ps1 -Restart
+```
+
+**Remotely from a Mac** over SSH (PowerShell 7 runs on macOS: `brew install --cask powershell`; WinRM from macOS is
+not practical, SSH is built into Windows 10/11):
+
+1. Once on the new PC, as administrator — enables the OpenSSH server for the local network:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\enable-remote-access.ps1 -PublicKey (Get-Content .\id_ed25519.pub)
+   ```
+
+   Without `-PublicKey` you sign in with the administrator's password. `-Disable` turns SSH off again.
+
+2. On the Mac:
+
+   ```bash
+   pwsh scripts/windows/deploy-remote.ps1 -ComputerName 192.168.1.50 -User admin \
+     -ConfigPath ./fotobox-provision.psd1 -SetupPath ./Fotobox_1.0.0_x64-setup.exe -Restart
+   ```
+
+   It copies everything to `C:\FotoboxSetup`, runs the provisioning as administrator and restarts the PC. Log on the
+   PC: `C:\ProgramData\Fotobox\provision.log`. Run it again at any time to update Fotobox or change settings.
 
 ---
 

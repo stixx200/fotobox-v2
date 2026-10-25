@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
-use crate::config::HostConfig;
+use crate::config::{HostConfig, HostFile};
 use crate::supervisor::{Action, Supervisor};
 
 const HEALTH_INTERVAL: Duration = Duration::from_secs(30);
@@ -74,8 +74,11 @@ fn api_env(paths: &SidecarPaths, config: &HostConfig) -> Vec<(String, String)> {
                 .into_owned(),
         ),
     ];
+    let provisioning = HostFile::provisioning_path(|key| std::env::var(key).ok())
+        .map(|path| ("FOTOBOX_SETTINGS_SEED", path.to_string_lossy().into_owned()));
     let mut env: Vec<(String, String)> = defaults
         .into_iter()
+        .chain(provisioning)
         .filter(|(key, _)| std::env::var_os(key).is_none())
         .map(|(key, value)| (key.to_string(), value))
         .collect();

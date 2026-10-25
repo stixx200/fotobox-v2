@@ -48,6 +48,13 @@ impl HostFile {
         None
     }
 
+    /// Fotobox settings provisioned by `scripts/windows/provision-fotobox.ps1`
+    /// (`provisioning.json` next to `host.json`); the API applies them on start.
+    pub fn provisioning_path(lookup: impl Fn(&str) -> Option<String>) -> Option<PathBuf> {
+        Self::default_path(lookup)
+            .and_then(|path| path.parent().map(|dir| dir.join("provisioning.json")))
+    }
+
     /// Reads the file; a missing file is normal (development, macOS), an
     /// unreadable or invalid one is logged and ignored.
     pub fn load(path: Option<PathBuf>) -> Self {
@@ -189,6 +196,15 @@ mod tests {
 
     fn config(vars: &[(&str, &str)]) -> HostConfig {
         HostConfig::resolve(lookup(vars), &HostFile::default())
+    }
+
+    #[test]
+    fn provisioning_file_sits_next_to_host_json() {
+        let path = HostFile::provisioning_path(lookup(&[(
+            "FOTOBOX_HOST_CONFIG",
+            "/etc/fotobox/host.json",
+        )]));
+        assert_eq!(path, Some(PathBuf::from("/etc/fotobox/provisioning.json")));
     }
 
     #[test]

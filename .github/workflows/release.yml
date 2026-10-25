@@ -74,6 +74,19 @@ jobs:
           $hash = Get-FileHash -Path $target -Algorithm SHA256
           "$($hash.Hash)  $($setup.Name)" | Out-File -FilePath "$target.sha256" -Encoding ascii
 
+      # Provisioning kit: everything to set up a fresh Windows PC as a booth
+      # (scripts/windows/provision-fotobox.ps1), locally or over SSH.
+      - name: Build provisioning kit
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist/packages/*-setup.exe | Select-Object -First 1
+          $kit = New-Item -ItemType Directory -Force -Path dist/kit/Fotobox-Provisioning
+          Copy-Item scripts/windows/provision-fotobox.ps1, scripts/windows/FotoboxProvision.psm1, `
+            scripts/windows/enable-remote-access.ps1, scripts/windows/deploy-remote.ps1, `
+            scripts/windows/fotobox-provision.example.psd1, $setup.FullName -Destination $kit
+          $zip = "dist/packages/Fotobox_${{ steps.version.outputs.version }}_provisioning.zip"
+          Compress-Archive -Path $kit -DestinationPath $zip -Force
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -83,4 +96,5 @@ jobs:
           files: |
             dist/packages/*-setup.exe
             dist/packages/*-setup.exe.sha256
+            dist/packages/*_provisioning.zip
           fail_on_unmatched_files: true
