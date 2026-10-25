@@ -68,6 +68,7 @@
         "signal": true
       },
       "options": {
+        "port": 5101,
         "proxyConfig": "apps/fotobox-ui/proxy.conf.json"
       },
       "configurations": {

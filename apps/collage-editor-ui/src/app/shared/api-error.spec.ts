@@ -5,7 +5,7 @@ describe('describeApiError', () => {
   it('maps an unreachable API (HTTP status 0) to a retryable network error', () => {
     const error = Object.assign(
       new Error(
-        'Http failure response for http://localhost:3000/graphql: 0 Unknown Error',
+        'Http failure response for http://localhost:5100/graphql: 0 Unknown Error',
       ),
       { status: 0 },
     );

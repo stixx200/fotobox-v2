@@ -20,7 +20,7 @@ interface PrintResult {
   message?: string | null;
 }
 
-/** `https://host:3000/api/photos/photo-1.jpg?token=…` → `photo-1.jpg` */
+/** `https://host:5100/api/photos/photo-1.jpg?token=…` → `photo-1.jpg` */
 export function photoFilenameFromUrl(photoUrl: string): string | null {
   try {
     const { pathname } = new URL(photoUrl, 'http://localhost');

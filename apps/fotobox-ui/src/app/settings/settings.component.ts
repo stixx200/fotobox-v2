@@ -734,7 +734,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         const params = collageDir
           ? `?dir=${encodeURIComponent(collageDir)}`
           : '';
-        window.open(`http://localhost:4201/${params}`, '_blank');
+        window.open(`http://localhost:5102/${params}`, '_blank');
       }
     });
   }

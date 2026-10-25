@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "de.se-voelk.fotobox",
   "build": {
-    "devUrl": "http://localhost:4200",
+    "devUrl": "http://localhost:5101",
     "frontendDist": "../../../dist/apps/fotobox-tauri/web"
   },
   "app": {

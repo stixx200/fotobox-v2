@@ -61,7 +61,7 @@
         "signal": true
       },
       "options": {
-        "port": 4201,
+        "port": 5102,
         "proxyConfig": "apps/collage-editor-ui/proxy.conf.json"
       },
       "configurations": {
@@ -82,7 +82,7 @@
       "executor": "@nx/web:file-server",
       "options": {
         "buildTarget": "collage-editor-ui:build",
-        "port": 4201,
+        "port": 5102,
         "staticFilePath": "dist/apps/collage-editor-ui/browser",
         "spa": true
       },

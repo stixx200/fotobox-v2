@@ -75,7 +75,7 @@
         "cwd": "apps/fotobox-tauri",
         "command": "tauri dev",
         "env": {
-          "FOTOBOX_API_URL": "http://localhost:3000"
+          "FOTOBOX_API_URL": "http://localhost:5100"
         }
       }
     },

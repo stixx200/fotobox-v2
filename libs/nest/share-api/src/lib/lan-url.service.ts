@@ -20,13 +20,13 @@ export class LanUrlService {
     }
 
     const detectedIp = this.detectLanIpv4();
-    const port = Number(process.env['PORT']) || 3000;
+    const port = Number(process.env['PORT']) || 5100;
     return `http://${detectedIp}:${port}`;
   }
 
   /** Auto-detected LAN URL without settings override (for settings UI preview). */
   getDetectedShareBaseUrl(): string {
-    const port = Number(process.env['PORT']) || 3000;
+    const port = Number(process.env['PORT']) || 5100;
     return `http://${this.detectLanIpv4()}:${port}`;
   }
 

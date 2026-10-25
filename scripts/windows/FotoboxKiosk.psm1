@@ -684,7 +684,7 @@ function Install-FotoboxKiosk {
         [Parameter(Mandatory)][string]$InstallDir,
         [string]$KioskUser = 'Fotobox',
         [string]$LanToken = 'none',
-        [ValidateRange(1, 65535)][int]$Port = 3000
+        [ValidateRange(1, 65535)][int]$Port = 5100
     )
     # Plain string paths: these are Windows paths even when tests run elsewhere.
     $dir = $InstallDir.TrimEnd('\')

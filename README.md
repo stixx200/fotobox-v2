@@ -42,7 +42,7 @@ libs/
 The Tauri host (`apps/fotobox-tauri/src-tauri`, Rust) opens the kiosk window with the Angular UI and runs the
 NestJS API as a **sidecar**: a bundled Node.js runtime executing `fotobox-api`. The host restarts the API when
 its health check fails, relaunches the app when restarts don't help, and the API exits with the host. The UI talks
-to the API over HTTP/WebSocket on `localhost:3000` (same as guest phones and tablets on the LAN), so the UI also
+to the API over HTTP/WebSocket on `localhost:5100` (same as guest phones and tablets on the LAN), so the UI also
 runs in a plain browser.
 
 ---
@@ -72,24 +72,24 @@ pnpm install
 pnpm nx serve fotobox-tauri
 ```
 
-In development the window loads `http://localhost:4200` and talks to the API started by `nx serve fotobox-api`
-(`FOTOBOX_API_URL=http://localhost:3000`), so UI and API reload on change. The collage editor window loads
-`http://localhost:4201` (`pnpm nx serve collage-editor-ui`). Debug builds open in a normal window; set
+In development the window loads `http://localhost:5101` and talks to the API started by `nx serve fotobox-api`
+(`FOTOBOX_API_URL=http://localhost:5100`), so UI and API reload on change. The collage editor window loads
+`http://localhost:5102` (`pnpm nx serve collage-editor-ui`). Debug builds open in a normal window; set
 `FOTOBOX_KIOSK=1` to try kiosk mode.
 
 **Browser only** (no Rust needed):
 
 ```bash
-pnpm nx serve fotobox-api   # API on http://localhost:3000
-pnpm nx serve fotobox-ui    # UI on http://localhost:4200
+pnpm nx serve fotobox-api   # API on http://localhost:5100
+pnpm nx serve fotobox-ui    # UI on http://localhost:5101
 ```
 
 ### Standalone API
 
 ```bash
 pnpm nx serve fotobox-api
-# API available at http://localhost:3000
-# GraphQL playground at http://localhost:3000/graphql
+# API available at http://localhost:5100
+# GraphQL playground at http://localhost:5100/graphql
 ```
 
 Override defaults with environment variables:
@@ -148,7 +148,7 @@ Run the API on its own and attach VS Code's debugger:
 
 ### GraphQL playground
 
-Available in development at `http://localhost:3000/graphql`.
+Available in development at `http://localhost:5100/graphql`.
 
 ---
 
@@ -265,7 +265,7 @@ without any input after power-on:
 | Awake               | No sleep, screen-off or password on wake (AC and battery)                                                         |
 | Fewer interruptions | Notifications, tips, lock screen and edge swipes off; no Windows Update restarts while signed in                  |
 | Fewer ways out      | Task Manager, Win key, Run and lock disabled for the kiosk user                                                   |
-| Network             | Firewall rule for the bundled `node.exe` on TCP 3000 (QR share links work on private and public Wi-Fi)            |
+| Network             | Firewall rule for the bundled `node.exe` on TCP 5100 (QR share links work on private and public Wi-Fi)            |
 | App settings        | `%ProgramData%\Fotobox\host.json` (mode, kiosk user, port, tablet mode)                                           |
 
 Edge-swipe, lock-screen and update policies are best effort on Windows **Home**. Ctrl+Alt+Del can't be blocked on
@@ -332,11 +332,11 @@ Database location:
 
 | Environment variable                | Description                                                                                       |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `PORT`                              | Port of the embedded API (default `3000`)                                                         |
+| `PORT`                              | Port of the embedded API (default `5100`)                                                         |
 | `FOTOBOX_KIOSK`                     | `1`/`0` forces kiosk mode on/off (default: `host.json`, else on in release / off in debug builds) |
 | `FOTOBOX_HOST_CONFIG`               | Path of the machine config written by the setup (default `%ProgramData%\Fotobox\host.json`)       |
 | `FOTOBOX_API_URL`                   | Use an external API instead of the embedded sidecar (sends `FOTOBOX_LAN_API_TOKEN` if set)        |
-| `FOTOBOX_COLLAGE_EDITOR_DEV_SERVER` | Collage editor URL in debug builds (default `http://localhost:4201`)                              |
+| `FOTOBOX_COLLAGE_EDITOR_DEV_SERVER` | Collage editor URL in debug builds (default `http://localhost:5102`)                              |
 
 ### Network access
 
@@ -363,8 +363,8 @@ browser.
 ```bash
 # Development
 pnpm nx serve fotobox-tauri        # Desktop app (UI + API dev servers + window)
-pnpm nx serve fotobox-ui           # Angular dev server  (port 4200)
-pnpm nx serve fotobox-api          # Standalone API only (port 3000)
+pnpm nx serve fotobox-ui           # Angular dev server  (port 5101)
+pnpm nx serve fotobox-api          # Standalone API only (port 5100)
 
 # Build
 pnpm nx run-many -t build --projects=fotobox-api,fotobox-ui,collage-editor-ui

@@ -110,7 +110,7 @@ mod tests {
 
     fn config(kiosk: bool, external: Option<&str>, token: Option<&str>) -> HostConfig {
         HostConfig {
-            api_port: 3000,
+            api_port: 5100,
             external_api_url: external.map(String::from),
             allow_lan_api: false,
             lan_api_token: token.map(String::from),
@@ -125,14 +125,14 @@ mod tests {
         let script = init_script(&config(false, None, None), None);
         assert_eq!(
             script,
-            "window.__FOTOBOX_API_URL__ = \"http://localhost:3000\";\n"
+            "window.__FOTOBOX_API_URL__ = \"http://localhost:5100\";\n"
         );
     }
 
     #[test]
     fn escapes_collage_directory_and_token() {
         let script = init_script(
-            &config(true, Some("http://host:3000"), Some("t\"</script>")),
+            &config(true, Some("http://host:5100"), Some("t\"</script>")),
             Some("C:\\Fotos\\\"x\""),
         );
         assert!(script.contains("window.__FOTOBOX_API_TOKEN__ = \"t\\\"</script>\";"));

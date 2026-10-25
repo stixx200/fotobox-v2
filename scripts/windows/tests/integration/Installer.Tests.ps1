@@ -75,7 +75,7 @@ Describe 'Fotobox installer (kiosk mode)' -Skip:$skip {
     It 'opens the firewall for the bundled node.exe only' {
         $rule = Get-NetFirewallRule -Name 'Fotobox-API'
         ($rule | Get-NetFirewallApplicationFilter).Program | Should -Be (Join-Path $installDir 'node.exe')
-        ($rule | Get-NetFirewallPortFilter).LocalPort | Should -Be '3000'
+        ($rule | Get-NetFirewallPortFilter).LocalPort | Should -Be '5100'
     }
 
     It 'writes host.json for the kiosk user with a LAN token' {
@@ -100,7 +100,7 @@ Describe 'Fotobox installer (kiosk mode)' -Skip:$skip {
             for ($i = 0; $i -lt 60 -and -not $healthy; $i++) {
                 Start-Sleep -Seconds 2
                 try {
-                    $response = Invoke-RestMethod -Uri 'http://127.0.0.1:3000/graphql' -Method Post `
+                    $response = Invoke-RestMethod -Uri 'http://127.0.0.1:5100/graphql' -Method Post `
                         -ContentType 'application/json' -Body '{"query":"{ __typename }"}' -TimeoutSec 5
                     $healthy = $response.data.__typename -eq 'Query'
                 }

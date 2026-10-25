@@ -60,7 +60,7 @@ function listLanIpv4Addresses(): string[] {
 }
 
 export interface BootstrapApiOptions {
-  /** Port to listen on. Defaults to `process.env.PORT` or 3000. */
+  /** Port to listen on. Defaults to `process.env.PORT` or 5100. */
   port?: number;
   /** Host/interface to bind. Defaults to `process.env.HOST` or 0.0.0.0. */
   host?: string;
@@ -113,7 +113,7 @@ export async function bootstrapApiServer(
   installLargeBodyParser(app);
   logger.info(`GraphQL request body limit: ${GRAPHQL_BODY_LIMIT}`);
 
-  const port = options.port ?? (Number(process.env['PORT']) || 3000);
+  const port = options.port ?? (Number(process.env['PORT']) || 5100);
   const host = options.host ?? process.env['HOST'] ?? '0.0.0.0';
 
   await app.listen(port, host);

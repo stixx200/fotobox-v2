@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import { workspaceRoot } from '@nx/devkit';
 import { workspacePaths } from '@fotobox/workspace-paths';
 
-/** Override with E2E_PORT when 4200 is taken by another dev server. */
-const port = Number(process.env['E2E_PORT'] ?? 4200);
+/** Override with E2E_PORT when 5101 is taken by another dev server. */
+const port = Number(process.env['E2E_PORT'] ?? 5101);
 const baseURL = process.env['BASE_URL'] ?? `http://localhost:${port}`;
 
 export default defineConfig({

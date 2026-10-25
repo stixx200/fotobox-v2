@@ -70,8 +70,8 @@ describe('access policy', () => {
     expect(isTrustedOrigin(undefined, restricted)).toBe(true);
     expect(isTrustedOrigin('null', restricted)).toBe(true);
     expect(isTrustedOrigin('file://', restricted)).toBe(true);
-    expect(isTrustedOrigin('http://localhost:4200', restricted)).toBe(true);
-    expect(isTrustedOrigin('http://127.0.0.1:3000', restricted)).toBe(true);
+    expect(isTrustedOrigin('http://localhost:5101', restricted)).toBe(true);
+    expect(isTrustedOrigin('http://127.0.0.1:5100', restricted)).toBe(true);
     expect(isTrustedOrigin('https://evil.example', restricted)).toBe(false);
     expect(isTrustedOrigin('http://localhost.evil.example', restricted)).toBe(
       false,

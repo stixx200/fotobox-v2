@@ -36,7 +36,7 @@
     "USE_SHARE": "Gäste können Fotos per QR-Code aufs Handy laden",
     "SHARE_DETECTED_URL": "Adresse für Gäste (automatisch erkannt)",
     "SHARE_BASE_URL": "Eigene Adresse (nur bei Bedarf)",
-    "SHARE_BASE_URL_PLACEHOLDER": "z. B. http://192.168.1.10:3000",
+    "SHARE_BASE_URL_PLACEHOLDER": "z. B. http://192.168.1.10:5100",
     "SHARE_BASE_URL_HINT": "Normalerweise leer lassen. Nur ändern, wenn die Erkennung nicht stimmt. Handy und Fotobox müssen im gleichen WLAN sein.",
     "SHARE_TOKEN_EXPIRY": "Download-Link gültig für",
     "SHARE_TOKEN_EXPIRY_SUFFIX": "Std.",

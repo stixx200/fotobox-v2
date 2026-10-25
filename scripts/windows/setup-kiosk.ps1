@@ -38,7 +38,7 @@ param(
     [string]$InstallDir,
     [string]$KioskUser = 'Fotobox',
     [string]$LanToken = 'none',
-    [ValidateRange(1, 65535)][int]$Port = 3000,
+    [ValidateRange(1, 65535)][int]$Port = 5100,
     [switch]$RemoveKioskUser,
     [string]$LogPath
 )

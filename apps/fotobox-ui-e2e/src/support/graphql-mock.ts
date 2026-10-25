@@ -202,7 +202,7 @@ export class FotoboxUiGraphqlMock {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              data: { detectedShareBaseUrl: 'http://localhost:3000/share' },
+              data: { detectedShareBaseUrl: 'http://localhost:5100/share' },
             }),
           });
           return;

@@ -17,8 +17,8 @@ my-template/
 Author templates with the **Collage Template Editor** app (`collage-editor-ui`):
 
 ```bash
-pnpm nx serve collage-editor-ui   # http://localhost:4201
-pnpm nx serve fotobox-api         # GraphQL API on :3000
+pnpm nx serve collage-editor-ui   # http://localhost:5102
+pnpm nx serve fotobox-api         # GraphQL API on :5100
 ```
 
 From fotobox settings, use **Open template editor** (the desktop app opens a second window; a browser opens a new tab).

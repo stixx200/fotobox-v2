@@ -73,7 +73,7 @@ Describe 'FotoboxKiosk' {
             $calls = Get-CallLog
             $calls | Should -Contain 'new-user Fotobox'
             $calls | Should -Contain 'register-task C:\Program Files\Fotobox\Fotobox.exe Fotobox'
-            $calls | Should -Contain 'firewall C:\Program Files\Fotobox\node.exe 3000'
+            $calls | Should -Contain 'firewall C:\Program Files\Fotobox\node.exe 5100'
             $calls | Should -Contain 'dismount-hive'
 
             (Get-Reg 'HKLM:\|SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon|AutoAdminLogon').Value | Should -Be '1'
@@ -179,7 +179,7 @@ Describe 'FotoboxKiosk' {
 
         It 'keeps the firewall rule for QR share links' {
             Install-FotoboxKiosk -Mode Normal -InstallDir 'C:\Fotobox'
-            (Get-CallLog) | Should -Contain 'firewall C:\Fotobox\node.exe 3000'
+            (Get-CallLog) | Should -Contain 'firewall C:\Fotobox\node.exe 5100'
             (Get-CallLog) | Should -Not -Contain 'new-user Fotobox'
         }
     }

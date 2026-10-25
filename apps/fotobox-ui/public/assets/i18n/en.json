@@ -36,7 +36,7 @@
     "USE_SHARE": "Let guests download photos via QR code",
     "SHARE_DETECTED_URL": "Address for guests (auto-detected)",
     "SHARE_BASE_URL": "Custom address (only if needed)",
-    "SHARE_BASE_URL_PLACEHOLDER": "e.g. http://192.168.1.10:3000",
+    "SHARE_BASE_URL_PLACEHOLDER": "e.g. http://192.168.1.10:5100",
     "SHARE_BASE_URL_HINT": "Usually leave empty. Only change if auto-detection is wrong. Phones and photobox must be on the same Wi‑Fi.",
     "SHARE_TOKEN_EXPIRY": "Download link valid for",
     "SHARE_TOKEN_EXPIRY_SUFFIX": "hrs",

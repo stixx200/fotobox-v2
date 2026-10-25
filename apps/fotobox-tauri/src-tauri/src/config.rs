@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-pub const DEFAULT_API_PORT: u16 = 3000;
+pub const DEFAULT_API_PORT: u16 = 5100;
 
 /// Contents of `host.json`. Every field is optional; unknown fields are
 /// ignored so older app versions can read newer files.
@@ -130,7 +130,7 @@ impl HostConfig {
             .or(file.port)
             .unwrap_or(DEFAULT_API_PORT);
         let collage_editor_dev_server = non_empty(lookup("FOTOBOX_COLLAGE_EDITOR_DEV_SERVER"))
-            .or_else(|| cfg!(debug_assertions).then(|| "http://localhost:4201".to_string()));
+            .or_else(|| cfg!(debug_assertions).then(|| "http://localhost:5102".to_string()));
 
         Self {
             api_port,
@@ -192,9 +192,9 @@ mod tests {
     }
 
     #[test]
-    fn defaults_to_embedded_api_on_port_3000() {
+    fn defaults_to_embedded_api_on_port_5100() {
         let cfg = config(&[]);
-        assert_eq!(cfg.api_url(), "http://localhost:3000");
+        assert_eq!(cfg.api_url(), "http://localhost:5100");
         assert!(!cfg.uses_external_api());
         assert!(!cfg.allow_lan_api);
         assert!(!cfg.managed_by_installer);
@@ -205,11 +205,11 @@ mod tests {
     fn honours_port_and_external_api() {
         let cfg = config(&[
             ("PORT", "3917"),
-            ("FOTOBOX_API_URL", "http://192.168.1.5:3000/"),
+            ("FOTOBOX_API_URL", "http://192.168.1.5:5100/"),
             ("FOTOBOX_LAN_API_TOKEN", "secret"),
         ]);
         assert_eq!(cfg.api_port, 3917);
-        assert_eq!(cfg.api_url(), "http://192.168.1.5:3000");
+        assert_eq!(cfg.api_url(), "http://192.168.1.5:5100");
         assert_eq!(cfg.renderer_api_token(), Some("secret"));
     }
 

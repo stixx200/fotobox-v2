@@ -4,7 +4,7 @@
  * Resolution order (first match wins):
  *  1. `window.__FOTOBOX_API_URL__` — injected at runtime (Tauri init script, etc.)
  *  2. `localStorage['fotobox.apiUrl']` — user override from settings UI
- *  3. Same-host default: `<protocol>//<hostname>:3000`
+ *  3. Same-host default: `<protocol>//<hostname>:5100`
  */
 const API_STORAGE_KEY = 'fotobox.apiUrl';
 const API_TOKEN_STORAGE_KEY = 'fotobox.apiToken';
@@ -13,7 +13,7 @@ const API_TOKEN_QUERY_PARAM = 'token';
 export const API_TOKEN_HEADER = 'x-fotobox-token';
 const COLLAGE_DIRECTORY_KEY = 'collage-editor.directory';
 const LANGUAGE_STORAGE_KEY = 'fotobox.language';
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 5100;
 
 declare global {
   interface Window {

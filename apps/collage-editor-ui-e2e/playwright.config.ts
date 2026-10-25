@@ -8,8 +8,8 @@ import { workspacePaths } from '@fotobox/workspace-paths';
  * Run: pnpm nx run collage-editor-ui-e2e:e2e
  * UI mode: pnpm nx run collage-editor-ui-e2e:e2e-ui
  */
-/** Override with E2E_PORT when 4201 is taken by another dev server. */
-const port = Number(process.env['E2E_PORT'] ?? 4201);
+/** Override with E2E_PORT when 5102 is taken by another dev server. */
+const port = Number(process.env['E2E_PORT'] ?? 5102);
 const baseURL = process.env['BASE_URL'] ?? `http://localhost:${port}`;
 
 export default defineConfig({
