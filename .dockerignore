@@ -1,0 +1,16 @@
+# Build context of docker/test/Dockerfile: sources only. Dependencies are
+# installed inside the image (Linux binaries), outputs stay on the host.
+**/node_modules
+.git
+.nx
+.angular
+dist
+tmp
+out-tsc
+playwright-report
+test-results
+apps/fotobox-tauri/src-tauri/target
+apps/fotobox-tauri/src-tauri/gen
+**/.DS_Store
+.idea
+.vscode

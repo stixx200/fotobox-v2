@@ -6,7 +6,8 @@
     "postinstall": "node scripts/postinstall.mjs",
     "graphql:codegen": "nx run graphql-operations:codegen",
     "collage-maker": "tsx --tsconfig=libs/collage-maker/tsconfig.lib.json ./libs/collage-maker/src/cli.ts",
-    "release": "nx release --group=fotobox --skip-publish"
+    "release": "nx release --group=fotobox --skip-publish",
+    "test:docker": "sh scripts/test-in-docker.sh"
   },
   "private": true,
   "packageManager": "pnpm@12.15.0",
