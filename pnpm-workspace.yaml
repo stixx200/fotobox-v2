@@ -22,9 +22,6 @@ allowBuilds:
   '@nestjs/core': false
   # Optional Node backend of fabric; the editor only uses fabric in the browser.
   canvas: false
-  # Electron is being replaced by Tauri; its binary download is not needed.
-  electron: false
-  electron-winstaller: false
 
 packageExtensions:
   # Its typings import `express` but don't declare @types/express, so pnpm

@@ -4,7 +4,7 @@ import path from 'path';
 function imagesDirectoryCandidates(): string[] {
   const candidates = [
     path.resolve(__dirname, 'images'),
-    path.resolve(process.cwd(), 'dist/apps/fotobox-electron/images'),
+    path.resolve(process.cwd(), 'dist/apps/fotobox-api/images'),
     path.resolve(__dirname, '../images'),
     path.resolve(process.cwd(), 'libs/collage-maker/src/images'),
   ];
@@ -12,7 +12,7 @@ function imagesDirectoryCandidates(): string[] {
   let dir = __dirname;
   for (let depth = 0; depth < 8; depth++) {
     candidates.push(path.join(dir, 'libs/collage-maker/src/images'));
-    candidates.push(path.join(dir, 'dist/apps/fotobox-electron/images'));
+    candidates.push(path.join(dir, 'dist/apps/fotobox-api/images'));
     const parent = path.dirname(dir);
     if (parent === dir) {
       break;

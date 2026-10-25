@@ -12,6 +12,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { CollageEditorApiService } from '../../services/collage-editor-api.service';
 import type { CollageEditorProjectSummary } from '../../services/collage-editor-api.service';
 import {
+  getHostCollageDirectory,
   getStoredCollageDirectory,
   setStoredCollageDirectory,
 } from '../../api-config';
@@ -37,7 +38,8 @@ export class ProjectListComponent implements OnInit {
   error = signal<string | null>(null);
 
   ngOnInit(): void {
-    const dir = this.route.snapshot.queryParamMap.get('dir');
+    const dir =
+      this.route.snapshot.queryParamMap.get('dir') ?? getHostCollageDirectory();
     if (dir) {
       this.collageDirectory.set(dir);
       setStoredCollageDirectory(dir);

@@ -196,3 +196,13 @@ pnpm nx run collage-editor-ui-e2e:e2e
 - [x] **Task 30:** Migrate test targets from deprecated `@nx/vite:test` to `@nx/vitest:test`; lint clean with `maxWarnings: 0`
 - [ ] **Task 31:** Finish Tasks 15/16 (needs e2e coverage of the editor toolbar/panels first)
 - [ ] **Task 32:** Adopt `ChangeDetectionStrategy.OnPush` (Angular 22 default) in components the v22 migration pinned to `Eager`, then re-enable `@angular-eslint/prefer-on-push-component-change-detection`
+
+---
+
+## Phase 6 — Electron → Tauri (2026-10)
+
+- [x] **Task 33:** Replace the Electron shell with `apps/fotobox-tauri` (Tauri 2): kiosk window, NestJS API as a supervised Node sidecar (health check → restart → relaunch; exits with the host), single instance, start at login, Windows kiosk-setup prompt, import of Electron data
+- [x] **Task 34:** Move printing into the API (`printPhoto` mutation: CUPS `lp` / PowerShell `PrintDocument`) and replace `window.electron` with the `frontend-core` host bridge
+- [x] **Task 35:** Fix migrations-folder detection for drizzle 1.0 layout (packaged builds could not find their migrations)
+- [ ] **Task 36:** Verify the first release MSI on a Windows kiosk (built only in the release workflow; macOS bundle verified locally)
+- [ ] **Task 37:** WebView crash recovery: Electron relaunched on `render-process-gone`/`unresponsive`/`did-fail-load`; Tauri 2 has no portable equivalent yet (the UI keeps its own recovery overlay, the host supervises the API)

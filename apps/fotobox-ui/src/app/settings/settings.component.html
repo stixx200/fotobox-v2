@@ -245,13 +245,13 @@
         <mat-form-field floatLabel="always">
           <mat-label>{{ 'SETTINGS.PHOTO_DIRECTORY' | translate }}</mat-label>
           <input
-            [readonly]="isElectronAvailable"
+            [readonly]="isDesktopHost"
             (click)="handleDirectoryClick('photoDirectory')"
             formControlName="photoDirectory"
             matInput
             [placeholder]="'SETTINGS.PHOTO_DIRECTORY' | translate"
           />
-          @if (isElectronAvailable) {
+          @if (isDesktopHost) {
             <button
               mat-icon-button
               matSuffix
@@ -265,14 +265,14 @@
         <mat-form-field floatLabel="always">
           <mat-label>{{ 'SETTINGS.COLLAGE_DIRECTORY' | translate }}</mat-label>
           <input
-            [readonly]="isElectronAvailable"
+            [readonly]="isDesktopHost"
             (click)="handleDirectoryClick('collageDirectory')"
             formControlName="collageDirectory"
             matInput
             [placeholder]="'SETTINGS.COLLAGE_DIRECTORY' | translate"
             [class.error-input]="collageDirectoryError()"
           />
-          @if (isElectronAvailable) {
+          @if (isDesktopHost) {
             <button
               mat-icon-button
               matSuffix

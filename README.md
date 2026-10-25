@@ -1,6 +1,6 @@
 # Fotobox v2
 
-Photo booth application built with **Angular 21**, **NestJS 11**, and **Electron** in an Nx monorepo.  
+Photo booth application built with **Angular 22**, **NestJS 12**, and **Tauri 2** in an Nx monorepo.
 It supports Sony cameras (via gphoto2), a browser webcam fallback, collage templates, printing, and a full kiosk mode for Windows/macOS.
 
 ---
@@ -12,7 +12,7 @@ It supports Sony cameras (via gphoto2), a browser webcam fallback, collage templ
 3. [Development – starting the app](#development--starting-the-app)
 4. [Debugging](#debugging)
 5. [Building a production release](#building-a-production-release)
-6. [Packaging the Electron app (installer)](#packaging-the-electron-app-installer)
+6. [Releasing (versioning + Windows MSI)](#releasing-versioning--windows-msi)
 7. [Deploying to a Windows Surface tablet](#deploying-to-a-windows-surface-tablet)
 8. [Kiosk auto-start on Windows](#kiosk-auto-start-on-windows)
 9. [Configuration reference](#configuration-reference)
@@ -24,26 +24,37 @@ It supports Sony cameras (via gphoto2), a browser webcam fallback, collage templ
 
 ```
 apps/
-  fotobox-ui/         Angular 21 frontend (kiosk UI)
-  fotobox-electron/   Electron shell (embeds UI + NestJS API)
-  fotobox-api/        Standalone NestJS API server (headless / server deployment)
+  fotobox-ui/          Angular frontend (kiosk UI)
+  collage-editor-ui/   Angular collage template editor
+  fotobox-api/         NestJS API (standalone server and desktop sidecar)
+  fotobox-tauri/       Tauri desktop app (kiosk window + API sidecar)
 libs/
-  cameras/            Camera abstraction (Sony gphoto2, webcam upload, demo)
-  collage-maker/      Collage rendering (sharp-based image composition)
-  nest/               NestJS feature modules (cameras-api, collage-maker, photo-storage, …)
-  photo-storage/      Core photo file storage service
-  logging/, error/    Shared infra libs
+  cameras/             Camera abstraction (Sony, gphoto2, webcam upload, demo)
+  collage-maker/       Collage rendering (sharp-based image composition)
+  nest/                NestJS feature modules (cameras-api, printer-api, photo-storage, …)
+  frontend-core/       Shared UI infrastructure (API config, desktop host bridge, i18n)
+  photo-storage/       Core photo file storage service
+  logging/, error/     Shared infra libs
 ```
+
+### How the desktop app works
+
+The Tauri host (`apps/fotobox-tauri/src-tauri`, Rust) opens the kiosk window with the Angular UI and runs the
+NestJS API as a **sidecar**: a bundled Node.js runtime executing `fotobox-api`. The host restarts the API when
+its health check fails, relaunches the app when restarts don't help, and the API exits with the host. The UI talks
+to the API over HTTP/WebSocket on `localhost:3000` (same as guest phones and tablets on the LAN), so the UI also
+runs in a plain browser.
 
 ---
 
 ## Prerequisites
 
-| Tool               | Version                                        |
-| ------------------ | ---------------------------------------------- |
-| Node.js            | ≥ 22 LTS                                       |
-| pnpm               | 12 (via `corepack enable pnpm`)                |
-| gphoto2 (optional) | latest – required only for Sony camera support |
+| Tool               | Version                                                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| Node.js            | ≥ 22.5 (24 LTS recommended; the desktop build bundles the Node that runs the build)                      |
+| pnpm               | 12 (via `corepack enable pnpm`)                                                                          |
+| Rust               | stable (only for the desktop app) – see [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) |
+| gphoto2 (optional) | latest – required only for Sony camera support                                                           |
 
 Install dependencies once:
 
@@ -55,25 +66,25 @@ pnpm install
 
 ## Development – starting the app
 
-The Electron app embeds both the Angular UI and the NestJS backend in a single process.  
-Run **two terminals** when developing:
-
-**Terminal 1 – Angular dev server** (must be started first):
+**Desktop app** (starts the UI dev server, the API and the Tauri window):
 
 ```bash
-pnpm nx serve fotobox-ui
-# Wait for: "Local: http://localhost:4200/"
+pnpm nx serve fotobox-tauri
 ```
 
-**Terminal 2 – Electron shell** (starts the NestJS backend + opens the window):
+In development the window loads `http://localhost:4200` and talks to the API started by `nx serve fotobox-api`
+(`FOTOBOX_API_URL=http://localhost:3000`), so UI and API reload on change. The collage editor window loads
+`http://localhost:4201` (`pnpm nx serve collage-editor-ui`). Debug builds open in a normal window; set
+`FOTOBOX_KIOSK=1` to try kiosk mode.
+
+**Browser only** (no Rust needed):
 
 ```bash
-pnpm nx serve fotobox-electron
+pnpm nx serve fotobox-api   # API on http://localhost:3000
+pnpm nx serve fotobox-ui    # UI on http://localhost:4200
 ```
 
-The Electron shell detects the dev server via the `FOTOBOX_DEV_SERVER` environment variable (set automatically by the Nx serve target) and loads `http://localhost:4200` instead of the bundled UI. Dev tools are enabled automatically in dev mode.
-
-### Standalone API (without Electron)
+### Standalone API
 
 ```bash
 pnpm nx serve fotobox-api
@@ -97,16 +108,14 @@ By default the API bootstraps these paths under `tmp/` automatically (see `tmp/R
 
 ## Debugging
 
-### Angular UI (Chrome DevTools)
+### Angular UI
 
-Dev tools open automatically when running via `pnpm nx serve fotobox-electron` (dev mode).  
-You can also press `Ctrl+Shift+I` / `Cmd+Option+I` in the Electron window during development.
-
-> **Note**: Dev tools are disabled in production builds (kiosk mode). Build with `--configuration=development` to re-enable them in a built binary.
+In debug builds (`pnpm nx serve fotobox-tauri`) right-click → **Inspect** opens the WebView dev tools.
+Release builds ship without dev tools.
 
 ### NestJS backend
 
-The backend runs inside the Electron process. Use VS Code's debugger:
+Run the API on its own and attach VS Code's debugger:
 
 1. Create `.vscode/launch.json`:
 
@@ -130,6 +139,13 @@ The backend runs inside the Electron process. Use VS Code's debugger:
 2. Build in development mode: `pnpm nx build fotobox-api --configuration=development`
 3. Start the "Debug fotobox-api" configuration in VS Code.
 
+### Desktop host logs
+
+| Platform | Host log (`fotobox.log`) and API log (`api.log`) |
+| -------- | ------------------------------------------------ |
+| Windows  | `%LOCALAPPDATA%\de.se-voelk.fotobox\logs\`       |
+| macOS    | `~/Library/Logs/de.se-voelk.fotobox/`            |
+
 ### GraphQL playground
 
 Available in development at `http://localhost:3000/graphql`.
@@ -139,34 +155,31 @@ Available in development at `http://localhost:3000/graphql`.
 ## Building a production release
 
 ```bash
-# Build all apps (or use the release package target below)
-pnpm nx run-many -t build --projects=fotobox-ui,collage-editor-ui,fotobox-electron --configuration=production
+# Build the UIs and the API
+pnpm nx run-many -t build --projects=fotobox-ui,collage-editor-ui,fotobox-api
 
-# Lint + test before releasing
-pnpm nx run-many -t lint
-pnpm nx run-many -t test
+# Lint + test before releasing (Rust: rust-lint / rust-test)
+pnpm nx run-many -t lint test
+pnpm nx run-many -t rust-lint rust-test -p fotobox-tauri
 ```
 
 Build outputs:
 
-| App                 | Output directory               |
-| ------------------- | ------------------------------ |
-| `fotobox-ui`        | `dist/apps/fotobox-ui/`        |
-| `collage-editor-ui` | `dist/apps/collage-editor-ui/` |
-| `fotobox-api`       | `dist/apps/fotobox-api/`       |
-| `fotobox-electron`  | `dist/apps/fotobox-electron/`  |
-
-The Electron dist bundles both UIs plus runtime assets (templates, migrations, images). Verify before packaging:
-
-```bash
-node scripts/verify-electron-dist.mjs
-```
+| Target                          | Output                                                       |
+| ------------------------------- | ------------------------------------------------------------ |
+| `fotobox-ui:build`              | `dist/apps/fotobox-ui/`                                      |
+| `collage-editor-ui:build`       | `dist/apps/collage-editor-ui/`                               |
+| `fotobox-api:build`             | `dist/apps/fotobox-api/`                                     |
+| `fotobox-tauri:prepare-web`     | `dist/apps/fotobox-tauri/web/` (both UIs)                    |
+| `fotobox-tauri:prepare-sidecar` | `dist/apps/fotobox-tauri/api/` + `src-tauri/binaries/node-*` |
+| `fotobox-tauri:bundle`          | `apps/fotobox-tauri/src-tauri/target/release/bundle/`        |
 
 ---
 
 ## Releasing (versioning + Windows MSI)
 
-Versions are managed with **Nx Release** (`fotobox` group). Root `package.json` and `apps/fotobox-electron/package.json` stay in sync.
+Versions are managed with **Nx Release** (`fotobox` group). Root `package.json` and `apps/fotobox-tauri/package.json`
+stay in sync; the Tauri app reads its version from the latter.
 
 ### Local release (trigger)
 
@@ -175,64 +188,38 @@ Versions are managed with **Nx Release** (`fotobox` group). Root `package.json` 
 pnpm nx run-many -t lint test
 
 # 2. Preview version bump (optional)
-pnpm nx release version --group=fotobox --dry-run --first-release
+pnpm nx release version --group=fotobox --dry-run
 
 # 3. Create version bump, changelog, commit, and tag
-npm run release
+pnpm run release
 # equivalent to: pnpm nx release --group=fotobox --skip-publish
-# On the first release, add: --first-release
 
 # 4. Push to trigger CI packaging on Windows
 git push origin main --tags
 ```
 
-This creates tag `fotobox-vX.Y.Z`. GitHub Actions builds the MSI on `windows-latest` and publishes it to **GitHub Releases** with a SHA256 checksum.
+This creates tag `fotobox-vX.Y.Z`. GitHub Actions builds the MSI on `windows-latest` and publishes it to
+**GitHub Releases** with a SHA256 checksum.
 
-### Manual MSI build (on Windows)
+### Building the installer yourself
 
-```bash
-pnpm nx run fotobox-release:package --configuration=production
-```
-
-Output: `dist/packages/Fotobox-<version>-x64.msi`
-
----
-
-## Packaging the Electron app (installer)
-
-The `fotobox-release:package` target builds both Angular apps, bundles Electron, verifies static assets, and creates the installer.
-
-### Windows MSI installer
-
-Run this on a **Windows machine** (or via the release CI workflow):
+Installers are built on the target OS:
 
 ```bash
-pnpm nx run fotobox-release:package --configuration=production
+pnpm nx run fotobox-release:package --configuration=production   # Windows: MSI, macOS: .app + DMG
+pnpm nx run fotobox-tauri:bundle:debug                           # faster unoptimized bundle for testing
 ```
 
-Output: `dist/packages/Fotobox-<version>-x64.msi`
+Output: `apps/fotobox-tauri/src-tauri/target/release/bundle/` (`msi/Fotobox_<version>_x64_en-US.msi`,
+`macos/Fotobox.app`, `dmg/…`). The bundle configuration lives in
+[`apps/fotobox-tauri/src-tauri/tauri.conf.json`](apps/fotobox-tauri/src-tauri/tauri.conf.json).
 
-The MSI configuration lives in [`apps/fotobox-electron/src/app/options/maker.options.json`](apps/fotobox-electron/src/app/options/maker.options.json).  
-Installs per-user under `%LOCALAPPDATA%` (`msi.perMachine: false`).
+On first launch in kiosk mode, the app:
 
-After install, the app:
-
-- Launches once automatically (`msi.runAfterFinish`)
-- Configures **open-at-login** on first run
-- Prompts to run **`setup-kiosk.ps1`** for advanced kiosk options (Startup shortcut fallback, Assigned Access guidance, optional firewall rule)
-
-Bundled kiosk script: [`scripts/windows/setup-kiosk.ps1`](scripts/windows/setup-kiosk.ps1)
-
-### macOS DMG
-
-Run on a **macOS machine**:
-
-```bash
-pnpm nx build fotobox-electron
-pnpm nx run fotobox-electron:package
-```
-
-Output: `dist/packages/fotobox-electron-<version>.dmg`
+- Configures **start at login**
+- On Windows, offers to run the bundled [`setup-kiosk.ps1`](scripts/windows/setup-kiosk.ps1) elevated (Startup
+  shortcut fallback, Assigned Access guidance, firewall rule for LAN QR sharing)
+- Imports settings, share links and the photo index of a previous **Electron** install (the old files are kept)
 
 ---
 
@@ -240,20 +227,20 @@ Output: `dist/packages/fotobox-electron-<version>.dmg`
 
 ### Requirements
 
-- Windows 10 / 11 (x64) — Home and Pro both work
+- Windows 10 / 11 (x64) — Home and Pro both work; WebView2 is preinstalled (the installer adds it if missing)
 - No extra drivers required for webcam mode
 - For Sony cameras: install the [gphoto2 Windows port](https://github.com/gphoto2/gphoto2) and add it to the system PATH
 
 ### Installation steps
 
-1. Copy `Fotobox-<version>-x64.msi` from GitHub Releases (or `dist/packages/`).
-2. Double-click the `.msi` and follow the wizard.  
-   Default install path: `%LOCALAPPDATA%\Programs\fotobox-electron\`
-3. **First launch**: the app starts in full-screen kiosk mode automatically.  
+1. Copy `Fotobox_<version>_x64_en-US.msi` from GitHub Releases.
+2. Double-click the `.msi` and follow the wizard.
+   Default install path: `C:\Program Files\Fotobox\`
+3. **First launch**: the app starts in full-screen kiosk mode automatically.
    Configure on the Settings screen:
    - **Camera** – `webcam` (built-in Surface camera) or `gphoto2` (Sony)
    - **Photo storage folder**
-   - **Printer** (optional)
+   - **Printer** (optional; printing is silent, via the API on the host)
    - **Active layouts**
 4. Tap **"Fotobox starten"** – the app navigates to the home screen and live preview starts.
 
@@ -261,7 +248,8 @@ Output: `dist/packages/fotobox-electron-<version>.dmg`
 
 ## Kiosk auto-start on Windows
 
-On first production launch, Fotobox configures **open-at-login** automatically. The bundled `setup-kiosk.ps1` (installed next to the app) provides additional setup:
+On first production launch, Fotobox configures **start at login** automatically. The bundled `setup-kiosk.ps1`
+(installed next to the app) provides additional setup:
 
 ```powershell
 # From the install directory (or via the in-app prompt)
@@ -277,7 +265,7 @@ powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Elevated
 
 1. Press **Win + R**, type `shell:startup`, press **Enter**.
 2. Right-click → **New → Shortcut**.
-3. Target: `%LOCALAPPDATA%\Programs\fotobox-electron\Fotobox.exe`
+3. Target: `C:\Program Files\Fotobox\Fotobox.exe`
 4. Click **Finish**.
 
 The app launches automatically after Windows login.
@@ -286,7 +274,7 @@ The app launches automatically after Windows login.
 
 1. Open **Task Scheduler** → "Create Basic Task".
 2. Trigger: **When the computer starts**.
-3. Action: **Start a program** → `%LOCALAPPDATA%\fotobox-electron\fotobox-electron.exe`
+3. Action: **Start a program** → `C:\Program Files\Fotobox\Fotobox.exe`
 4. Check **Run whether user is logged on or not** and **Run with highest privileges**.
 
 ### Option C — Auto-login + startup folder (recommended for kiosk)
@@ -296,47 +284,61 @@ Combines unattended boot with automatic app start:
 1. Enable auto-login: **Win + R** → `netplwiz` → uncheck "Users must enter a user name and password" → set the password.
 2. Add the shortcut to the startup folder (Option A).
 
-> **Tip**: Enable Windows **Assigned Access** (Settings → Accounts → Family & other users → Set up a kiosk) to lock the tablet to the Fotobox app only, preventing users from accessing the desktop.
+> **Tip**: Enable Windows **Assigned Access** (Settings → Accounts → Family & other users → Set up a kiosk) to lock
+> the tablet to the Fotobox app only, preventing users from accessing the desktop.
 
 ---
 
 ## Configuration reference
 
-Application settings, share tokens, and photo metadata are stored in a SQLite database (`fotobox.db`). Photo JPEG files remain on disk in `photoDirectory`.
+Application settings, share tokens, and photo metadata are stored in a SQLite database (`fotobox.db`). Photo JPEG
+files remain on disk in `photoDirectory`.
 
-| Key                | Default                | Description                                  |
-| ------------------ | ---------------------- | -------------------------------------------- |
-| `camera`           | `demo`                 | Camera driver: `demo` / `webcam` / `gphoto2` |
-| `photoDirectory`   | `<userData>/photos`    | Where captured photos are saved              |
-| `collageDirectory` | built-in templates     | Custom collage template folder               |
-| `usePrinter`       | `true`                 | Show the print button after capture          |
-| `printerName`      | –                      | OS printer name                              |
-| `shutterTimeout`   | `3`                    | Countdown seconds before the shutter fires   |
-| `layouts`          | `["Einzelbild","2x2"]` | Active layout tiles (max 3)                  |
+| Key                | Default                | Description                                             |
+| ------------------ | ---------------------- | ------------------------------------------------------- |
+| `camera`           | `demo`                 | Camera driver: `demo` / `webcam` / `gphoto2`            |
+| `photoDirectory`   | `<app data>/photos`    | Where captured photos are saved                         |
+| `collageDirectory` | built-in templates     | Custom collage template folder                          |
+| `usePrinter`       | `true`                 | Show the print button after capture                     |
+| `printerName`      | –                      | OS printer name (system default when empty)             |
+| `showPrintDialog`  | `false`                | Use the browser print dialog instead of silent printing |
+| `shutterTimeout`   | `3`                    | Countdown seconds before the shutter fires              |
+| `layouts`          | `["Einzelbild","2x2"]` | Active layout tiles (max 3)                             |
 
 Database location:
 
-| Platform           | Path                                                        |
-| ------------------ | ----------------------------------------------------------- |
-| Windows (Electron) | `%APPDATA%\fotobox-electron\fotobox.db`                     |
-| macOS (Electron)   | `~/Library/Application Support/fotobox-electron/fotobox.db` |
-| Standalone API     | `tmp/runtime/fotobox/fotobox.db` or `FOTOBOX_DATABASE_PATH` |
+| Platform       | Path                                                           |
+| -------------- | -------------------------------------------------------------- |
+| Windows        | `%APPDATA%\de.se-voelk.fotobox\fotobox.db`                     |
+| macOS          | `~/Library/Application Support/de.se-voelk.fotobox/fotobox.db` |
+| Standalone API | `tmp/runtime/fotobox/fotobox.db` or `FOTOBOX_DATABASE_PATH`    |
+
+### Desktop app environment
+
+| Environment variable                | Description                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `PORT`                              | Port of the embedded API (default `3000`)                                                  |
+| `FOTOBOX_KIOSK`                     | `1`/`0` forces kiosk mode on/off (default: on in release, off in debug builds)             |
+| `FOTOBOX_API_URL`                   | Use an external API instead of the embedded sidecar (sends `FOTOBOX_LAN_API_TOKEN` if set) |
+| `FOTOBOX_COLLAGE_EDITOR_DEV_SERVER` | Collage editor URL in debug builds (default `http://localhost:4201`)                       |
 
 ### Network access
 
 The API listens on all interfaces so guest phones can open QR share links. Access is restricted by default:
 
-- **Localhost** (the kiosk UI) has full access. Browser requests from untrusted origins (any web page that is not the Electron renderer or a `localhost` dev server) are rejected with 403, over HTTP and WebSocket.
+- **Localhost** (the kiosk UI) has full access. Browser requests from untrusted origins (any web page that is not
+  the desktop app's webview or a `localhost` dev server) are rejected with 403, over HTTP and WebSocket.
 - **LAN clients** may only open `GET /api/share/<token>` links.
 
-| Environment variable      | Description                                                                                           |
-| ------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `FOTOBOX_ALLOW_LAN_API`   | `1` enables tablet mode: full API access for LAN clients that present the token below                 |
-| `FOTOBOX_LAN_API_TOKEN`   | Shared secret for tablet mode. Required; without it tablet mode stays disabled                        |
-| `FOTOBOX_TRUSTED_ORIGINS` | Comma-separated extra browser origins trusted for localhost clients (e.g. `http://kiosk.local:8080`)  |
-| `FOTOBOX_API_URL`         | Electron only: use an external API instead of the embedded one (sends `FOTOBOX_LAN_API_TOKEN` if set) |
+| Environment variable      | Description                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `FOTOBOX_ALLOW_LAN_API`   | `1` enables tablet mode: full API access for LAN clients that present the token below                |
+| `FOTOBOX_LAN_API_TOKEN`   | Shared secret for tablet mode. Required; without it tablet mode stays disabled                       |
+| `FOTOBOX_TRUSTED_ORIGINS` | Comma-separated extra browser origins trusted for localhost clients (e.g. `http://kiosk.local:8080`) |
 
-Tablet/browser clients send the token as the `x-fotobox-token` header, the `token` WebSocket connection param, or the `?token=` query parameter (used for `<img>` URLs). Opening the UI once with `?token=<secret>` stores the token in the browser.
+Tablet/browser clients send the token as the `x-fotobox-token` header, the `token` WebSocket connection param, or the
+`?token=` query parameter (used for `<img>` URLs). Opening the UI once with `?token=<secret>` stores the token in the
+browser.
 
 ---
 
@@ -344,27 +346,23 @@ Tablet/browser clients send the token as the `x-fotobox-token` header, the `toke
 
 ```bash
 # Development
+pnpm nx serve fotobox-tauri        # Desktop app (UI + API dev servers + window)
 pnpm nx serve fotobox-ui           # Angular dev server  (port 4200)
-pnpm nx serve fotobox-electron     # Electron + API      (port 3000)
 pnpm nx serve fotobox-api          # Standalone API only (port 3000)
 
 # Build
-pnpm nx build fotobox-ui
-pnpm nx build fotobox-api
-pnpm nx build fotobox-electron
-pnpm nx run-many -t build --projects=fotobox-api,fotobox-ui,fotobox-electron
+pnpm nx run-many -t build --projects=fotobox-api,fotobox-ui,collage-editor-ui
+pnpm nx run fotobox-tauri:bundle   # Desktop installer for the current OS
 
-# Lint
-pnpm nx run-many -t lint
+# Lint / test
+pnpm nx run-many -t lint test
+pnpm nx run-many -t rust-lint rust-test -p fotobox-tauri
 
-# Test
-pnpm nx run-many -t test
-
-# Package Electron installer (build + verify + package)
+# Package the release installer
 pnpm nx run fotobox-release:package --configuration=production
 
 # Create a release (version bump + changelog + tag)
-npm run release
+pnpm run release
 
 # Dependency graph
 pnpm nx graph

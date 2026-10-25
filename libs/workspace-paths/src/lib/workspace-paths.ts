@@ -57,20 +57,6 @@ export function getDatabasePath(): string {
     return path.join(path.dirname(resolved), 'fotobox.db');
   }
 
-  if (isElectronRuntime()) {
-    try {
-      const { app } = require('electron') as {
-        app?: { getPath?: (name: string) => string };
-      };
-      const userData = app?.getPath?.('userData');
-      if (userData) {
-        return path.join(userData, 'fotobox.db');
-      }
-    } catch {
-      // fall through
-    }
-  }
-
   return path.join(getWorkspaceDataDir(), 'fotobox.db');
 }
 
@@ -91,17 +77,6 @@ export function getShareTokensPath(): string {
   }
 
   return path.join(getWorkspaceDataDir(), 'share-tokens.json');
-}
-
-export function isElectronRuntime(): boolean {
-  try {
-    const { app } = require('electron') as {
-      app?: { getPath?: (name: string) => string };
-    };
-    return !!app?.getPath;
-  } catch {
-    return false;
-  }
 }
 
 export const workspacePaths = {
@@ -207,7 +182,7 @@ export function applyDefaultWorkspaceEnv(): void {
   if (!process.env['FOTOBOX_LOG_FILE']) {
     process.env['FOTOBOX_LOG_FILE'] = workspacePaths.logFile();
   }
-  if (!process.env['FOTOBOX_SETTINGS_PATH'] && !isElectronRuntime()) {
+  if (!process.env['FOTOBOX_SETTINGS_PATH']) {
     process.env['FOTOBOX_SETTINGS_PATH'] = workspacePaths.settings();
   }
 }

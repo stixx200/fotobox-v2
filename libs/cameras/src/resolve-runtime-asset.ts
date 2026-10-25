@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 export interface RuntimeAssetOptions {
-  /** Directory next to the electron bundle, e.g. `demo-camera`. */
+  /** Directory next to the API bundle, e.g. `demo-camera`. */
   bundleRelativeDir: string;
   filename: string;
   /** Path from the workspace root, e.g. `libs/cameras/src/demo/giraffe.jpg`. */
@@ -10,7 +10,7 @@ export interface RuntimeAssetOptions {
 }
 
 /**
- * Locate a file copied beside the electron bundle, falling back to the
+ * Locate a file copied beside the API bundle, falling back to the
  * workspace source tree when the bundle assets are missing (e.g. stale Nx cache).
  */
 export function resolveRuntimeAsset(options: RuntimeAssetOptions): string {
@@ -30,7 +30,7 @@ export function resolveRuntimeAsset(options: RuntimeAssetOptions): string {
   add(
     path.join(
       process.cwd(),
-      'dist/apps/fotobox-electron',
+      'dist/apps/fotobox-api',
       bundleRelativeDir,
       filename,
     ),
@@ -40,14 +40,7 @@ export function resolveRuntimeAsset(options: RuntimeAssetOptions): string {
   let dir = __dirname;
   for (let depth = 0; depth < 8; depth++) {
     add(path.join(dir, sourceRelativePath));
-    add(
-      path.join(
-        dir,
-        'dist/apps/fotobox-electron',
-        bundleRelativeDir,
-        filename,
-      ),
-    );
+    add(path.join(dir, 'dist/apps/fotobox-api', bundleRelativeDir, filename));
     const parent = path.dirname(dir);
     if (parent === dir) {
       break;
@@ -61,7 +54,5 @@ export function resolveRuntimeAsset(options: RuntimeAssetOptions): string {
     }
   }
 
-  throw new Error(
-    `Runtime asset not found: ${bundleRelativeDir}/${filename}`,
-  );
+  throw new Error(`Runtime asset not found: ${bundleRelativeDir}/${filename}`);
 }

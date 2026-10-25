@@ -4,16 +4,16 @@ import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '@fotobox/nest-settings';
 
 /**
- * Resolves the built-in collage template directory shipped with the API/Electron build.
+ * Resolves the built-in collage template directory shipped with the API build
+ * (next to the bundle in the desktop sidecar, or under dist/ in development).
  */
-export function resolveBuiltInTemplateDirectory(
-  config: ConfigService,
-): string {
+export function resolveBuiltInTemplateDirectory(config: ConfigService): string {
   const configuredDirectory = config.get<string>('builtInTemplateDirectory');
   const candidates = [
     configuredDirectory,
+    process.env['FOTOBOX_BUILTIN_TEMPLATE_DIR'],
+    path.join(__dirname, 'collage-templates'),
     path.join(process.cwd(), 'dist/apps/fotobox-api/collage-templates'),
-    path.join(process.cwd(), 'dist/apps/fotobox-electron/collage-templates'),
   ].filter((candidate): candidate is string => !!candidate);
 
   return (

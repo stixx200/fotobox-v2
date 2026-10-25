@@ -24,6 +24,12 @@ jobs:
       - name: Enable pnpm
         run: corepack enable pnpm
 
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/fotobox-tauri/src-tauri
+
       - name: Install dependencies
         env:
           SKIP_PLAYWRIGHT_INSTALL: 'true'
@@ -36,7 +42,7 @@ jobs:
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             TAG="${GITHUB_REF_NAME#fotobox-v}"
           else
-            TAG=$(node -p "require('./apps/fotobox-electron/package.json').version")
+            TAG=$(node -p "require('./apps/fotobox-tauri/package.json').version")
           fi
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
           echo "Release version: $TAG"
@@ -45,15 +51,23 @@ jobs:
         shell: bash
         run: |
           ROOT_VERSION=$(node -p "require('./package.json').version")
-          ELECTRON_VERSION=$(node -p "require('./apps/fotobox-electron/package.json').version")
+          APP_VERSION=$(node -p "require('./apps/fotobox-tauri/package.json').version")
           EXPECTED="${{ steps.version.outputs.version }}"
-          if [[ "$ROOT_VERSION" != "$EXPECTED" || "$ELECTRON_VERSION" != "$EXPECTED" ]]; then
-            echo "Version mismatch: root=$ROOT_VERSION electron=$ELECTRON_VERSION expected=$EXPECTED"
+          if [[ "$ROOT_VERSION" != "$EXPECTED" || "$APP_VERSION" != "$EXPECTED" ]]; then
+            echo "Version mismatch: root=$ROOT_VERSION app=$APP_VERSION expected=$EXPECTED"
             exit 1
           fi
 
+      # Builds the UIs and API, stages the Node sidecar (this runner's Node
+      # 24) and bundles the Tauri app as an MSI.
       - name: Build Windows MSI
         run: pnpm exec nx run fotobox-release:package --configuration=production
+
+      - name: Collect installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/packages | Out-Null
+          Copy-Item apps/fotobox-tauri/src-tauri/target/release/bundle/msi/*.msi dist/packages/
 
       - name: Generate checksum
         shell: pwsh

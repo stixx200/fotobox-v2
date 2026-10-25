@@ -6,7 +6,6 @@ export {
   getWorkspaceDataDir,
   getWorkspaceLogFile,
   getWorkspaceTmpDir,
-  isElectronRuntime,
   migrateLegacyWorkspaceFiles,
   resolveWorkspaceRoot,
   workspacePaths,

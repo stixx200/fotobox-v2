@@ -19,7 +19,6 @@
     "paths": {
       "@fotobox/cameras": ["libs/cameras/src/index.ts"],
       "@fotobox/collage-maker": ["libs/collage-maker/src/index.ts"],
-      "@fotobox/electron-window": ["libs/electron/window/src/index.ts"],
       "@fotobox/error": ["libs/error/src/index.ts"],
       "@fotobox/logging": ["libs/logging/src/index.ts"],
       "@fotobox/nest-app-service": ["libs/nest/app-service/src/index.ts"],

@@ -11,6 +11,10 @@
 .PARAMETER Elevated
   When set, attempts firewall rule creation (requires admin).
 
+.PARAMETER ExePath
+  Path to Fotobox.exe. Passed by the app when it launches this script;
+  otherwise the default install locations are searched.
+
 .EXAMPLE
   .\setup-kiosk.ps1
 .EXAMPLE
@@ -18,7 +22,8 @@
 #>
 [CmdletBinding()]
 param(
-  [switch]$Elevated
+  [switch]$Elevated,
+  [string]$ExePath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,9 +33,12 @@ function Write-Step([string]$Message) {
 }
 
 function Find-FotoboxExe {
+  if ($ExePath -and (Test-Path -LiteralPath $ExePath)) {
+    return (Resolve-Path -LiteralPath $ExePath).Path
+  }
+
   $candidates = @(
-    (Join-Path $env:LOCALAPPDATA 'Programs\fotobox-electron\Fotobox.exe'),
-    (Join-Path $env:LOCALAPPDATA 'fotobox-electron\Fotobox.exe'),
+    (Join-Path $env:ProgramFiles 'Fotobox\Fotobox.exe'),
     (Join-Path $env:LOCALAPPDATA 'Programs\Fotobox\Fotobox.exe')
   )
 
@@ -55,7 +63,7 @@ function Find-FotoboxExe {
 Write-Step 'Locating Fotobox installation'
 $exePath = Find-FotoboxExe
 if (-not $exePath) {
-  Write-Host 'Could not find Fotobox.exe under %LOCALAPPDATA%. Install the MSI first.' -ForegroundColor Red
+  Write-Host 'Could not find Fotobox.exe (pass -ExePath or install the MSI first).' -ForegroundColor Red
   exit 1
 }
 Write-Host "Found: $exePath" -ForegroundColor Green
@@ -97,7 +105,7 @@ Write-Step 'Windows Assigned Access (full desktop lockdown)'
 Write-Host @"
 1. Settings -> Accounts -> Other users (or Family & other users).
 2. Choose 'Set up a kiosk' / Assigned Access.
-3. Select the kiosk user and choose 'Fotobox' (or fotobox-electron) as the allowed app.
+3. Select the kiosk user and choose 'Fotobox' as the allowed app.
 4. Sign in with the kiosk account to verify single-app mode.
 
 Note: Assigned Access requires Windows 10/11 Pro, Enterprise, or Education.

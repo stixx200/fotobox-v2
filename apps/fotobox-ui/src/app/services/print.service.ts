@@ -1,20 +1,39 @@
 import { Injectable, inject } from '@angular/core';
+import { Apollo, gql } from 'apollo-angular';
 import { TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 import { SettingsStore } from '../store';
 import { ClientLogService } from './client-log.service';
 import { NotificationService } from './notification.service';
 
-export interface PrintPhotoOptions {
-  /** OS printer name from settings. Uses the system default when omitted. */
-  printerName?: string;
-  /** Skip the native print dialog (Electron only). */
-  silent?: boolean;
-  /** Print in landscape orientation. */
-  landscape?: boolean;
+const PRINT_PHOTO = gql`
+  mutation PrintPhoto($input: PrintPhotoInput!) {
+    printPhoto(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+interface PrintResult {
+  success: boolean;
+  message?: string | null;
+}
+
+/** `https://host:3000/api/photos/photo-1.jpg?token=…` → `photo-1.jpg` */
+export function photoFilenameFromUrl(photoUrl: string): string | null {
+  try {
+    const { pathname } = new URL(photoUrl, 'http://localhost');
+    const match = /^\/api\/photos\/([^/]+)$/.exec(pathname);
+    return match ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
 }
 
 @Injectable({ providedIn: 'root' })
 export class PrintService {
+  private readonly apollo = inject(Apollo);
   private readonly settingsStore = inject(SettingsStore);
   private readonly notificationService = inject(NotificationService);
   private readonly clientLogService = inject(ClientLogService);
@@ -23,40 +42,50 @@ export class PrintService {
   /**
    * Print a single photo.
    *
-   * - In Electron: prints to the configured printer; silent unless
-   *   `showPrintDialog` is enabled in settings.
-   * - In a plain browser: opens a minimal print page; the dialog cannot be
-   *   suppressed due to browser security restrictions.
+   * By default the host prints it silently on the configured printer (works
+   * from the kiosk and from tablets). With `showPrintDialog` enabled, the
+   * browser print dialog is used instead.
    *
    * @returns `true` when printing succeeded or was handed off to the browser.
    */
   async printPhoto(photoUrl: string): Promise<boolean> {
-    const options: PrintPhotoOptions = {
-      printerName: this.getStringSetting('printerName'),
-      silent: !this.getBooleanSetting('showPrintDialog', false),
-      landscape: true,
-    };
-
-    if (typeof window !== 'undefined' && window.electron?.printPhoto) {
-      try {
-        const result = await window.electron.printPhoto(photoUrl, options);
-        if (!result.success) {
-          this.reportPrintFailure(result.reason);
-          return false;
-        }
-        return true;
-      } catch (error) {
-        this.reportPrintFailure(error);
-        return false;
+    if (this.getBooleanSetting('showPrintDialog', false)) {
+      const opened = this.printInBrowser(photoUrl);
+      if (!opened) {
+        this.reportPrintFailure('Popup blocked');
       }
+      return opened;
     }
 
-    const opened = this.printInBrowser(photoUrl);
-    if (!opened) {
-      this.reportPrintFailure('Popup blocked');
+    const filename = photoFilenameFromUrl(photoUrl);
+    if (!filename) {
+      this.reportPrintFailure(`Not a stored photo: ${photoUrl}`);
       return false;
     }
-    return true;
+
+    try {
+      const result = await firstValueFrom(
+        this.apollo.mutate<{ printPhoto: PrintResult }>({
+          mutation: PRINT_PHOTO,
+          variables: {
+            input: {
+              filename,
+              printerName: this.getStringSetting('printerName'),
+              landscape: true,
+            },
+          },
+        }),
+      );
+      const outcome = result.data?.printPhoto;
+      if (!outcome?.success) {
+        this.reportPrintFailure(outcome?.message ?? result.error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.reportPrintFailure(error);
+      return false;
+    }
   }
 
   private reportPrintFailure(detail?: unknown): void {

@@ -1,0 +1,11 @@
+{
+  "name": "fotobox-tauri",
+  "productName": "Fotobox",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fotobox photo booth desktop app (Tauri)",
+  "author": {
+    "name": "Markus Völk",
+    "email": "stixx200@gmail.com"
+  }
+}

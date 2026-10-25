@@ -57,3 +57,41 @@ jobs:
 
       - run: pnpm exec nx fix-ci
         if: always()
+
+  desktop:
+    # Rust host of the Tauri desktop app (apps/fotobox-tauri).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - name: Install system libraries for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/fotobox-tauri/src-tauri
+
+      - name: Install dependencies
+        env:
+          SKIP_PLAYWRIGHT_INSTALL: 'true'
+        run: pnpm install --frozen-lockfile
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - run: pnpm exec nx affected -t rust-lint rust-test

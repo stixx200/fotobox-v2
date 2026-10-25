@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { getLogger } from '@fotobox/logging';
 import { PrinterInfo } from './models/printer.model';
 import { parseLpstatOutput } from './printer-lpstat.parser';
 import { parseWindowsPrinterOutput } from './printer-windows.parser';
 import * as os from 'os';
+import { buildPrintCommand, PrintImageOptions } from './print-command';
 
 const logger = getLogger('PrinterService');
 const execPromise = promisify(exec);
+const execFilePromise = promisify(execFile);
+
+const PRINT_TIMEOUT_MS = 60_000;
 
 type ExecError = Error & { stdout?: string };
 
@@ -26,7 +30,9 @@ export class PrinterService {
       if (platform === 'win32') {
         return await this.getPrintersWindows();
       }
-      logger.warn(`Printer detection not implemented for platform: ${platform}`);
+      logger.warn(
+        `Printer detection not implemented for platform: ${platform}`,
+      );
       return [];
     } catch (error) {
       logger.error('Error fetching printers:', error);
@@ -34,7 +40,9 @@ export class PrinterService {
     }
   }
 
-  private async getPrintersUnix(platform: 'linux' | 'darwin'): Promise<PrinterInfo[]> {
+  private async getPrintersUnix(
+    platform: 'linux' | 'darwin',
+  ): Promise<PrinterInfo[]> {
     try {
       return await this.runLpstat('lpstat -p -d');
     } catch (error) {
@@ -76,6 +84,36 @@ export class PrinterService {
     } catch (error) {
       logger.error('Error fetching Windows printers:', error);
       return [];
+    }
+  }
+
+  /**
+   * Print an image file to the given (or default) printer without a dialog.
+   * Rejects with the spooler's error output when printing fails.
+   */
+  async printImage(
+    filePath: string,
+    options: PrintImageOptions,
+  ): Promise<void> {
+    const { command, args, env } = buildPrintCommand(
+      os.platform(),
+      filePath,
+      options,
+    );
+    logger.info('Printing photo', {
+      filePath,
+      printerName: options.printerName ?? '(system default)',
+      landscape: options.landscape,
+    });
+    try {
+      await execFilePromise(command, args, {
+        env: { ...process.env, ...env },
+        timeout: PRINT_TIMEOUT_MS,
+        windowsHide: true,
+      });
+    } catch (error) {
+      const stderr = (error as { stderr?: string }).stderr?.trim();
+      throw new Error(stderr || (error as Error).message, { cause: error });
     }
   }
 }

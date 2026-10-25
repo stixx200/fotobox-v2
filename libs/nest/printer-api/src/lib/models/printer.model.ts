@@ -1,4 +1,4 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { Field, InputType, ObjectType } from '@nestjs/graphql';
 
 @ObjectType('Printer')
 export class PrinterInfo {
@@ -22,4 +22,26 @@ export class PrinterList {
 
   @Field()
   count!: number;
+}
+
+@InputType()
+export class PrintPhotoInput {
+  /** File name of a photo in the photo directory, e.g. `photo-123.jpg`. */
+  @Field()
+  filename!: string;
+
+  @Field({ nullable: true })
+  printerName?: string;
+
+  @Field({ nullable: true, defaultValue: true })
+  landscape?: boolean;
+}
+
+@ObjectType()
+export class PrintResult {
+  @Field()
+  success!: boolean;
+
+  @Field({ nullable: true })
+  message?: string;
 }

@@ -153,16 +153,6 @@
       }
     },
     {
-      "plugin": "@nx/rspack/plugin",
-      "options": {
-        "buildTargetName": "build",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview",
-        "buildDepsTargetName": "build-deps",
-        "watchDepsTargetName": "watch-deps"
-      }
-    },
-    {
       "plugin": "@nx/vitest",
       "options": {
         "testTargetName": "vitest:test",
@@ -200,12 +190,10 @@
       "include": [
         "apps/collage-editor-ui/**/*",
         "apps/fotobox-api/**/*",
-        "apps/fotobox-electron/**/*",
         "apps/fotobox-ui/**/*",
         "libs/cameras/**/*",
         "libs/collage-editor/**/*",
         "libs/collage-maker/**/*",
-        "libs/electron/window/**/*",
         "libs/error/**/*",
         "libs/frontend-core/**/*",
         "libs/graphql-operations/**/*",
@@ -226,16 +214,16 @@
       ]
     }
   ],
-  "defaultProject": "fotobox-electron",
+  "defaultProject": "fotobox-ui",
   "release": {
     "groups": {
       "fotobox": {
-        "projects": ["fotobox-electron"],
+        "projects": ["fotobox-tauri"],
         "projectsRelationship": "fixed",
         "version": {
           "conventionalCommits": true,
           "fallbackCurrentVersionResolver": "disk",
-          "manifestRootsToUpdate": ["apps/fotobox-electron", "."],
+          "manifestRootsToUpdate": ["apps/fotobox-tauri", "."],
           "git": {
             "commit": true,
             "tag": true,

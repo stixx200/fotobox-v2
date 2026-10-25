@@ -1,6 +1,7 @@
 export {
   getGraphqlHttpUri,
   getGraphqlWsUri,
+  getHostCollageDirectory,
   getStoredCollageDirectory,
   resolveApiBaseUrl,
   setStoredCollageDirectory,

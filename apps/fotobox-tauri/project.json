@@ -1,0 +1,106 @@
+{
+  "name": "fotobox-tauri",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/fotobox-tauri/src-tauri/src",
+  "implicitDependencies": ["fotobox-ui", "collage-editor-ui", "fotobox-api"],
+  "tags": ["scope:desktop", "type:app", "platform:tauri"],
+  "targets": {
+    "prepare-web": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["fotobox-ui", "collage-editor-ui"],
+          "target": "build"
+        }
+      ],
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/scripts/prepare-web.mjs",
+        { "dependentTasksOutputFiles": "**/*", "transitive": false }
+      ],
+      "outputs": ["{workspaceRoot}/dist/apps/fotobox-tauri/web"],
+      "options": {
+        "command": "node apps/fotobox-tauri/scripts/prepare-web.mjs"
+      }
+    },
+    "prepare-sidecar": {
+      "executor": "nx:run-commands",
+      "dependsOn": [{ "projects": ["fotobox-api"], "target": "build" }],
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/scripts/prepare-sidecar.mjs",
+        { "dependentTasksOutputFiles": "**/*", "transitive": false },
+        { "runtime": "node --version" },
+        { "runtime": "rustc -vV" }
+      ],
+      "outputs": [
+        "{workspaceRoot}/dist/apps/fotobox-tauri/api",
+        "{projectRoot}/src-tauri/binaries"
+      ],
+      "options": {
+        "command": "node apps/fotobox-tauri/scripts/prepare-sidecar.mjs"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "dependsOn": [
+        "prepare-sidecar",
+        { "projects": ["fotobox-ui"], "target": "serve" },
+        { "projects": ["fotobox-api"], "target": "serve" }
+      ],
+      "options": {
+        "cwd": "apps/fotobox-tauri",
+        "command": "tauri dev",
+        "env": {
+          "FOTOBOX_API_URL": "http://localhost:3000"
+        }
+      }
+    },
+    "bundle": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["prepare-web", "prepare-sidecar"],
+      "outputs": ["{projectRoot}/src-tauri/target/release/bundle"],
+      "options": {
+        "cwd": "apps/fotobox-tauri",
+        "command": "tauri build"
+      },
+      "configurations": {
+        "debug": {
+          "command": "tauri build --debug"
+        }
+      }
+    },
+    "rust-lint": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["prepare-web", "prepare-sidecar"],
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src-tauri/**/*",
+        "!{projectRoot}/src-tauri/target/**/*"
+      ],
+      "options": {
+        "cwd": "apps/fotobox-tauri/src-tauri",
+        "commands": [
+          "cargo fmt --check",
+          "cargo clippy --all-targets -- -D warnings"
+        ],
+        "parallel": false
+      }
+    },
+    "rust-test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["prepare-web", "prepare-sidecar"],
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src-tauri/**/*",
+        "!{projectRoot}/src-tauri/target/**/*"
+      ],
+      "options": {
+        "cwd": "apps/fotobox-tauri/src-tauri",
+        "command": "cargo test"
+      }
+    }
+  }
+}

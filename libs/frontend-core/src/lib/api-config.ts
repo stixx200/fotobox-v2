@@ -2,7 +2,7 @@
  * Runtime resolution of the Fotobox API base URL.
  *
  * Resolution order (first match wins):
- *  1. `window.__FOTOBOX_API_URL__` — injected at runtime (Electron preload, etc.)
+ *  1. `window.__FOTOBOX_API_URL__` — injected at runtime (Tauri init script, etc.)
  *  2. `localStorage['fotobox.apiUrl']` — user override from settings UI
  *  3. Same-host default: `<protocol>//<hostname>:3000`
  */
@@ -19,6 +19,8 @@ declare global {
   interface Window {
     __FOTOBOX_API_URL__?: string;
     __FOTOBOX_API_TOKEN__?: string;
+    /** Collage directory passed by the desktop host to the editor window. */
+    __FOTOBOX_COLLAGE_DIR__?: string;
   }
 }
 
@@ -133,6 +135,13 @@ export function getPhotoUrl(photoPath: string): string {
   }
   const separator = url.includes('?') ? '&' : '?';
   return `${url}${separator}${API_TOKEN_QUERY_PARAM}=${encodeURIComponent(token)}`;
+}
+
+/** Collage directory the desktop host opened the editor with, if any. */
+export function getHostCollageDirectory(): string | null {
+  return (
+    (typeof window !== 'undefined' && window.__FOTOBOX_COLLAGE_DIR__) || null
+  );
 }
 
 export function getStoredCollageDirectory(): string | null {

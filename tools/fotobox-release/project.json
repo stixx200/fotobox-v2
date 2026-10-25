@@ -9,13 +9,12 @@
       "executor": "nx:run-commands",
       "dependsOn": [
         {
-          "projects": "fotobox-electron",
-          "target": "package",
-          "params": "forward"
+          "projects": "fotobox-tauri",
+          "target": "bundle"
         }
       ],
       "options": {
-        "command": "echo Fotobox release package complete"
+        "command": "echo Fotobox release bundle complete"
       },
       "configurations": {
         "production": {}

@@ -35,6 +35,11 @@ import {
   AppMetadataStore,
   PrinterStore,
 } from '../store';
+import {
+  isDesktopHost,
+  openCollageEditorWindow,
+  pickDirectory,
+} from '@fotobox/frontend-core';
 import { CollageService } from '../services/collage.service';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
@@ -183,11 +188,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   );
 
   cameras = ['Sony', 'Demo'];
-  get isElectronAvailable(): boolean {
-    return (
-      typeof window !== 'undefined' && !!window.electron?.openDirectoryDialog
-    );
-  }
+  /** Native folder pickers are only available in the desktop app. */
+  readonly isDesktopHost = isDesktopHost();
 
   constructor() {
     // Update form with loaded settings when they become available
@@ -683,44 +685,26 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   handleDirectoryClick(fieldName: string): void {
-    if (this.isElectronAvailable) {
-      this.openPicker(fieldName);
+    if (this.isDesktopHost) {
+      void this.openPicker(fieldName);
     }
   }
 
   openCollageEditor(): void {
     const collageDir = this.settingsForm.get('collageDirectory')?.value;
-    if (window.electron?.openCollageEditor) {
-      void window.electron.openCollageEditor(collageDir || undefined);
-      return;
-    }
-    const params = collageDir ? `?dir=${encodeURIComponent(collageDir)}` : '';
-    window.open(`http://localhost:4201/${params}`, '_blank');
+    void openCollageEditorWindow(collageDir || undefined).then((opened) => {
+      if (!opened) {
+        const params = collageDir
+          ? `?dir=${encodeURIComponent(collageDir)}`
+          : '';
+        window.open(`http://localhost:4201/${params}`, '_blank');
+      }
+    });
   }
 
   async openPicker(fieldName: string): Promise<void> {
-    if (!window.electron?.openDirectoryDialog) {
-      console.warn('Electron API not available');
-      return;
-    }
-
     try {
-      const result = await window.electron.openDirectoryDialog();
-      const selectedPath =
-        typeof result === 'string'
-          ? result
-          : result && typeof result === 'object' && 'filePaths' in result
-            ? (() => {
-                const dialogResult = result as {
-                  canceled: boolean;
-                  filePaths: string[];
-                };
-                return dialogResult.canceled
-                  ? null
-                  : (dialogResult.filePaths[0] ?? null);
-              })()
-            : null;
-
+      const selectedPath = await pickDirectory();
       if (selectedPath) {
         this.settingsForm.patchValue({ [fieldName]: selectedPath });
         this.cdr.markForCheck();

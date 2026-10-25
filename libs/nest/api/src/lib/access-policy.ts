@@ -62,9 +62,13 @@ export function isLoopbackAddress(ip: string): boolean {
 
 const LOOPBACK_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 
+/** Origins of the Tauri webview: `tauri://localhost` (macOS/Linux) and
+ * `http(s)://tauri.localhost` (Windows/WebView2). */
+const TAURI_ORIGIN = /^(tauri:\/\/localhost|https?:\/\/tauri\.localhost)$/i;
+
 /**
- * Browser origins allowed to drive the API from the host machine: the
- * Electron renderer (`file://`, reported as `null` by Chromium) and local dev
+ * Browser origins allowed to drive the API from the host machine: the Tauri
+ * desktop webview, `file://` pages (reported as `null`) and local dev
  * servers. Requests without an Origin header are not browser cross-origin
  * requests and are allowed.
  */
@@ -80,6 +84,7 @@ export function isTrustedOrigin(
     normalized === 'null' ||
     normalized === 'file:' ||
     LOOPBACK_ORIGIN.test(normalized) ||
+    TAURI_ORIGIN.test(normalized) ||
     policy.extraTrustedOrigins.includes(normalized)
   );
 }

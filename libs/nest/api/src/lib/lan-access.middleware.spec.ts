@@ -60,7 +60,13 @@ describe('access policy', () => {
     expect(isLanApiEnabled(tablet)).toBe(true);
   });
 
-  it('trusts Electron and localhost origins only', () => {
+  it('trusts the Tauri webview, file:// and localhost origins only', () => {
+    expect(isTrustedOrigin('tauri://localhost', restricted)).toBe(true);
+    expect(isTrustedOrigin('http://tauri.localhost', restricted)).toBe(true);
+    expect(isTrustedOrigin('https://tauri.localhost', restricted)).toBe(true);
+    expect(
+      isTrustedOrigin('http://tauri.localhost.evil.example', restricted),
+    ).toBe(false);
     expect(isTrustedOrigin(undefined, restricted)).toBe(true);
     expect(isTrustedOrigin('null', restricted)).toBe(true);
     expect(isTrustedOrigin('file://', restricted)).toBe(true);
