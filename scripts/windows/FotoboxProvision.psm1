@@ -8,13 +8,15 @@
   computer). Runs as administrator under Windows PowerShell 5.1.
 
     - computer name and time zone
+    - SSH server for remote maintenance (installed if missing)
     - power: "Höchstleistung" plan (or the best performance mode on devices
       without it), never sleep, hibernate, dim or turn off the screen, no USB
       selective suspend, closing the lid does nothing
     - optional Wi-Fi profile and printer driver
     - Fotobox installed silently in kiosk mode (kiosk user, auto-logon,
       autostart, lockdown: see FotoboxKiosk.psm1)
-    - photo and collage folders, writable by the kiosk user
+    - photo and collage folders, writable by the kiosk user; collage
+      templates shipped next to the script are copied there
     - Fotobox settings written to %ProgramData%\Fotobox\provisioning.json;
       the app applies them on its next start (and again whenever the file
       changes; changes made in the app are kept otherwise)
@@ -127,6 +129,56 @@ function Disable-NetworkPowerSaving {
     }
 }
 
+function Get-SshServerState {
+    <# 'Installed' when the OpenSSH server feature is present. #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+    $capability = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' | Select-Object -First 1
+    return @{ Name = $capability.Name; State = [string]$capability.State }
+}
+
+function Install-SshServerFeature {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([Parameter(Mandatory)][string]$Name)
+    if ($PSCmdlet.ShouldProcess($Name, 'Install Windows feature')) {
+        Add-WindowsCapability -Online -Name $Name | Out-Null
+    }
+}
+
+function Set-SshServerConfiguration {
+    <# Service on at boot, port 22 for the local network, PowerShell as shell. #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$FirewallRule)
+    Set-Service sshd -StartupType Automatic
+    Start-Service sshd
+    # Any network profile: a fresh install often marks the network as public.
+    Remove-NetFirewallRule -Name $FirewallRule -ErrorAction SilentlyContinue
+    New-NetFirewallRule -Name $FirewallRule -DisplayName 'Fotobox remote maintenance (SSH)' -Direction Inbound `
+        -Protocol TCP -LocalPort 22 -RemoteAddress LocalSubnet -Profile Any -Action Allow | Out-Null
+    $shell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
+    New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -Value $shell -PropertyType String -Force | Out-Null
+}
+
+function Add-SshAdministratorKey {
+    <# Key login for administrators (file owned by Administrators/SYSTEM only). #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$PublicKey)
+    $keys = Join-Path $env:ProgramData 'ssh\administrators_authorized_keys'
+    $existing = if (Test-Path -LiteralPath $keys) { @(Get-Content -LiteralPath $keys) } else { @() }
+    if ($existing -notcontains $PublicKey.Trim()) {
+        Add-Content -LiteralPath $keys -Value $PublicKey.Trim() -Encoding ASCII
+    }
+    Invoke-NativeCommand -FilePath 'icacls.exe' -Arguments @($keys, '/inheritance:r', '/grant', '*S-1-5-32-544:F', '/grant', '*S-1-5-18:F') | Out-Null
+}
+
+function Copy-CollageTemplate {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Source, [Parameter(Mandatory)][string]$Destination)
+    Copy-Item -Path (Join-Path $Source '*') -Destination $Destination -Recurse -Force
+}
+
 function Test-FotoboxInstalled {
     [CmdletBinding()]
     [OutputType([bool])]
@@ -170,6 +222,28 @@ function Set-ComputerIdentity {
         return $true
     }
     return $false
+}
+
+function Enable-SshRemoteAccess {
+    <#
+    .SYNOPSIS
+      Installs the OpenSSH server if missing and opens it for the local
+      network, so the booth can be maintained from another computer
+      (deploy-remote.ps1). Needs internet when the feature is missing.
+    #>
+    [CmdletBinding()]
+    param([string]$PublicKey)
+    $state = Get-SshServerState
+    if ($state.State -ne 'Installed') {
+        Write-ProvisionLog "Installing $($state.Name) (needs internet)"
+        Install-SshServerFeature -Name $state.Name
+    }
+    Set-SshServerConfiguration -FirewallRule 'Fotobox-SSH'
+    if ($PublicKey) {
+        Add-SshAdministratorKey -PublicKey $PublicKey
+        Write-ProvisionLog 'SSH key authorized for administrators'
+    }
+    Write-ProvisionLog 'SSH server on (port 22, local network only)'
 }
 
 function Get-PowerSchemeGuid {
@@ -365,6 +439,12 @@ function Invoke-FotoboxProvisioning {
 
     $renamed = Set-ComputerIdentity -ComputerName $Config['ComputerName'] -TimeZone $Config['TimeZone']
 
+    # Early, so the PC can be reached even if a later step fails.
+    $remote = if ($Config['RemoteAccess']) { $Config['RemoteAccess'] } else { @{} }
+    if ($remote['Enabled'] -ne $false) {
+        Enable-SshRemoteAccess -PublicKey $remote['PublicKey']
+    }
+
     # Before the Fotobox setup: its kiosk power settings go to the active plan.
     $powerScheme = Enable-HighPerformancePower
 
@@ -382,6 +462,11 @@ function Invoke-FotoboxProvisioning {
     foreach ($path in @($directories['Photos'], $directories['Collages'])) {
         if ($path) { Set-FotoboxDirectory -Path $path -KioskUser $kioskUser }
     }
+    $templates = [System.IO.Path]::Combine($BaseDir, 'Collagen')
+    if ($directories['Collages'] -and (Test-Path -LiteralPath $templates)) {
+        Copy-CollageTemplate -Source $templates -Destination $directories['Collages']
+        Write-ProvisionLog "Collage templates copied to $($directories['Collages'])"
+    }
 
     $provisioningPath = Get-ProvisioningPath
     Write-ProvisionFile -Path $provisioningPath -Content (ConvertTo-ProvisionedSettingsJson -Settings $settings -Directories $directories)
@@ -397,4 +482,4 @@ function Invoke-FotoboxProvisioning {
     }
 }
 
-Export-ModuleMember -Function Invoke-FotoboxProvisioning, ConvertTo-ProvisionedSettingsJson, Enable-HighPerformancePower
+Export-ModuleMember -Function Invoke-FotoboxProvisioning, ConvertTo-ProvisionedSettingsJson, Enable-HighPerformancePower, Enable-SshRemoteAccess

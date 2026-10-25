@@ -5,16 +5,20 @@
 
 .DESCRIPTION
   Installs Fotobox in kiosk mode and configures everything the booth needs:
-  computer name, time zone, "Höchstleistung" power plan, never sleep or turn
-  off the screen, optional Wi-Fi and printer driver, photo/collage folders
-  and the Fotobox settings (camera, printer, layouts, PINs, ...).
+  computer name, time zone, SSH server for remote maintenance (installed if
+  missing), "Höchstleistung" power plan, never sleep or turn off the screen,
+  optional Wi-Fi and printer driver, photo/collage folders with collage
+  templates and the Fotobox settings (camera, printer, layouts, PINs, ...).
 
   Put this folder on the PC (USB stick, or deploy-remote.ps1 over SSH):
     provision-fotobox.ps1, FotoboxProvision.psm1
     fotobox-provision.psd1          (copy of fotobox-provision.example.psd1)
     Fotobox_<version>_x64-setup.exe
+    Collagen\                       (optional: collage templates to install)
+    Fotobox-einrichten.cmd          (double-click starter)
 
-  Run it as administrator. It can be run again at any time, e.g. to apply
+  Double-click Fotobox-einrichten.cmd (asks for administrator rights), or
+  run this script as administrator. It can be run again at any time, e.g. to apply
   changed settings or to update Fotobox with a newer setup. Restart Windows
   afterwards: the kiosk user then signs in and the booth starts.
 
@@ -38,10 +42,21 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Started without admin rights (double-click, USB stick): ask for elevation
+# (UAC) and run again in a window that stays open to show the result.
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Error 'Please run as administrator (right-click PowerShell > "Als Administrator ausführen").'
-    exit 1
+    $arguments = @('-NoProfile', '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    foreach ($entry in $PSBoundParameters.GetEnumerator()) {
+        if ($entry.Value -is [switch]) {
+            if ($entry.Value) { $arguments += "-$($entry.Key)" }
+        }
+        else {
+            $arguments += "-$($entry.Key)", "`"$($entry.Value)`""
+        }
+    }
+    Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -Verb RunAs
+    exit 0
 }
 
 if (-not $ConfigPath) {

@@ -12,6 +12,13 @@
     # Tablet mode: 'none' (default), 'auto' (generate a token) or a token.
     LanToken         = 'none'
 
+    # SSH server for remote maintenance from your Mac (deploy-remote.ps1);
+    # installed if missing. PublicKey: content of ~/.ssh/id_ed25519.pub.
+    RemoteAccess     = @{
+        Enabled   = $true
+        # PublicKey = 'ssh-ed25519 AAAA... you@mac'
+    }
+
     # Optional: Wi-Fi the booth connects to automatically (WPA2/WPA3-Personal).
     # Wifi = @{ Ssid = 'Fotobox-WLAN'; Password = 'secret' }
 
@@ -21,8 +28,9 @@
     # --- Folders (created and made writable for the kiosk user) -------------
     Directories      = @{
         Photos   = 'C:\Fotobox\Fotos'
-        # Own collage templates; leave out to use the built-in ones.
-        # Collages = 'C:\Fotobox\Collagen'
+        # Own collage templates. The templates in the 'Collagen' folder next
+        # to the script are copied here; leave out to use the built-in ones.
+        Collages = 'C:\Fotobox\Collagen'
     }
 
     # --- Fotobox settings ---------------------------------------------------

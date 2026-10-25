@@ -83,7 +83,8 @@ jobs:
           $kit = New-Item -ItemType Directory -Force -Path dist/kit/Fotobox-Provisioning
           Copy-Item scripts/windows/provision-fotobox.ps1, scripts/windows/FotoboxProvision.psm1, `
             scripts/windows/enable-remote-access.ps1, scripts/windows/deploy-remote.ps1, `
-            scripts/windows/fotobox-provision.example.psd1, $setup.FullName -Destination $kit
+            scripts/windows/fotobox-provision.example.psd1, scripts/windows/Fotobox-einrichten.cmd, `
+            $setup.FullName -Destination $kit
           $zip = "dist/packages/Fotobox_${{ steps.version.outputs.version }}_provisioning.zip"
           Compress-Archive -Path $kit -DestinationPath $zip -Force
 

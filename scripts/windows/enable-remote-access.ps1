@@ -32,46 +32,17 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     exit 1
 }
 
-$firewallRule = 'Fotobox-SSH'
-
 if ($Disable) {
     Stop-Service sshd -ErrorAction SilentlyContinue
     Set-Service sshd -StartupType Disabled -ErrorAction SilentlyContinue
-    Remove-NetFirewallRule -Name $firewallRule -ErrorAction SilentlyContinue
+    Remove-NetFirewallRule -Name 'Fotobox-SSH' -ErrorAction SilentlyContinue
     Write-Output 'SSH remote access is off.'
     exit 0
 }
 
-# 1. OpenSSH server (a Windows feature; downloaded via Windows Update if needed)
-$capability = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' | Select-Object -First 1
-if ($capability.State -ne 'Installed') {
-    Write-Output "Installing $($capability.Name) (needs internet)..."
-    Add-WindowsCapability -Online -Name $capability.Name | Out-Null
-}
-Set-Service sshd -StartupType Automatic
-Start-Service sshd
-
-# 2. Port 22 for the local network only (any network profile: a fresh
-#    install often marks the network as public).
-Remove-NetFirewallRule -Name $firewallRule -ErrorAction SilentlyContinue
-New-NetFirewallRule -Name $firewallRule -DisplayName 'Fotobox remote setup (SSH)' -Direction Inbound `
-    -Protocol TCP -LocalPort 22 -RemoteAddress LocalSubnet -Profile Any -Action Allow | Out-Null
-
-# 3. Windows PowerShell as the SSH shell (deploy-remote.ps1 relies on it).
-$shell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
-New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell -Value $shell -PropertyType String -Force | Out-Null
-
-# 4. Key login for administrators (file must be owned by Administrators/SYSTEM only).
-if ($PublicKey) {
-    $keys = Join-Path $env:ProgramData 'ssh\administrators_authorized_keys'
-    $existing = if (Test-Path -LiteralPath $keys) { @(Get-Content -LiteralPath $keys) } else { @() }
-    if ($existing -notcontains $PublicKey.Trim()) {
-        Add-Content -LiteralPath $keys -Value $PublicKey.Trim() -Encoding ASCII
-    }
-    & icacls.exe $keys /inheritance:r /grant '*S-1-5-32-544:F' /grant '*S-1-5-18:F' | Out-Null
-    Write-Output 'SSH key authorized for administrators.'
-}
+# Same steps as provision-fotobox.ps1 (installs the OpenSSH server if missing).
+Import-Module (Join-Path $PSScriptRoot 'FotoboxProvision.psm1') -Force
+Enable-SshRemoteAccess -PublicKey $PublicKey
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
     Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |

@@ -40,7 +40,13 @@ Describe 'FotoboxProvision' {
             Mock Disable-NetworkPowerSaving { $script:Calls.Add('network-power') }
             Mock Test-FotoboxInstalled { $true }
             Mock New-FotoboxDirectory { $script:Calls.Add("mkdir $Path") }
+            Mock Get-SshServerState { @{ Name = 'OpenSSH.Server~~~~0.0.1.0'; State = $script:SshState } }
+            Mock Install-SshServerFeature { $script:Calls.Add("install-ssh $Name") }
+            Mock Set-SshServerConfiguration { $script:Calls.Add("configure-ssh $FirewallRule") }
+            Mock Add-SshAdministratorKey { $script:Calls.Add("ssh-key $PublicKey") }
+            Mock Copy-CollageTemplate { $script:Calls.Add("copy-templates $Destination") }
             Mock Write-ProvisionLog {}
+            $script:SshState = 'NotPresent'
         }
 
         function Get-CallLog { InModuleScope FotoboxProvision { , $script:Calls.ToArray() } }
@@ -87,6 +93,24 @@ Describe 'FotoboxProvision' {
         }
     }
 
+    Context 'remote access' {
+        It 'installs the SSH server when it is missing' {
+            Enable-SshRemoteAccess -PublicKey 'ssh-ed25519 AAAA test@mac'
+            $calls = Get-CallLog
+            $calls | Should -Contain 'install-ssh OpenSSH.Server~~~~0.0.1.0'
+            $calls | Should -Contain 'configure-ssh Fotobox-SSH'
+            $calls | Should -Contain 'ssh-key ssh-ed25519 AAAA test@mac'
+        }
+
+        It 'only configures an installed SSH server' {
+            InModuleScope FotoboxProvision { $script:SshState = 'Installed' }
+            Enable-SshRemoteAccess
+            $calls = Get-CallLog
+            @($calls | Where-Object { $_ -like 'install-ssh*' }).Count | Should -Be 0
+            $calls | Should -Contain 'configure-ssh Fotobox-SSH'
+        }
+    }
+
     Context 'settings file' {
         It 'merges folders into the settings and keeps arrays' {
             $json = ConvertTo-ProvisionedSettingsJson -Settings @{ layouts = @('Einzelbild'); autoStart = $true } `
@@ -109,6 +133,8 @@ Describe 'FotoboxProvision' {
             $calls | Should -Contain 'setup C:\Setup\Fotobox_1.0.0_x64-setup.exe /S /KIOSK=1 /KIOSKUSER=Booth /LANTOKEN=none'
             $calls | Should -Contain 'mkdir C:\Fotobox\Fotos'
             $calls | Should -Contain 'icacls.exe C:\Fotobox\Fotos /grant Booth:(OI)(CI)M'
+            # SSH first, so the PC stays reachable if a later step fails.
+            $calls.IndexOf('configure-ssh Fotobox-SSH') | Should -BeLessThan ([array]::FindIndex($calls, [Predicate[string]] { param($c) $c -like 'setup *' }))
             # Power plan first, so the kiosk setup tunes the active plan.
             $calls.IndexOf('powercfg /hibernate off') | Should -BeLessThan ([array]::FindIndex($calls, [Predicate[string]] { param($c) $c -like 'setup *' }))
 
@@ -127,6 +153,24 @@ Describe 'FotoboxProvision' {
             $calls = Get-CallLog
             @($calls | Where-Object { $_ -like 'netsh.exe wlan add profile filename=* user=all' }).Count | Should -Be 1
             $calls | Should -Contain "pnputil.exe /add-driver $([System.IO.Path]::Combine('C:\Setup', 'drivers\printer.inf')) /install"
+        }
+
+        It 'can leave SSH off' {
+            $script:config.RemoteAccess = @{ Enabled = $false }
+            Invoke-FotoboxProvisioning -Config $script:config -SetupPath 'C:\Setup\Fotobox-setup.exe' | Out-Null
+            @(Get-CallLog | Where-Object { $_ -like '*ssh*' }).Count | Should -Be 0
+        }
+
+        It 'copies collage templates shipped next to the script' {
+            $kit = Join-Path $TestDrive 'kit'
+            New-Item -ItemType Directory -Path (Join-Path $kit 'Collagen\kiga25') -Force | Out-Null
+            $script:config.Directories.Collages = 'C:\Fotobox\Collagen'
+            Invoke-FotoboxProvisioning -Config $script:config -SetupPath 'C:\Setup\Fotobox-setup.exe' -BaseDir $kit | Out-Null
+
+            $calls = Get-CallLog
+            $calls | Should -Contain 'copy-templates C:\Fotobox\Collagen'
+            $settings = (Get-Content -LiteralPath (Join-Path $env:ProgramData 'Fotobox/provisioning.json') -Raw | ConvertFrom-Json).settings
+            $settings.collageDirectory | Should -Be 'C:\Fotobox\Collagen'
         }
 
         It 'stops when the setup fails' {

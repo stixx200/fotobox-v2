@@ -270,16 +270,15 @@ Each release contains `Fotobox_<version>_provisioning.zip` with the scripts, an 
 setup. Copy `fotobox-provision.example.psd1` to `fotobox-provision.psd1` and adjust it (keep it UTF-8 with BOM if
 you use umlauts; Windows PowerShell 5.1 reads files without BOM as ANSI).
 
-**Locally** (USB stick, as administrator):
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\provision-fotobox.ps1 -Restart
-```
+**Locally** from a USB stick: double-click `Fotobox-einrichten.cmd` in the kit folder and confirm the administrator
+prompt (or run `powershell -ExecutionPolicy Bypass -File .\provision-fotobox.ps1 -Restart`). Collage templates in a
+`Collagen` folder next to the script are copied to the configured collage folder. The script also installs and enables
+the OpenSSH server (local network only) for remote maintenance; set `RemoteAccess.Enabled = $false` to skip it.
 
 **Remotely from a Mac** over SSH (PowerShell 7 runs on macOS: `brew install --cask powershell`; WinRM from macOS is
 not practical, SSH is built into Windows 10/11):
 
-1. Once on the new PC, as administrator — enables the OpenSSH server for the local network:
+1. Once on the new PC, as administrator — installs (if missing) and enables the OpenSSH server for the local network:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\enable-remote-access.ps1 -PublicKey (Get-Content .\id_ed25519.pub)
