@@ -7,13 +7,13 @@ test.describe('Editor workspace', () => {
     await editor.expectLoaded();
   });
 
-  test('shows a centered white canvas on a grey workspace', async ({
+  test('shows a centered white canvas on a tinted workspace', async ({
     editor,
   }): Promise<void> => {
     await expect(editor.canvasWrap).toBeVisible();
-    await expect(editor.canvasWrap).toHaveCSS(
+    await expect(editor.canvasWrap).not.toHaveCSS(
       'background-color',
-      'rgb(203, 213, 225)',
+      'rgb(255, 255, 255)',
     );
 
     const canvasContainer = editor.canvasWrap.locator('.canvas-container');
@@ -41,10 +41,12 @@ test.describe('Editor workspace', () => {
     await expect(editor.decorationLayers.first()).toContainText('Confetti');
   });
 
-  test('can enable magnetic smart guides', async ({ editor }): Promise<void> => {
+  test('can enable magnetic smart guides', async ({
+    editor,
+  }): Promise<void> => {
     await editor.toggleMagneticGuides();
     await expect(
-      editor.page.getByRole('checkbox', { name: 'Smart guides (magnetic)' }),
+      editor.page.getByRole('switch', { name: 'Smart guides (magnetic)' }),
     ).toBeChecked();
   });
 });

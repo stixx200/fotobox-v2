@@ -49,6 +49,7 @@ import { FabricCanvasViewportManager } from './fabric-canvas-viewport.manager';
 import {
   alphaFromFill,
   boundsFromObject,
+  findFreePosition,
   colorToHex,
 } from './fabric-canvas.utils';
 import {
@@ -63,6 +64,7 @@ import {
   type ImageStyle,
   type LayerBounds,
   type LayerGroups,
+  type LayerNamer,
   type PhotoStyle,
   type ShapeStyle,
   type TextStyle,
@@ -76,6 +78,7 @@ export type {
   ImageStyle,
   LayerBounds,
   LayerGroups,
+  LayerNamer,
   PhotoStyle,
   ShapeStyle,
   TextStyle,
@@ -87,6 +90,9 @@ export class FabricCanvasService {
   private canvas: Canvas | null = null;
   private layerCounter = 0;
   private photoSlotCounter = 0;
+  /** Default names for new layers; the editor injects translated names. */
+  private layerNamer: LayerNamer = (type, index, hint) =>
+    hint ?? `${type} ${index}`;
   private projectBorder?: Border;
   private snapEnabled = true;
   private magneticGuidesEnabled = false;
@@ -470,8 +476,12 @@ export class FabricCanvasService {
     return this.photoSlotCounter;
   }
 
+  setLayerNamer(namer: LayerNamer): void {
+    this.layerNamer = namer;
+  }
+
   private defaultLayerName(type: FotoboxLayerType): string {
-    return `${type} ${this.layerCounter + 1}`;
+    return this.layerNamer(type, this.layerCounter + 1);
   }
 
   private tagObject(
@@ -517,12 +527,37 @@ export class FabricCanvasService {
       ry: 2,
     });
     this.tagObject(rect, 'photo', {
+      [FOTOBOX_LAYER_NAME]: this.layerNamer('photo', slot),
       [FOTOBOX_BORDER]: DEFAULT_PHOTO_BORDER,
       [FOTOBOX_PHOTO_SLOT]: slot,
     });
+    const occupied = this.getPhotoObjects().map((obj) => boundsFromObject(obj));
     this.addCentered(rect);
+    this.moveToFreeSpot(rect, occupied);
     this.createPhotoSlotLabel(rect, slot);
     this.syncPhotoSlotLabels();
+  }
+
+  /** Shift a freshly centred photo pane so it doesn't cover existing ones. */
+  private moveToFreeSpot(obj: FabricObject, occupied: LayerBounds[]): void {
+    if (!this.canvas || occupied.length === 0) return;
+    const bounds = boundsFromObject(obj, false);
+    const spot = findFreePosition(
+      this.canvas.getWidth(),
+      this.canvas.getHeight(),
+      bounds.width,
+      bounds.height,
+      occupied,
+      this.safeMargin + 16,
+    );
+    if (!spot) return;
+    obj.set({
+      left: (obj.left ?? 0) + spot.x - bounds.x,
+      top: (obj.top ?? 0) + spot.y - bounds.y,
+    });
+    obj.setCoords();
+    this.canvas.requestRenderAll();
+    this.recordHistory(true);
   }
 
   private createPhotoSlotLabel(photo: FabricObject, slot: number): void {
@@ -692,7 +727,12 @@ export class FabricCanvasService {
     const height = this.canvas.getHeight();
     const group = buildDecorationPreset(preset, width, height);
     this.tagObject(group, 'shape', {
-      [FOTOBOX_LAYER_NAME]: DECORATION_PRESET_LABELS[preset],
+      [FOTOBOX_LAYER_NAME]: this.layerNamer(
+        'shape',
+        this.layerCounter + 1,
+        DECORATION_PRESET_LABELS[preset],
+        preset,
+      ),
     });
     this.canvas.add(group);
     this.canvas.sendObjectToBack(group);
@@ -1636,12 +1676,14 @@ export class FabricCanvasService {
     }
   }
 
+  /** True when the canvas differs from the last saved/loaded state. */
   isDirty(): boolean {
-    return this.canUndo();
+    return this.history.isDirty();
   }
 
+  /** Remember the current state as saved – keeps the undo history. */
   markSaved(): void {
-    this.resetHistory();
+    this.history.markSaved();
   }
 
   private getPhotoObjects(): FabricObject[] {

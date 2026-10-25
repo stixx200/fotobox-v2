@@ -5,15 +5,17 @@ export class ProjectListPage {
   readonly newTemplateButton: Locator;
   readonly emptyState: Locator;
   readonly projectCards: Locator;
+  readonly errorBanner: Locator;
 
   constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', {
       name: 'Collage Template Editor',
       level: 1,
     });
-    this.newTemplateButton = page.getByRole('button', { name: 'New template' });
+    this.newTemplateButton = page.getByTestId('new-template');
     this.emptyState = page.getByText('No editor projects yet.');
     this.projectCards = page.locator('.project-card');
+    this.errorBanner = page.getByTestId('list-error');
   }
 
   async goto(): Promise<void> {
@@ -29,7 +31,9 @@ export class ProjectListPage {
   projectCard(title: string): Locator {
     return this.page.locator('.project-card').filter({
       has: this.page.locator('strong', {
-        hasText: new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+        hasText: new RegExp(
+          `^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        ),
       }),
     });
   }
@@ -38,11 +42,19 @@ export class ProjectListPage {
     return this.projectCard(title).getByRole('button').first();
   }
 
-  duplicateButton(title: string): Locator {
-    return this.projectCard(title).getByRole('button', { name: 'Duplicate' });
+  async openCardMenu(title: string): Promise<void> {
+    await this.projectCard(title)
+      .getByRole('button', { name: /More actions/ })
+      .click();
   }
 
-  deleteButton(title: string): Locator {
-    return this.projectCard(title).getByRole('button', { name: 'Delete' });
+  async duplicate(title: string): Promise<void> {
+    await this.openCardMenu(title);
+    await this.page.getByRole('menuitem', { name: 'Duplicate' }).click();
+  }
+
+  async requestDelete(title: string): Promise<void> {
+    await this.openCardMenu(title);
+    await this.page.getByRole('menuitem', { name: 'Delete' }).click();
   }
 }

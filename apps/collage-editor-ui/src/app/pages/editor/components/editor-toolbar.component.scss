@@ -1,0 +1,175 @@
+:host {
+  display: block;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 64px;
+  padding: 0 12px 0 4px;
+  background: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface);
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+
+  &--start {
+    flex: 1 1 0;
+  }
+
+  &--center {
+    flex: 0 0 auto;
+    gap: 2px;
+  }
+
+  &--end {
+    flex: 1 1 0;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.divider {
+  height: 24px;
+  margin: 0 4px;
+}
+
+.doc-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 260px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--mat-sys-corner-small);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+  }
+}
+
+.doc-name {
+  max-width: 100%;
+  font: var(--mat-sys-title-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-meta {
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.state-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+
+  &--ok {
+    color: var(--mat-sys-primary);
+  }
+}
+
+.state-spinner {
+  display: inline-block;
+}
+
+.dirty-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mat-sys-tertiary);
+}
+
+.meta-sep {
+  opacity: 0.6;
+}
+
+.tonal {
+  --mat-button-filled-container-color: var(--mat-sys-secondary-container);
+  --mat-button-filled-label-text-color: var(--mat-sys-on-secondary-container);
+  --mat-button-filled-icon-color: var(--mat-sys-on-secondary-container);
+  margin-right: 4px;
+}
+
+.insert {
+  --mat-button-text-label-text-color: var(--mat-sys-on-surface);
+  --mat-button-text-icon-color: var(--mat-sys-on-surface-variant);
+}
+
+// Split button (M3 expressive): main action + menu toggle sharing a shape.
+.split {
+  display: inline-flex;
+  gap: 2px;
+
+  .split-main {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+
+  .split-toggle {
+    min-width: 0;
+    padding: 0 8px;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+
+    mat-icon {
+      margin: 0;
+    }
+  }
+}
+
+// Narrow windows: secondary insert tools collapse to icon buttons (tooltips
+// keep the labels discoverable).
+@media (max-width: 1360px) {
+  .insert {
+    min-width: 40px;
+    padding: 0 8px;
+
+    .label {
+      display: none;
+    }
+
+    mat-icon {
+      margin: 0;
+    }
+  }
+
+  .doc-title {
+    max-width: 270px;
+  }
+}
+
+@media (max-width: 960px) {
+  .top-bar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 4px 8px;
+    row-gap: 4px;
+  }
+
+  .section--center {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

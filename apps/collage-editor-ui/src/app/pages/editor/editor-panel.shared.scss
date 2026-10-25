@@ -1,218 +1,222 @@
-// Shared sidebar panel styles for editor child components (view encapsulation safe).
-
+// Editor side-panel styles, loaded globally from `styles.scss` (used by the
+// editor and its panel components). Uses the M3 tokens from `mat.theme`.
 .project-settings {
-  padding: 0.75rem 1rem 1rem;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 16px;
 
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    color: #475569;
-  }
-
-  input[type='text'],
-  input[type='number'] {
+  mat-form-field {
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.375rem 0.5rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    font-size: 0.8125rem;
   }
 
-  .checkbox-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
-    color: #334155;
-    cursor: pointer;
+  .hint {
+    margin: -8px 0 0;
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
 
-    input {
-      margin: 0;
-      flex-shrink: 0;
-    }
+  .field-error {
+    color: var(--mat-sys-error);
   }
 
   .template-border {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #e2e8f0;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
   }
 }
 
 .field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .props {
   margin: 0;
-  padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid #e2e8f0;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
   flex-shrink: 0;
 
   h3 {
-    margin: 0 0 0.5rem;
-    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+    font: var(--mat-sys-title-small);
+    color: var(--mat-sys-on-surface);
   }
 
   .hint {
-    margin: 0 0 0.5rem;
-    font-size: 0.75rem;
-    color: #64748b;
-    line-height: 1.4;
+    margin: 0 0 8px;
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
   }
 
-  label {
+  // Only the panel's own field labels – not the labels inside Material
+  // controls (slide toggles, checkboxes).
+  > label,
+  > .field-grid > label {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    margin-bottom: 0;
+    gap: 4px;
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
   }
 
-  input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0.25rem 0.375rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    font-size: 0.8125rem;
+  label + label,
+  .field-grid + label,
+  label + .field-grid,
+  .segmented + label,
+  label + .segmented {
+    margin-top: 8px;
   }
 
+  input:not([type='checkbox']):not([type='color']),
   textarea,
-  select,
-  .font-select {
+  select {
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.25rem 0.375rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    font-size: 0.8125rem;
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid var(--mat-sys-outline);
+    border-radius: var(--mat-sys-corner-extra-small);
+    background: var(--mat-sys-surface-container-lowest);
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-body-medium);
+
+    &:hover {
+      border-color: var(--mat-sys-on-surface);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--mat-sys-primary);
+      box-shadow: inset 0 0 0 1px var(--mat-sys-primary);
+    }
   }
 
-  .checkbox-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
-    color: #334155;
-    cursor: pointer;
+  textarea {
+    resize: vertical;
+  }
 
-    input {
-      margin: 0;
-      width: auto;
-      flex-shrink: 0;
-    }
+  .field-grid > label {
+    margin-top: 0;
+  }
+
+  .field-grid {
+    row-gap: 8px;
   }
 
   .color-input {
-    padding: 0.125rem;
-    height: 2rem;
-    width: auto;
+    width: 100%;
+    height: 36px;
+    padding: 2px;
+    border: 1px solid var(--mat-sys-outline);
+    border-radius: var(--mat-sys-corner-extra-small);
+    background: var(--mat-sys-surface-container-lowest);
     cursor: pointer;
-  }
-
-  button {
-    padding: 0.375rem 0.625rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-    font-size: 0.75rem;
-
-    &:hover {
-      background: #f8fafc;
-    }
   }
 }
 
-.toggle-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.375rem;
-}
-
-.validation ul {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-  font-size: 0.75rem;
+.toggle-list {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 4px;
+}
+
+// Validation list
+.validation {
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 
   li {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.375rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 
-.validation-issue,
-.validation-issue-text {
-  font-size: 0.75rem;
-  line-height: 1.35;
+.issue-count {
+  padding: 0 6px;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font: var(--mat-sys-label-small);
+  line-height: 18px;
+}
+
+.validation-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--mat-sys-primary);
+  }
 }
 
 .validation-issue {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   width: 100%;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--mat-sys-corner-small);
   text-align: left;
-  cursor: pointer;
+  font: var(--mat-sys-body-small);
 
-  &:hover {
-    background: #f8fafc;
+  mat-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
   }
 
   &--error {
-    color: #dc2626;
-    border-color: #fecaca;
-
-    &:hover {
-      background: #fef2f2;
-    }
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
   }
 
   &--warning {
-    color: #d97706;
-    border-color: #fde68a;
-
-    &:hover {
-      background: #fffbeb;
-    }
-  }
-
-  &--related {
-    width: auto;
-    flex-shrink: 0;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.6875rem;
-    color: #b45309;
-    border-color: #fde68a;
-    background: #fffbeb;
+    background: var(--app-warning-container);
+    color: var(--app-on-warning-container);
   }
 }
 
-.validation-issue-text {
-  display: block;
-  padding: 0.125rem 0.5rem;
-  color: #dc2626;
+button.validation-issue {
+  cursor: pointer;
 
-  .warning & {
-    color: #d97706;
+  &:hover {
+    filter: brightness(0.96);
+  }
+}
+
+.validation-related {
+  margin-left: 26px;
+  padding: 2px 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-full);
+  background: transparent;
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
   }
 }

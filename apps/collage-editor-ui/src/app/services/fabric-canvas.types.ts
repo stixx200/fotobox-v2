@@ -133,3 +133,15 @@ export interface LayerGroups {
 }
 
 export type ZoomMode = 'fit' | '100' | 'manual';
+
+/**
+ * Produces the default name of a new layer. `index` is the running layer
+ * number (photo panes: the photo slot); `fallback`/`preset` are set for
+ * decoration presets.
+ */
+export type LayerNamer = (
+  type: FotoboxLayerType,
+  index: number,
+  fallback?: string,
+  preset?: string,
+) => string;

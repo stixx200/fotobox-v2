@@ -14,7 +14,7 @@ test.describe('Editor layers and save', () => {
     await editor.layersTab.click();
     await expect(editor.photoLayers).toHaveCount(1);
     await expect(editor.decorationLayers).toHaveCount(1);
-    await expect(editor.photoLayers.first()).toContainText(/photo/i);
+    await expect(editor.photoLayers.first()).toContainText(/photo pane 1/i);
     await expect(editor.decorationLayers.first()).toContainText(/text/i);
   });
 
@@ -45,7 +45,8 @@ test.describe('Editor layers and save', () => {
 
     await editor.saveStay();
 
-    await expect(editor.status).toHaveText('Saved');
+    await expect(editor.saveState).toContainText('Saved');
+    await expect(editor.snackBar).toContainText('“Stay open” saved.');
     await expect(page).toHaveURL(/\/editor\/?$/);
     await expect(editor.photoPaneButton).toBeVisible();
   });

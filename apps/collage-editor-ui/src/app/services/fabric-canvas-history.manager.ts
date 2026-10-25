@@ -11,6 +11,8 @@ export interface FabricHistoryDeps {
 export class FabricCanvasHistoryManager {
   private undoStack: CanvasHistoryState[] = [];
   private redoStack: CanvasHistoryState[] = [];
+  /** State at the last save/load; `undefined` until `reset()`. */
+  private savedState?: CanvasHistoryState;
   private enabled = false;
   private paused = false;
   private debounceTimer?: ReturnType<typeof setTimeout>;
@@ -57,6 +59,23 @@ export class FabricCanvasHistoryManager {
     this.undoStack = [];
     this.redoStack = [];
     this.pushState();
+    this.savedState = this.undoStack[this.undoStack.length - 1];
+  }
+
+  /** Mark the current state as saved without dropping undo/redo history. */
+  markSaved(): void {
+    clearTimeout(this.debounceTimer);
+    this.pushState();
+    this.savedState = this.undoStack[this.undoStack.length - 1];
+  }
+
+  /** True when the current state differs from the last saved state. */
+  isDirty(): boolean {
+    const current = this.undoStack[this.undoStack.length - 1];
+    if (current === undefined || this.savedState === undefined) {
+      return this.canUndo();
+    }
+    return !this.deps.statesEqual(current, this.savedState);
   }
 
   record(immediate = false): void {

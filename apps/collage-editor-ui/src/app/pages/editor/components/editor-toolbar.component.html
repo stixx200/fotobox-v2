@@ -1,0 +1,247 @@
+<header
+  class="top-bar"
+  role="toolbar"
+  [attr.aria-label]="'editor.toolbarLabel' | translate"
+>
+  <div class="section section--start">
+    <button
+      mat-icon-button
+      type="button"
+      data-testid="editor-back"
+      [matTooltip]="'editor.back' | translate"
+      [attr.aria-label]="'editor.back' | translate"
+      (click)="back.emit()"
+    >
+      <mat-icon svgIcon="arrow_back" />
+    </button>
+
+    <button
+      type="button"
+      class="doc-title"
+      [matTooltip]="'editor.editProject' | translate"
+      (click)="editProject.emit()"
+    >
+      <span class="doc-name">{{ templateName() }}</span>
+      <span class="doc-meta" data-testid="save-state" aria-live="polite">
+        @switch (saveState()) {
+          @case ('saving') {
+            <mat-spinner diameter="12" class="state-spinner" />
+            {{ 'editor.state.saving' | translate }}
+          }
+          @case ('saved') {
+            <mat-icon
+              svgIcon="check_circle"
+              class="state-icon state-icon--ok"
+            />
+            {{ 'editor.state.saved' | translate }}
+          }
+          @case ('dirty') {
+            <span class="dirty-dot" aria-hidden="true"></span>
+            {{ 'editor.state.dirty' | translate }}
+          }
+          @default {
+            {{ 'editor.state.new' | translate }}
+          }
+        }
+        <span class="meta-sep" aria-hidden="true">·</span>
+        <span data-testid="photo-count">{{
+          'editor.photoCount' | translate: { count: photoCount() }
+        }}</span>
+      </span>
+    </button>
+
+    <mat-divider vertical class="divider" />
+
+    <button
+      mat-icon-button
+      type="button"
+      [disabled]="!canUndo()"
+      [matTooltip]="'editor.undoTooltip' | translate"
+      [attr.aria-label]="'editor.undo' | translate"
+      (click)="undo.emit()"
+    >
+      <mat-icon svgIcon="undo" />
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      [disabled]="!canRedo()"
+      [matTooltip]="'editor.redoTooltip' | translate"
+      [attr.aria-label]="'editor.redo' | translate"
+      (click)="redo.emit()"
+    >
+      <mat-icon svgIcon="redo" />
+    </button>
+  </div>
+
+  <div
+    class="section section--center"
+    role="group"
+    [attr.aria-label]="'editor.insert' | translate"
+  >
+    <button
+      mat-flat-button
+      type="button"
+      class="tonal"
+      data-testid="add-photo-pane"
+      [matTooltip]="'editor.photoPaneTooltip' | translate"
+      (click)="addPhotoPane.emit()"
+    >
+      <mat-icon svgIcon="add_photo_alternate" />
+      {{ 'editor.photoPane' | translate }}
+    </button>
+    <button
+      mat-button
+      type="button"
+      class="insert"
+      data-testid="add-text"
+      [matTooltip]="'editor.textTooltip' | translate"
+      (click)="addText.emit()"
+    >
+      <mat-icon svgIcon="title" />
+      <span class="label">{{ 'editor.text' | translate }}</span>
+    </button>
+    <button
+      mat-button
+      type="button"
+      class="insert"
+      data-testid="add-shape"
+      [matMenuTriggerFor]="shapeMenu"
+      [matTooltip]="'editor.toolbar.shapes' | translate"
+    >
+      <mat-icon svgIcon="category" />
+      <span class="label">{{ 'editor.toolbar.shapes' | translate }}</span>
+    </button>
+    <button
+      mat-button
+      type="button"
+      class="insert"
+      data-testid="add-image"
+      [matTooltip]="'editor.imageTooltip' | translate"
+      (click)="imageInput.click()"
+    >
+      <mat-icon svgIcon="image" />
+      <span class="label">{{ 'editor.image' | translate }}</span>
+    </button>
+    <input
+      #imageInput
+      type="file"
+      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+      hidden
+      (change)="onImageInput($event)"
+    />
+    <button
+      mat-button
+      type="button"
+      class="insert"
+      data-testid="add-decoration"
+      [matMenuTriggerFor]="presetMenu"
+      [matTooltip]="'editor.toolbar.presets' | translate"
+    >
+      <mat-icon svgIcon="auto_awesome" />
+      <span class="label">{{ 'editor.toolbar.presets' | translate }}</span>
+    </button>
+  </div>
+
+  <div class="section section--end">
+    <div class="split">
+      <button
+        mat-stroked-button
+        type="button"
+        class="split-main"
+        data-testid="preview"
+        [matTooltip]="'editor.previewTooltip' | translate"
+        (click)="preview.emit()"
+      >
+        <mat-icon svgIcon="visibility" />
+        {{ 'editor.preview' | translate }}
+      </button>
+      <button
+        mat-stroked-button
+        type="button"
+        class="split-toggle"
+        [matMenuTriggerFor]="previewMenu"
+        [attr.aria-label]="'editor.previewOptions' | translate"
+      >
+        <mat-icon svgIcon="arrow_drop_down" />
+      </button>
+    </div>
+
+    <button
+      mat-icon-button
+      type="button"
+      data-testid="shortcuts"
+      [matTooltip]="'editor.shortcuts' | translate"
+      [attr.aria-label]="'editor.shortcuts' | translate"
+      (click)="shortcuts.emit()"
+    >
+      <mat-icon svgIcon="keyboard" />
+    </button>
+
+    <div class="split">
+      <button
+        mat-flat-button
+        type="button"
+        class="split-main"
+        data-testid="save"
+        [disabled]="saveState() === 'saving'"
+        [matTooltip]="'editor.saveTooltip' | translate"
+        (click)="save.emit({ close: false })"
+      >
+        <mat-icon svgIcon="save" />
+        {{ 'editor.saveStay' | translate }}
+      </button>
+      <button
+        mat-flat-button
+        type="button"
+        class="split-toggle"
+        data-testid="save-options"
+        [disabled]="saveState() === 'saving'"
+        [matMenuTriggerFor]="saveMenu"
+        [attr.aria-label]="'editor.saveOptions' | translate"
+      >
+        <mat-icon svgIcon="arrow_drop_down" />
+      </button>
+    </div>
+  </div>
+</header>
+
+<mat-menu #shapeMenu="matMenu">
+  @for (shape of shapes; track shape.kind) {
+    <button mat-menu-item type="button" (click)="addShape.emit(shape.kind)">
+      {{ shape.label | translate }}
+    </button>
+  }
+</mat-menu>
+
+<mat-menu #presetMenu="matMenu">
+  @for (preset of presets; track preset.id) {
+    <button mat-menu-item type="button" (click)="addDecoration.emit(preset.id)">
+      {{ preset.label | translate }}
+    </button>
+  }
+</mat-menu>
+
+<mat-menu #previewMenu="matMenu" xPosition="before">
+  <button
+    mat-menu-item
+    type="button"
+    role="menuitemcheckbox"
+    [attr.aria-checked]="previewPinned()"
+    (click)="previewPinnedChange.emit(!previewPinned())"
+  >
+    <mat-icon [svgIcon]="previewPinned() ? 'check_circle' : 'visibility'" />
+    <span>{{ 'editor.toolbar.pinLivePreview' | translate }}</span>
+  </button>
+</mat-menu>
+
+<mat-menu #saveMenu="matMenu" xPosition="before">
+  <button mat-menu-item type="button" (click)="save.emit({ close: false })">
+    <mat-icon svgIcon="save" />
+    <span>{{ 'editor.saveStay' | translate }}</span>
+  </button>
+  <button mat-menu-item type="button" (click)="save.emit({ close: true })">
+    <mat-icon svgIcon="arrow_back" />
+    <span>{{ 'editor.toolbar.saveAndClose' | translate }}</span>
+  </button>
+</mat-menu>

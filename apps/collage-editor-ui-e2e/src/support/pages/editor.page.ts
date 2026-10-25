@@ -9,22 +9,25 @@ export class EditorPage {
   readonly projectSettings: Locator;
   readonly photoLayers: Locator;
   readonly decorationLayers: Locator;
-  readonly status: Locator;
+  /** Save state in the top bar ("New – not saved yet", "Saved", …). */
+  readonly saveState: Locator;
+  readonly backButton: Locator;
+  readonly snackBar: Locator;
+  readonly dialog: Locator;
 
   constructor(readonly page: Page) {
     this.canvas = page.locator('.canvas-wrap canvas').first();
     this.canvasWrap = page.locator('.canvas-wrap');
-    this.photoPaneButton = page.getByRole('button', { name: '+ Photo pane' });
-    this.layersTab = page.getByRole('button', { name: 'Layers', exact: true });
-    this.projectTab = page.getByRole('button', { name: 'Project', exact: true });
+    this.photoPaneButton = page.getByTestId('add-photo-pane');
+    this.layersTab = page.getByRole('tab', { name: 'Layers', exact: true });
+    this.projectTab = page.getByRole('tab', { name: 'Project', exact: true });
     this.projectSettings = page.locator('.project-settings');
     this.photoLayers = page.locator('.photo-list .layer-item');
-    this.decorationLayers = page
-      .locator('section.layer-group')
-      .filter({ has: page.getByRole('heading', { name: 'Decorations' })
-      })
-      .locator('.layer-item');
-    this.status = page.locator('.status');
+    this.decorationLayers = page.locator('.decoration-list .layer-item');
+    this.saveState = page.getByTestId('save-state');
+    this.backButton = page.getByTestId('editor-back');
+    this.snackBar = page.locator('mat-snack-bar-container');
+    this.dialog = page.getByRole('dialog');
   }
 
   async expectLoaded(): Promise<void> {
@@ -32,34 +35,30 @@ export class EditorPage {
     await this.canvas.waitFor({ state: 'visible' });
   }
 
-  async openToolbarMenu(triggerName: string | RegExp): Promise<Locator> {
-    const group = this.page.locator('.toolbar-group').filter({
-      has: this.page.getByRole('button', { name: triggerName }),
-    });
-    await group.getByRole('button').first().hover();
-    const flyout = group.locator('.toolbar-flyout');
-    await flyout.waitFor({ state: 'visible' });
-    return flyout;
-  }
-
   async addTextLayer(): Promise<void> {
-    const flyout = await this.openToolbarMenu('Content');
-    await flyout.getByRole('menuitem', { name: 'Text' }).click();
+    await this.page.getByTestId('add-text').click();
   }
 
   async addPreset(presetName: string | RegExp): Promise<void> {
-    const flyout = await this.openToolbarMenu('Presets');
-    await flyout.getByRole('menuitem', { name: presetName }).click();
+    await this.page.getByTestId('add-decoration').click();
+    await this.page.getByRole('menuitem', { name: presetName }).click();
   }
 
   async saveAndClose(): Promise<void> {
-    const flyout = await this.openToolbarMenu(/^Save$/);
-    await flyout.getByRole('menuitem', { name: 'Save & close' }).click();
+    await this.page.getByTestId('save-options').click();
+    await this.page.getByRole('menuitem', { name: 'Save & close' }).click();
   }
 
   async saveStay(): Promise<void> {
-    const flyout = await this.openToolbarMenu(/^Save$/);
-    await flyout.getByRole('menuitem', { name: 'Save', exact: true }).click();
+    await this.page.getByTestId('save').click();
+  }
+
+  async confirmDialog(): Promise<void> {
+    await this.page.getByTestId('confirm-accept').click();
+  }
+
+  async cancelDialog(): Promise<void> {
+    await this.page.getByTestId('confirm-cancel').click();
   }
 
   async setProjectId(id: string): Promise<void> {
@@ -85,7 +84,7 @@ export class EditorPage {
   async toggleMagneticGuides(): Promise<void> {
     await this.layersTab.click();
     await this.page
-      .getByRole('checkbox', { name: 'Smart guides (magnetic)' })
-      .check();
+      .getByRole('switch', { name: 'Smart guides (magnetic)' })
+      .click();
   }
 }

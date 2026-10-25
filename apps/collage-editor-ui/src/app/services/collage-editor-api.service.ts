@@ -40,7 +40,9 @@ export function isCollageTemplateAlreadyExistsError(error: unknown): boolean {
   }
 
   const graphQLErrors = (
-    error as { graphQLErrors?: { extensions?: { code?: string }; message?: string }[] }
+    error as {
+      graphQLErrors?: { extensions?: { code?: string }; message?: string }[];
+    }
   ).graphQLErrors;
   if (
     graphQLErrors?.some(
@@ -129,20 +131,20 @@ export class CollageEditorApiService {
     overwrite?: boolean;
   }): Observable<{ templateId: string; path: string }> {
     return this.apollo
-      .mutate<{ saveCollageEditorProject: { templateId: string; path: string } }>(
-        {
-          mutation: SaveCollageEditorProjectDocument,
-          variables: {
-            input: {
-              projectJson: JSON.stringify(input.project),
-              backgroundBase64: input.backgroundBase64,
-              assets: input.assets,
-              collageDirectory: input.collageDirectory || null,
-              overwrite: input.overwrite ?? false,
-            },
+      .mutate<{
+        saveCollageEditorProject: { templateId: string; path: string };
+      }>({
+        mutation: SaveCollageEditorProjectDocument,
+        variables: {
+          input: {
+            projectJson: JSON.stringify(input.project),
+            backgroundBase64: input.backgroundBase64,
+            assets: input.assets,
+            collageDirectory: input.collageDirectory || null,
+            overwrite: input.overwrite ?? false,
           },
         },
-      )
+      })
       .pipe(
         map((r) => {
           if (r.error) {
@@ -194,6 +196,9 @@ export class CollageEditorApiService {
       })
       .pipe(
         map((r) => {
+          // Mutations use errorPolicy 'all': surface the real GraphQL error so
+          // the UI can map its code to a readable message.
+          if (r.error) throw r.error;
           const result = r.data?.deleteCollageEditorProject;
           if (!result) throw new Error('Delete failed');
           return result;
@@ -219,6 +224,7 @@ export class CollageEditorApiService {
       })
       .pipe(
         map((r) => {
+          if (r.error) throw r.error;
           const result = r.data?.duplicateCollageEditorProject;
           if (!result) throw new Error('Duplicate failed');
           return result;

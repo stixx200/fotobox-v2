@@ -1,5 +1,12 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  DOCUMENT,
+  inject,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-root',
@@ -12,13 +19,22 @@ import { RouterModule } from '@angular/router';
       :host {
         display: block;
         min-height: 100vh;
-        font-family:
-          system-ui,
-          -apple-system,
-          sans-serif;
-        color: #0f172a;
       }
     `,
   ],
 })
-export class AppComponent {}
+export class AppComponent {
+  constructor() {
+    const document = inject(DOCUMENT);
+    const translate = inject(TranslateService);
+    const apply = (lang: string | undefined) => {
+      if (lang) {
+        document.documentElement.lang = lang;
+      }
+    };
+    apply(translate.getCurrentLang?.() ?? undefined);
+    translate.onLangChange
+      .pipe(takeUntilDestroyed())
+      .subscribe((event) => apply(event.lang));
+  }
+}

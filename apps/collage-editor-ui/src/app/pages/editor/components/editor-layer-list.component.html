@@ -1,0 +1,192 @@
+<ng-template #rowActions let-layer="layer" let-reorderable="reorderable">
+  <div class="row-actions">
+    <button
+      mat-icon-button
+      type="button"
+      class="icon-button-compact row-action"
+      [class.is-on]="!layer.visible"
+      [matTooltip]="(layer.visible ? 'editor.hide' : 'editor.show') | translate"
+      [attr.aria-label]="
+        (layer.visible ? 'editor.hide' : 'editor.show') | translate
+      "
+      [attr.aria-pressed]="!layer.visible"
+      (click)="$event.stopPropagation(); toggleVisible.emit(layer)"
+    >
+      <mat-icon [svgIcon]="layer.visible ? 'visibility' : 'visibility_off'" />
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="icon-button-compact row-action"
+      [class.is-on]="layer.locked"
+      [matTooltip]="
+        (layer.locked ? 'editor.unlock' : 'editor.lock') | translate
+      "
+      [attr.aria-label]="
+        (layer.locked ? 'editor.unlock' : 'editor.lock') | translate
+      "
+      [attr.aria-pressed]="layer.locked"
+      (click)="$event.stopPropagation(); toggleLocked.emit(layer)"
+    >
+      <mat-icon [svgIcon]="layer.locked ? 'lock' : 'lock_open'" />
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="icon-button-compact row-action row-action--menu"
+      [matMenuTriggerFor]="layerMenu"
+      [matMenuTriggerData]="{ layer: layer, reorderable: reorderable }"
+      [matTooltip]="'editor.layerActions' | translate"
+      [attr.aria-label]="
+        'editor.layerActionsFor' | translate: { name: layer.name }
+      "
+      (click)="$event.stopPropagation()"
+    >
+      <mat-icon svgIcon="more_vert" />
+    </button>
+  </div>
+</ng-template>
+
+<mat-menu #layerMenu="matMenu" xPosition="before">
+  <ng-template matMenuContent let-layer="layer" let-reorderable="reorderable">
+    <button mat-menu-item type="button" (click)="duplicate.emit(layer)">
+      <mat-icon svgIcon="content_copy" />
+      <span>{{ 'editor.duplicate' | translate }}</span>
+    </button>
+    @if (reorderable) {
+      <button mat-menu-item type="button" (click)="bringForward.emit(layer.id)">
+        <mat-icon svgIcon="arrow_upward" />
+        <span>{{ 'editor.bringForward' | translate }}</span>
+      </button>
+      <button mat-menu-item type="button" (click)="sendBackward.emit(layer.id)">
+        <mat-icon svgIcon="arrow_downward" />
+        <span>{{ 'editor.sendBackward' | translate }}</span>
+      </button>
+    }
+    <button
+      mat-menu-item
+      type="button"
+      class="menu-danger"
+      (click)="remove.emit(layer.id)"
+    >
+      <mat-icon svgIcon="delete" />
+      <span>{{ 'editor.deleteLayer' | translate }}</span>
+    </button>
+  </ng-template>
+</mat-menu>
+
+<section class="layer-group" aria-labelledby="group-photos">
+  <h3 id="group-photos" class="group-title">
+    {{ 'editor.photoPanes' | translate }}
+    <span class="group-count">{{ groups().photos.length }}</span>
+  </h3>
+  @if (groups().photos.length === 0) {
+    <p class="group-empty">{{ 'editor.noPhotoPanes' | translate }}</p>
+  }
+  <ul class="layer-list photo-list">
+    @for (layer of groups().photos; track layer.id) {
+      <li
+        class="layer-item layer-photo"
+        [class.active]="activeLayerId() === layer.id"
+        [class.layer-hidden]="!layer.visible"
+      >
+        <button
+          type="button"
+          class="layer-select"
+          [attr.aria-pressed]="activeLayerId() === layer.id"
+          (click)="layerSelect.emit(layer.id)"
+        >
+          <span class="slot-badge">{{ layer.photoSlot }}</span>
+          <span class="layer-label">{{ layer.name }}</span>
+        </button>
+        <ng-container
+          *ngTemplateOutlet="
+            rowActions;
+            context: { layer: layer, reorderable: false }
+          "
+        />
+      </li>
+    }
+  </ul>
+</section>
+
+<section class="layer-group" aria-labelledby="group-decorations">
+  <h3 id="group-decorations" class="group-title">
+    {{ 'editor.decorations' | translate }}
+    <span class="group-count">{{ groups().decorations.length }}</span>
+  </h3>
+  @if (groups().decorations.length === 0) {
+    <p class="group-empty">{{ 'editor.noDecorations' | translate }}</p>
+  }
+  <ul
+    class="layer-list decoration-list"
+    cdkDropList
+    (cdkDropListDropped)="reorder.emit($event)"
+  >
+    @for (layer of groups().decorations; track layer.id) {
+      <li
+        class="layer-item"
+        cdkDrag
+        cdkDragLockAxis="y"
+        [class.active]="activeLayerId() === layer.id"
+        [class.layer-hidden]="!layer.visible"
+      >
+        <span
+          class="drag-handle"
+          cdkDragHandle
+          [matTooltip]="'editor.dragToReorder' | translate"
+        >
+          <mat-icon svgIcon="drag_indicator" />
+        </span>
+        <button
+          type="button"
+          class="layer-select"
+          [attr.aria-pressed]="activeLayerId() === layer.id"
+          (click)="layerSelect.emit(layer.id)"
+        >
+          <mat-icon class="type-icon" [svgIcon]="typeIcon(layer.type)" />
+          <span class="layer-text">
+            <span class="layer-label">{{ layer.name }}</span>
+            <span class="layer-meta">
+              {{ 'editor.layerType.' + layer.type | translate }}
+              @if (layer.assetFile) {
+                · {{ layer.assetFile }}
+              }
+            </span>
+          </span>
+        </button>
+        <ng-container
+          *ngTemplateOutlet="
+            rowActions;
+            context: { layer: layer, reorderable: true }
+          "
+        />
+      </li>
+    }
+  </ul>
+</section>
+
+<section class="layer-group" aria-labelledby="group-background">
+  <h3 id="group-background" class="group-title">
+    {{ 'editor.background' | translate }}
+  </h3>
+  <ul class="layer-list">
+    <li
+      class="layer-item layer-fixed"
+      [class.active]="activeLayerId() === groups().background.id"
+    >
+      <button
+        type="button"
+        class="layer-select"
+        data-testid="background-layer"
+        [attr.aria-pressed]="activeLayerId() === groups().background.id"
+        (click)="layerSelect.emit(groups().background.id)"
+      >
+        <mat-icon class="type-icon" svgIcon="palette" />
+        <span class="layer-label">{{
+          'editor.backgroundLayer' | translate
+        }}</span>
+      </button>
+    </li>
+  </ul>
+</section>

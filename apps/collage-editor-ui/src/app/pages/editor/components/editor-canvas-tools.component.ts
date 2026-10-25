@@ -4,59 +4,53 @@ import {
   output,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-editor-canvas-tools',
   standalone: true,
-  imports: [FormsModule, TranslatePipe],
-  styleUrl: '../editor-panel.shared.scss',
+  imports: [MatSlideToggleModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="props">
       <h3>{{ 'editor.canvasTools' | translate }}</h3>
-      <div class="toggle-grid">
-        <label class="checkbox-row">
-          <input
-            type="checkbox"
-            [ngModel]="magneticGuidesEnabled()"
-            (ngModelChange)="magneticGuidesChange.emit($event)"
-          />
-          {{ 'editor.magneticGuides' | translate }}
-        </label>
-        <label class="checkbox-row">
-          <input
-            type="checkbox"
-            [ngModel]="snapEnabled()"
-            (ngModelChange)="snapChange.emit($event)"
-          />
+      <div class="toggle-list">
+        <mat-slide-toggle
+          hideIcon
+          [checked]="snapEnabled()"
+          (change)="snapChange.emit($event.checked)"
+        >
           {{ 'editor.snap' | translate }}
-        </label>
-        <label class="checkbox-row">
-          <input
-            type="checkbox"
-            [ngModel]="showGrid()"
-            (ngModelChange)="showGridChange.emit($event)"
-          />
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          hideIcon
+          [checked]="magneticGuidesEnabled()"
+          (change)="magneticGuidesChange.emit($event.checked)"
+        >
+          {{ 'editor.magneticGuides' | translate }}
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          hideIcon
+          [checked]="showGrid()"
+          (change)="showGridChange.emit($event.checked)"
+        >
           {{ 'editor.grid' | translate }}
-        </label>
-        <label class="checkbox-row">
-          <input
-            type="checkbox"
-            [ngModel]="showGuides()"
-            (ngModelChange)="showGuidesChange.emit($event)"
-          />
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          hideIcon
+          [checked]="showGuides()"
+          (change)="showGuidesChange.emit($event.checked)"
+        >
           {{ 'editor.guides' | translate }}
-        </label>
-        <label class="checkbox-row">
-          <input
-            type="checkbox"
-            [ngModel]="showSafeArea()"
-            (ngModelChange)="showSafeAreaChange.emit($event)"
-          />
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          hideIcon
+          [checked]="showSafeArea()"
+          (change)="showSafeAreaChange.emit($event.checked)"
+        >
           {{ 'editor.safeArea' | translate }}
-        </label>
+        </mat-slide-toggle>
       </div>
     </div>
   `,

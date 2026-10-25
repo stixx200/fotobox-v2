@@ -1,83 +1,184 @@
-<div class="page">
-  <header class="header">
-    <h1>{{ 'projects.title' | translate }}</h1>
-    <button type="button" class="btn primary" (click)="createNew()">
-      {{ 'projects.new' | translate }}
-    </button>
-  </header>
-
-  <section class="directory">
-    <label>
-      {{ 'projects.directory' | translate }}
-      <input
-        type="text"
-        [ngModel]="collageDirectory()"
-        (ngModelChange)="collageDirectory.set($event)"
-        placeholder="/path/to/collage-templates"
-      />
-    </label>
-    <button type="button" class="btn" (click)="refresh()">
-      {{ 'projects.refresh' | translate }}
-    </button>
-  </section>
-
-  @if (error(); as err) {
-    <p class="error">{{ err }}</p>
-  }
-
+<mat-toolbar class="top-bar">
+  <mat-icon class="brand-icon" svgIcon="collections" aria-hidden="true" />
+  <h1>{{ 'projects.title' | translate }}</h1>
+  <span class="spacer"></span>
+  <button
+    mat-flat-button
+    type="button"
+    data-testid="new-template"
+    (click)="createNew()"
+  >
+    <mat-icon svgIcon="add" />
+    {{ 'projects.new' | translate }}
+  </button>
+</mat-toolbar>
+<div class="progress-slot">
   @if (loading()) {
-    <p>Loading…</p>
-  } @else {
-    <section>
-      <h2>{{ 'projects.saved' | translate }}</h2>
-      @if (projects().length === 0) {
-        <p class="muted">{{ 'projects.none' | translate }}</p>
-      } @else {
-        <ul class="list">
-          @for (p of projects(); track p.id) {
-            <li class="project-card">
-              @if (thumbnailUrl(p); as thumb) {
-                <img class="thumb" [src]="thumb" alt="" />
-              } @else {
-                <div class="thumb placeholder">{{ p.width }}×{{ p.height }}</div>
-              }
-              <button type="button" class="link" (click)="openProject(p.id)">
-                <strong>{{ p.name || p.id }}</strong>
-                <span>{{ p.width }}×{{ p.height }}</span>
-                @if (p.updatedAt) {
-                  <span class="muted">{{ p.updatedAt | date: 'short' }}</span>
-                }
-              </button>
-              <div class="card-actions">
-                <button type="button" class="btn small" (click)="duplicateProject(p.id, $event)">
-                  {{ 'projects.duplicate' | translate }}
-                </button>
-                <button type="button" class="btn small danger" (click)="deleteProject(p.id, $event)">
-                  {{ 'projects.delete' | translate }}
-                </button>
-              </div>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
-    <section>
-      <h2>{{ 'projects.legacy' | translate }}</h2>
-      <p class="muted">{{ 'projects.legacyHint' | translate }}</p>
-      @if (legacyTemplates().length === 0) {
-        <p class="muted">None found in this directory.</p>
-      } @else {
-        <ul class="list">
-          @for (id of legacyTemplates(); track id) {
-            <li>
-              <button type="button" class="link" (click)="openProject(id)">
-                {{ id }}
-              </button>
-            </li>
-          }
-        </ul>
-      }
-    </section>
+    <mat-progress-bar
+      mode="indeterminate"
+      [attr.aria-label]="'common.loading' | translate"
+    />
   }
 </div>
+
+<main class="page">
+  <form class="folder" (ngSubmit)="refresh()">
+    <mat-form-field
+      appearance="outline"
+      class="folder-field"
+      subscriptSizing="dynamic"
+    >
+      <mat-label>{{ 'projects.directory' | translate }}</mat-label>
+      <mat-icon matPrefix svgIcon="folder_open" />
+      <input
+        matInput
+        name="collageDirectory"
+        autocomplete="off"
+        spellcheck="false"
+        [placeholder]="'projects.directoryPlaceholder' | translate"
+        [ngModel]="collageDirectory()"
+        (ngModelChange)="collageDirectory.set($event)"
+      />
+      <mat-hint>{{ 'projects.directoryHint' | translate }}</mat-hint>
+    </mat-form-field>
+    <button
+      mat-stroked-button
+      type="submit"
+      class="folder-submit"
+      [disabled]="loading()"
+    >
+      <mat-icon svgIcon="refresh" />
+      {{ 'projects.refresh' | translate }}
+    </button>
+  </form>
+
+  @if (error(); as err) {
+    <div class="banner" role="alert" data-testid="list-error">
+      <mat-icon
+        class="banner-icon"
+        [svgIcon]="err.retryable ? 'cloud_off' : 'error'"
+        aria-hidden="true"
+      />
+      <div class="banner-text">
+        <strong>{{ 'projects.loadFailedTitle' | translate }}</strong>
+        <span>{{ err.key | translate: err.params }}</span>
+      </div>
+      <button mat-button type="button" (click)="refresh()">
+        {{ 'common.retry' | translate }}
+      </button>
+    </div>
+  }
+
+  <section class="section" aria-labelledby="saved-heading" [hidden]="!!error()">
+    <header class="section-header">
+      <h2 id="saved-heading">{{ 'projects.saved' | translate }}</h2>
+      @if (projects().length) {
+        <span class="count">{{ projects().length }}</span>
+      }
+    </header>
+
+    @if (!loading() && !error() && projects().length === 0) {
+      <div class="empty-state" data-testid="empty-state">
+        <mat-icon class="empty-icon" svgIcon="collections" aria-hidden="true" />
+        <h3>{{ 'projects.none' | translate }}</h3>
+        <p>{{ 'projects.noneHint' | translate }}</p>
+        <button mat-flat-button type="button" (click)="createNew()">
+          <mat-icon svgIcon="add" />
+          {{ 'projects.new' | translate }}
+        </button>
+      </div>
+    } @else {
+      <ul class="grid">
+        @for (p of projects(); track p.id) {
+          <li class="project-card" [class.busy]="busyId() === p.id">
+            <button
+              type="button"
+              class="card-open"
+              [attr.aria-label]="
+                'projects.openAria' | translate: { name: p.name || p.id }
+              "
+              (click)="openProject(p.id)"
+            >
+              <div
+                class="thumb"
+                [style.aspect-ratio]="p.width + ' / ' + p.height"
+              >
+                @if (thumbnailUrl(p); as thumb) {
+                  <img [src]="thumb" alt="" />
+                } @else {
+                  <mat-icon svgIcon="image" aria-hidden="true" />
+                }
+              </div>
+              <span class="card-body">
+                <strong class="card-title">{{ p.name || p.id }}</strong>
+                <span class="card-meta">
+                  {{ p.width }} × {{ p.height }} px
+                  @if (p.updatedAt) {
+                    · {{ p.updatedAt | date: 'short' : undefined : locale() }}
+                  }
+                </span>
+              </span>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              class="card-menu"
+              [disabled]="busyId() === p.id"
+              [matMenuTriggerFor]="cardMenu"
+              [matMenuTriggerData]="{ project: p }"
+              [matTooltip]="'projects.moreActions' | translate"
+              [attr.aria-label]="
+                'projects.moreActionsFor' | translate: { name: p.name || p.id }
+              "
+            >
+              <mat-icon svgIcon="more_vert" />
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <mat-menu #cardMenu="matMenu" xPosition="before">
+    <ng-template matMenuContent let-project="project">
+      <button mat-menu-item type="button" (click)="openProject(project.id)">
+        <mat-icon svgIcon="edit" />
+        <span>{{ 'projects.open' | translate }}</span>
+      </button>
+      <button mat-menu-item type="button" (click)="duplicateProject(project)">
+        <mat-icon svgIcon="content_copy" />
+        <span>{{ 'projects.duplicate' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        type="button"
+        class="menu-danger"
+        (click)="deleteProject(project)"
+      >
+        <mat-icon svgIcon="delete" />
+        <span>{{ 'projects.delete' | translate }}</span>
+      </button>
+    </ng-template>
+  </mat-menu>
+
+  @if (legacyTemplates().length) {
+    <section class="section" aria-labelledby="legacy-heading">
+      <header class="section-header">
+        <h2 id="legacy-heading">{{ 'projects.legacy' | translate }}</h2>
+      </header>
+      <p class="section-hint">{{ 'projects.legacyHint' | translate }}</p>
+      <ul class="legacy-list">
+        @for (id of legacyTemplates(); track id) {
+          <li>
+            <mat-icon svgIcon="image" aria-hidden="true" />
+            <span class="legacy-name">{{ id }}</span>
+            <button mat-button type="button" (click)="openProject(id)">
+              <mat-icon svgIcon="upload" />
+              {{ 'projects.import' | translate }}
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</main>
