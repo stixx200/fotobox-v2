@@ -38,7 +38,8 @@
 ; Runs setup-kiosk.ps1 with ARGS; leaves the exit code (or "error") in $R8.
 !macro FOTOBOX_RUN_SETUP ARGS
   !insertmacro FOTOBOX_POWERSHELL $R9
-  DetailPrint "Fotobox: setup-kiosk.ps1 ${ARGS}"
+  ; Single quotes: ARGS contains double quotes.
+  DetailPrint 'Fotobox: setup-kiosk.ps1 ${ARGS}'
   nsExec::ExecToLog '"$R9" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\setup-kiosk.ps1" -InstallDir "$INSTDIR" ${ARGS}'
   Pop $R8
 !macroend
