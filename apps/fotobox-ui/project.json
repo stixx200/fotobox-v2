@@ -27,7 +27,13 @@
             "input": "apps/fotobox-ui/public"
           }
         ],
-        "styles": ["apps/fotobox-ui/src/styles.scss"],
+        "styles": [
+          "node_modules/@fontsource/roboto/latin-300.css",
+          "node_modules/@fontsource/roboto/latin-400.css",
+          "node_modules/@fontsource/roboto/latin-500.css",
+          "node_modules/material-icons/iconfont/filled.css",
+          "apps/fotobox-ui/src/styles.scss"
+        ],
         "scripts": [],
         "allowedCommonJsDependencies": ["qrcode", "dijkstrajs"]
       },

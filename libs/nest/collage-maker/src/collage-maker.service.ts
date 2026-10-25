@@ -11,13 +11,13 @@ import { ConfigService } from '@nestjs/config';
 import { BehaviorSubject, catchError, of, switchMap } from 'rxjs';
 import { FotoboxError } from '@fotobox/error';
 import { getLogger } from '@fotobox/logging';
+import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
 import { resolveBuiltInTemplateDirectory } from './template-paths';
 
 const logger = getLogger('CollageMakerService');
 
 @Injectable({ scope: Scope.TRANSIENT })
 export class CollageMakerService {
-  private photoDirectory: string;
   private templateDirectory?: string;
   private builtInDirectory: string;
   private currentTemplateId?: string;
@@ -49,10 +49,21 @@ export class CollageMakerService {
     }),
   );
 
-  constructor(private config: ConfigService) {
-    this.photoDirectory = this.config.getOrThrow('photoDirectory');
+  constructor(
+    private config: ConfigService,
+    private photoStorage: PhotoStorageProviderService,
+  ) {
     this.templateDirectory = this.config.get('templateDirectory');
     this.builtInDirectory = resolveBuiltInTemplateDirectory(this.config);
+  }
+
+  /**
+   * Where captured photos are stored. Resolved on every use: the operator can
+   * change the folder in the settings at runtime, and photos are saved through
+   * PhotoStorageProviderService.
+   */
+  private get photoDirectory(): string {
+    return this.photoStorage.getPhotoDirectory();
   }
 
   /**

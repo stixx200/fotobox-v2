@@ -4,8 +4,8 @@
 @use 'sass:meta';
 @use '@angular/material' as mat;
 
-// System fonts only: the editor runs offline in the desktop app, so no web-font
-// CDN. Roboto is used when installed.
+// Roboto is bundled from @fontsource/roboto (project.json styles), so it works
+// offline in the desktop app; system fonts are only a fallback.
 $font-stack:
   Roboto,
   'Segoe UI',
@@ -17,8 +17,9 @@ html {
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+        // Same palette as the kiosk UI (apps/fotobox-ui/src/styles.scss).
+        primary: mat.$violet-palette,
+        tertiary: mat.$magenta-palette,
       ),
       typography: (
         plain-family: $font-stack,

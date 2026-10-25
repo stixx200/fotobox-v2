@@ -123,7 +123,17 @@ export class SettingsService {
         },
         refetchQueries: [{ query: GET_SETTINGS }],
       })
-      .pipe(map((result) => requireData(result).updateSettings));
+      .pipe(
+        map((result) => {
+          // errorPolicy 'all' can return data with a null field next to an
+          // error; never hand null to the store as the settings list.
+          const updated = requireData(result).updateSettings;
+          if (result.error || !Array.isArray(updated)) {
+            throw new Error(result.error?.message ?? 'Settings were not saved');
+          }
+          return updated;
+        }),
+      );
   }
 
   resetSettings(): Observable<MutationResult> {
