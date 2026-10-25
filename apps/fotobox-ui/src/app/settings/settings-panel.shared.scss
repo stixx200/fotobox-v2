@@ -229,6 +229,22 @@
   }
 }
 
+.exit-kiosk-action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 0.25rem;
+
+  button {
+    width: 100%;
+  }
+
+  mat-spinner {
+    display: inline-block;
+    margin-inline-end: 8px;
+  }
+}
+
 .layouts-select-wrap {
   display: flex;
   flex-direction: column;

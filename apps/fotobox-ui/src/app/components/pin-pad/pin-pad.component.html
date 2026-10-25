@@ -1,0 +1,74 @@
+<div class="pin-card" [class.pin-card--shake]="error()">
+  <mat-icon class="pin-icon" aria-hidden="true">{{ icon() }}</mat-icon>
+  <h2 [id]="titleId">{{ title() }}</h2>
+
+  <div
+    class="pin-dots"
+    role="status"
+    [attr.aria-label]="
+      'PIN_PAD.PROGRESS' | translate: { count: pin().length, total: length() }
+    "
+  >
+    @for (filled of dots(); track $index) {
+      <span class="pin-dot" [class.pin-dot--filled]="filled"></span>
+    }
+  </div>
+
+  <p class="pin-error" aria-live="assertive">
+    @if (error()) {
+      {{ errorMessage() }}
+    }
+  </p>
+
+  <div class="keypad" role="group" [attr.aria-labelledby]="titleId">
+    @for (digit of keypadDigits; track digit) {
+      <button
+        type="button"
+        class="keypad-key"
+        (pointerdown)="$event.preventDefault()"
+        matButton="tonal"
+        [attr.data-key]="digit"
+        (click)="pressDigit(digit)"
+      >
+        {{ digit }}
+      </button>
+    }
+    @if (cancelable()) {
+      <button
+        type="button"
+        class="keypad-key keypad-key--icon"
+        (pointerdown)="$event.preventDefault()"
+        matButton="text"
+        data-key="cancel"
+        [attr.aria-label]="cancelLabel()"
+        (click)="cancel()"
+      >
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+    } @else {
+      <span aria-hidden="true"></span>
+    }
+    <button
+      type="button"
+      class="keypad-key"
+      (pointerdown)="$event.preventDefault()"
+      matButton="tonal"
+      data-key="0"
+      (click)="pressDigit('0')"
+    >
+      0
+    </button>
+    <button
+      type="button"
+      class="keypad-key keypad-key--icon"
+      (pointerdown)="$event.preventDefault()"
+      matButton="text"
+      data-key="delete"
+      [disabled]="pin().length === 0"
+      [attr.aria-label]="'PIN_PAD.DELETE_DIGIT' | translate"
+      (click)="deleteDigit()"
+    >
+      <mat-icon>backspace</mat-icon>
+    </button>
+  </div>
+</div>

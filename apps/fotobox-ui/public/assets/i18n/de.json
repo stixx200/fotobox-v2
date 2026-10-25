@@ -62,7 +62,16 @@
     "THEME_DARK": "Dunkles Design",
     "REFRESH_PRINTERS": "Druckerliste neu laden",
     "REFRESH_TEMPLATES": "Collage-Vorlagen neu laden",
-    "LAYOUTS_AUTO_SELECTED": "Es war kein Layout ausgewählt – „Einzelbild“ wurde automatisch aktiviert."
+    "LAYOUTS_AUTO_SELECTED": "Es war kein Layout ausgewählt – „Einzelbild“ wurde automatisch aktiviert.",
+    "OPERATION": "Betrieb",
+    "OPERATOR_PIN": "Betreiber-PIN",
+    "OPERATOR_PIN_HINT": "4 Ziffern. Schützt die Einstellungen vor Gästen. Leer lassen für freien Zugang",
+    "OPERATOR_PIN_INVALID": "PIN muss genau 4 Ziffern haben",
+    "AUTO_START": "Beim Start direkt die Fotobox öffnen",
+    "AUTO_START_HINT": "Nach einem Neustart geht es ohne Umweg zur Fotobox. Die Einstellungen erreichst du dann über die versteckte Ecke oben links (5× tippen).",
+    "EXIT_TO_WINDOWS": "Zu Windows wechseln",
+    "EXIT_TO_WINDOWS_HINT": "Für Wartungsarbeiten am Rechner. Die Fotobox startet nach 30 Minuten automatisch neu.",
+    "EXIT_TO_WINDOWS_ERROR": "Der Wechsel zu Windows ist fehlgeschlagen. Bitte erneut versuchen."
   },
   "SPLASH": {
     "CONNECTING": "Verbindung zur Fotobox wird hergestellt…",
@@ -137,9 +146,7 @@
     "COUNT": "{{count}} Fotos",
     "PHOTO_N": "Foto {{n}} öffnen",
     "DELETED": "Foto gelöscht",
-    "DELETE_ERROR": "Foto konnte nicht gelöscht werden.",
-    "DELETE_DIGIT": "Letzte Ziffer löschen",
-    "PIN_PROGRESS": "{{count}} von {{total}} Ziffern eingegeben"
+    "DELETE_ERROR": "Foto konnte nicht gelöscht werden."
   },
   "PHOTO_VIEW": {
     "ALT": "Aufgenommenes Foto",
@@ -199,5 +206,26 @@
     "ERROR_HINT": "Bitte das Fotobox-Team ansprechen.",
     "STARTING_CAMERA": "Kamera wird gestartet…",
     "STARTING_WEBCAM": "Webcam wird gestartet…"
+  },
+  "PIN_PAD": {
+    "DELETE_DIGIT": "Letzte Ziffer löschen",
+    "PROGRESS": "{{count}} von {{total}} Ziffern eingegeben"
+  },
+  "OPERATOR": {
+    "ENTER_PIN": "Betreiber-PIN eingeben",
+    "WRONG_PIN": "Falsche PIN – bitte erneut versuchen",
+    "BACK_TO_FOTOBOX": "Zurück zur Fotobox",
+    "LOADING": "Wird geladen…",
+    "STARTING": "Fotobox wird gestartet…"
+  },
+  "EXIT_KIOSK": {
+    "TITLE": "Zu Windows wechseln?",
+    "MAINTENANCE": "Die Fotobox wird für 30 Minuten zur Wartung beendet und startet danach automatisch neu.",
+    "STEPS_TITLE": "So geht es weiter:",
+    "STEP_KEYS": "Strg+Alt+Entf drücken.",
+    "STEP_SWITCH_USER": "„Benutzer wechseln“ wählen.",
+    "STEP_SIGN_IN": "Als Administrator anmelden.",
+    "CANCEL": "Abbrechen",
+    "CONFIRM": "Zu Windows wechseln"
   }
 }

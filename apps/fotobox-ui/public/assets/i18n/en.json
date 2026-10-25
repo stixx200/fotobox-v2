@@ -62,7 +62,16 @@
     "THEME_DARK": "Dark theme",
     "REFRESH_PRINTERS": "Reload printer list",
     "REFRESH_TEMPLATES": "Reload collage templates",
-    "LAYOUTS_AUTO_SELECTED": "No layout was selected – \"Einzelbild\" (single photo) was enabled automatically."
+    "LAYOUTS_AUTO_SELECTED": "No layout was selected – \"Einzelbild\" (single photo) was enabled automatically.",
+    "OPERATION": "Operation",
+    "OPERATOR_PIN": "Operator PIN",
+    "OPERATOR_PIN_HINT": "4 digits. Protects the settings from guests. Leave empty for open access",
+    "OPERATOR_PIN_INVALID": "PIN must be exactly 4 digits",
+    "AUTO_START": "Open the Fotobox directly on startup",
+    "AUTO_START_HINT": "After a restart the booth goes straight to the Fotobox. The settings are then reached via the hidden top-left corner (tap 5 times).",
+    "EXIT_TO_WINDOWS": "Switch to Windows",
+    "EXIT_TO_WINDOWS_HINT": "For maintenance on the computer. The Fotobox restarts automatically after 30 minutes.",
+    "EXIT_TO_WINDOWS_ERROR": "Switching to Windows failed. Please try again."
   },
   "SPLASH": {
     "CONNECTING": "Connecting to the photo booth…",
@@ -137,9 +146,7 @@
     "COUNT": "{{count}} photos",
     "PHOTO_N": "Open photo {{n}}",
     "DELETED": "Photo deleted",
-    "DELETE_ERROR": "The photo could not be deleted.",
-    "DELETE_DIGIT": "Delete last digit",
-    "PIN_PROGRESS": "{{count}} of {{total}} digits entered"
+    "DELETE_ERROR": "The photo could not be deleted."
   },
   "PHOTO_VIEW": {
     "ALT": "Captured photo",
@@ -199,5 +206,26 @@
     "ERROR_HINT": "Please ask the photo booth team for help.",
     "STARTING_CAMERA": "Starting camera…",
     "STARTING_WEBCAM": "Starting webcam…"
+  },
+  "PIN_PAD": {
+    "DELETE_DIGIT": "Delete last digit",
+    "PROGRESS": "{{count}} of {{total}} digits entered"
+  },
+  "OPERATOR": {
+    "ENTER_PIN": "Enter operator PIN",
+    "WRONG_PIN": "Wrong PIN – please try again",
+    "BACK_TO_FOTOBOX": "Back to the Fotobox",
+    "LOADING": "Loading…",
+    "STARTING": "Starting the Fotobox…"
+  },
+  "EXIT_KIOSK": {
+    "TITLE": "Switch to Windows?",
+    "MAINTENANCE": "The Fotobox closes for 30 minutes of maintenance and then restarts automatically.",
+    "STEPS_TITLE": "To continue:",
+    "STEP_KEYS": "Press Ctrl+Alt+Del.",
+    "STEP_SWITCH_USER": "Choose “Switch user”.",
+    "STEP_SIGN_IN": "Sign in as administrator.",
+    "CANCEL": "Cancel",
+    "CONFIRM": "Switch to Windows"
   }
 }

@@ -1,16 +1,7 @@
-export const GALLERY_LENGTH = 4;
-
-const GALLERY_PATTERN = /^\d{4}$/;
-
-export function sanitizeGalleryPinInput(value: string): string {
-  return value.replace(/\D/g, '').slice(0, GALLERY_LENGTH);
-}
-
-export function isGalleryPin(value: string): boolean {
-  return GALLERY_PATTERN.test(value);
-}
-
-/** Empty (open access) or exactly four digits. */
-export function isOptionalGalleryPin(value: string): boolean {
-  return value === '' || isGalleryPin(value);
-}
+/** Gallery-specific names for the shared PIN helpers in `pin.util.ts`. */
+export {
+  PIN_LENGTH as GALLERY_LENGTH,
+  sanitizePinInput as sanitizeGalleryPinInput,
+  isPin as isGalleryPin,
+  isOptionalPin as isOptionalGalleryPin,
+} from './pin.util';

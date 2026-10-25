@@ -34,3 +34,16 @@ export async function openCollageEditorWindow(
   });
   return true;
 }
+
+/**
+ * Leave the kiosk so the operator can switch to the Windows administrator
+ * account for maintenance; the host restarts the Fotobox automatically later.
+ * Resolves `false` when not running on the desktop host.
+ */
+export async function exitKioskToWindows(): Promise<boolean> {
+  if (!isDesktopHost()) {
+    return false;
+  }
+  await invoke('exit_kiosk');
+  return true;
+}

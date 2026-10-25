@@ -214,6 +214,6 @@ pnpm nx run collage-editor-ui-e2e:e2e
 - [x] **Task 38:** Machine config `%ProgramData%\Fotobox\host.json` (kiosk, kiosk user, port, tablet mode) read by the Tauri host; kiosk mode only for the kiosk user
 - [x] **Task 39:** `scripts/windows/FotoboxKiosk.psm1` + `setup-kiosk.ps1`: kiosk user, LSA auto-logon, relaunching scheduled task, power/lockdown policies, firewall, exact undo; Pester + PSScriptAnalyzer (5.1)
 - [x] **Task 40:** NSIS setup (perMachine) with installer hooks (kiosk question, silent switches, updates keep mode, uninstall cleanup); `windows.yml` installs/verifies/uninstalls on the runner
-- [ ] **Task 41:** PIN-protected "Zu Windows wechseln" in settings (Tauri `exit_kiosk` command + maintenance marker so the task doesn't relaunch immediately)
+- [x] **Task 41:** Operator PIN for the settings, auto-start into the guest flow, "Zu Windows wechseln" (Tauri `exit_kiosk` + 30-min maintenance pause honoured by `--autostart` launches)
 - [ ] **Task 42:** Acceptance test on a real Surface (Home and Pro): reboot → booth, escape routes, sleep, toasts, QR on Wi-Fi, printer/gphoto2 as standard user, update, uninstall
 - [ ] **Task 43:** Code signing (Azure Trusted Signing via `bundle.windows.signCommand`)

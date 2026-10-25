@@ -19,14 +19,8 @@ import { PhotoActionsService } from '../services/photo-actions.service';
 import { ClientLogService } from '../services/client-log.service';
 import { SettingsStore } from '../store';
 import { ShareQrOverlayComponent } from '../components/share-qr-overlay/share-qr-overlay.component';
+import { PinPadComponent } from '../components/pin-pad/pin-pad.component';
 import { getPhotoUrl } from '../api-config';
-import {
-  GALLERY_LENGTH,
-  sanitizeGalleryPinInput,
-} from '../services/gallery-pin.util';
-
-/** How long the wrong-PIN state (shake + message) stays visible. */
-const PIN_ERROR_MS = 1500;
 
 @Component({
   selector: 'app-gallery',
@@ -38,9 +32,9 @@ const PIN_ERROR_MS = 1500;
     MatProgressSpinnerModule,
     TranslatePipe,
     ShareQrOverlayComponent,
+    PinPadComponent,
   ],
   providers: [PhotoActionsService],
-  host: { '(document:keydown)': 'onPinKeydown($event)' },
   templateUrl: './gallery.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './gallery.component.scss',
@@ -56,17 +50,7 @@ export class GalleryComponent implements OnDestroy {
   readonly actions = inject(PhotoActionsService);
 
   readonly unlocked = this.galleryAccess.unlocked;
-  readonly pinInput = signal('');
   readonly pinError = signal(false);
-  readonly pinLength = GALLERY_LENGTH;
-  readonly keypadDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-  /** One entry per PIN digit: `true` once entered. */
-  readonly pinDots = computed(() =>
-    Array.from(
-      { length: GALLERY_LENGTH },
-      (_, i) => i < this.pinInput().length,
-    ),
-  );
   readonly requiresPassword = computed(() =>
     this.galleryAccess.requiresPassword(),
   );
@@ -80,7 +64,6 @@ export class GalleryComponent implements OnDestroy {
   /** Photos whose file could not be loaded (listed but missing on disk). */
   readonly brokenIds = signal<ReadonlySet<string>>(new Set());
   private photosLoaded = false;
-  private pinErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly showPrint = computed(() => {
     const setting = this.settingsStore
@@ -127,45 +110,11 @@ export class GalleryComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.galleryAccess.lock();
-    if (this.pinErrorTimer) {
-      clearTimeout(this.pinErrorTimer);
-    }
   }
 
-  /** On-screen keypad; submits automatically once all digits are entered. */
-  pressDigit(digit: string): void {
-    const pin = sanitizeGalleryPinInput(this.pinInput() + digit);
-    this.pinInput.set(pin);
-    this.pinError.set(false);
-    if (pin.length === GALLERY_LENGTH) {
-      this.submitPin();
-    }
-  }
-
-  deleteDigit(): void {
-    this.pinInput.update((pin) => pin.slice(0, -1));
-    this.pinError.set(false);
-  }
-
-  /** Operators may still use a hardware keyboard. */
-  onPinKeydown(event: KeyboardEvent): void {
-    if (!this.requiresPassword() || this.unlocked()) {
-      return;
-    }
-    if (/^\d$/.test(event.key)) {
-      event.preventDefault();
-      this.pressDigit(event.key);
-    } else if (event.key === 'Backspace') {
-      event.preventDefault();
-      this.deleteDigit();
-    } else if (event.key === 'Escape') {
-      this.goBack();
-    }
-  }
-
-  submitPin(): void {
-    if (this.galleryAccess.validate(this.pinInput())) {
-      this.pinInput.set('');
+  /** Called by the keypad once all digits are entered. */
+  submitPin(pin: string): void {
+    if (this.galleryAccess.validate(pin)) {
       this.pinError.set(false);
       this.galleryAccess.unlock();
       this.loadPhotos();
@@ -173,14 +122,6 @@ export class GalleryComponent implements OnDestroy {
     }
 
     this.pinError.set(true);
-    this.pinInput.set('');
-    if (this.pinErrorTimer) {
-      clearTimeout(this.pinErrorTimer);
-    }
-    this.pinErrorTimer = setTimeout(() => {
-      this.pinError.set(false);
-      this.pinErrorTimer = null;
-    }, PIN_ERROR_MS);
   }
 
   private loadPhotos(): void {

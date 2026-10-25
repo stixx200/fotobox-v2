@@ -35,6 +35,8 @@ const DEFAULT_SETTINGS = [
     value: 'false',
     description: 'Show gallery button',
   },
+  { key: 'operatorPin', value: '""', description: 'Operator PIN' },
+  { key: 'autoStart', value: 'false', description: 'Auto-start' },
 ];
 
 function resolveOperationName(body: GraphqlBody): string {

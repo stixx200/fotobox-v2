@@ -1,15 +1,22 @@
 import { Route } from '@angular/router';
 
 export const appRoutes: Route[] = [
+  // Both show the operator settings behind the optional operator PIN; only
+  // the start route may auto-start straight into the guest flow.
   {
     path: '',
+    data: { autoStart: true },
     loadComponent: () =>
-      import('./settings/settings.component').then((m) => m.SettingsComponent),
+      import('./operator-gate/operator-gate.component').then(
+        (m) => m.OperatorGateComponent,
+      ),
   },
   {
     path: 'settings',
     loadComponent: () =>
-      import('./settings/settings.component').then((m) => m.SettingsComponent),
+      import('./operator-gate/operator-gate.component').then(
+        (m) => m.OperatorGateComponent,
+      ),
   },
   {
     path: 'home',

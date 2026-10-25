@@ -8,12 +8,12 @@ import {
   signal,
   effect,
 } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -26,8 +26,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
-import { Subject, filter, finalize, firstValueFrom, merge, take } from 'rxjs';
+import { RouterLink } from '@angular/router';
+import { Subject, finalize, firstValueFrom, merge } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   SettingsStore,
@@ -48,16 +48,25 @@ import {
 import { CollageService } from '../services/collage.service';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
-  GALLERY_LENGTH,
-  isOptionalGalleryPin,
-  sanitizeGalleryPinInput,
-} from '../services/gallery-pin.util';
-import { LayoutNavigationService } from '../services/layout-navigation.service';
-import { ClientLogService } from '../services/client-log.service';
+  PIN_LENGTH,
+  isOptionalPin,
+  sanitizePinInput,
+} from '../services/pin.util';
+import {
+  FotoboxStartService,
+  resolveStartConfig,
+} from '../services/fotobox-start.service';
 import { ShareService } from '../services/share.service';
 import { NotificationService } from '../services/notification.service';
 import { SettingsCameraLayoutsComponent } from './components/settings-camera-layouts.component';
 import { SettingsShareGalleryComponent } from './components/settings-share-gallery.component';
+import { SettingsOperationComponent } from './components/settings-operation.component';
+
+/** Form validator: empty or exactly four digits. */
+function optionalPinValidator(errorKey: string): ValidatorFn {
+  return (control) =>
+    isOptionalPin(String(control.value ?? '')) ? null : { [errorKey]: true };
+}
 
 /** @title Form field with label */
 @Component({
@@ -82,6 +91,7 @@ import { SettingsShareGalleryComponent } from './components/settings-share-galle
     RouterLink,
     SettingsCameraLayoutsComponent,
     SettingsShareGalleryComponent,
+    SettingsOperationComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -92,12 +102,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   readonly appMetadataStore = inject(AppMetadataStore);
   readonly printerStore = inject(PrinterStore);
   readonly collageService = inject(CollageService);
-  private readonly router = inject(Router);
-  private readonly layoutNavigation = inject(LayoutNavigationService);
+  private readonly fotoboxStart = inject(FotoboxStartService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translateService = inject(TranslateService);
   private readonly dialog = inject(MatDialog);
-  private readonly clientLogService = inject(ClientLogService);
   private readonly shareService = inject(ShareService);
   private readonly notification = inject(NotificationService);
   /** A user-initiated save waits for its result to confirm it. */
@@ -156,9 +164,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   collageDirectoryError = signal<string | null>(null);
   readonly refreshingTemplates = signal(false);
   layoutsAutoSelectionMessage = signal<string | null>(null);
-  isInitializingCamera = signal(false);
-  startError = signal<string | null>(null);
-  camera$ = toObservable(this.cameraStore.camera$);
+  readonly isInitializingCamera = this.fotoboxStart.starting;
+  readonly startError = this.fotoboxStart.error;
 
   private readonly MAX_LAYOUTS = 3;
   maxLayoutsReached = signal(false);
@@ -185,14 +192,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
       layouts: new FormControl<string[]>([]),
       camera: new FormControl(''),
       galleryPassword: new FormControl('', {
-        validators: [
-          (control) =>
-            isOptionalGalleryPin(String(control.value ?? ''))
-              ? null
-              : { galleryPin: true },
-        ],
+        validators: [optionalPinValidator('galleryPin')],
       }),
       showGalleryButton: new FormControl(false),
+      operatorPin: new FormControl('', {
+        validators: [optionalPinValidator('operatorPin')],
+      }),
+      autoStart: new FormControl(false),
     },
     {},
   );
@@ -295,7 +301,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.cdr.markForCheck());
 
-    this.settingsForm.controls.galleryPassword.valueChanges
+    merge(
+      this.settingsForm.controls.galleryPassword.valueChanges,
+      this.settingsForm.controls.operatorPin.valueChanges,
+    )
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.cdr.markForCheck());
 
@@ -574,120 +583,57 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
-  startFotobox(): void {
-    // Save settings first (no "saved" toast — we are leaving the page).
-    this.saveSettings(false);
-
-    this.startError.set(null);
-    // Mark that we're initializing
-    this.isInitializingCamera.set(true);
-
-    // Initialize camera with selected driver
-    this.initializeCameraAndWaitForLoading();
-  }
-
-  private initializeCameraAndWaitForLoading(): void {
-    const selectedCamera = this.settingsForm.get('camera')?.value;
-    const currentCamera = this.cameraStore.currentCamera();
-
-    if (
-      !currentCamera ||
-      currentCamera.driver === 'none' ||
-      !currentCamera.available
-    ) {
-      const driverToInit = selectedCamera || 'demo';
-
-      // Initialize the camera
-      this.cameraStore.initializeCamera(driverToInit);
-
-      // Watch for camera initialization completion using observables
-      this.watchForCameraInitialization(driverToInit);
-    } else {
-      // Check if live view is active, if not start it
-      const isLiveViewActive = this.cameraStore.isLiveViewActive();
-      if (!isLiveViewActive) {
-        this.cameraStore.startLiveView();
-      }
-
-      // Navigate to home
-      this.navigateToHome();
-    }
-  }
-
-  private watchForCameraInitialization(driverToInit: string): void {
-    this.camera$
-      .pipe(
-        filter(({ isLoading }) => !isLoading),
-        filter(({ currentCamera, error }) => {
-          const isReady =
-            !!currentCamera &&
-            currentCamera.driver === driverToInit &&
-            currentCamera.available;
-          if (isReady) {
-            return true;
-          }
-          if (error) {
-            return true;
-          }
-          return (
-            currentCamera?.driver === driverToInit && !currentCamera.available
-          );
-        }),
-        take(1),
-        takeUntil(this.destroy$),
-      )
-      .subscribe(({ currentCamera, error }) => {
-        const isReady =
-          currentCamera &&
-          currentCamera.driver === driverToInit &&
-          currentCamera.available;
-
-        if (!isReady) {
-          const message =
-            error || this.translateService.instant('SETTINGS.START_FAILED');
-          this.startError.set(message);
-          this.clientLogService.error('Fotobox start failed', message);
-          this.isInitializingCamera.set(false);
-          this.cdr.markForCheck();
-          return;
-        }
-
-        this.cameraStore.startLiveView();
-        this.navigateToHome();
-      });
-  }
-
-  private navigateToHome(): void {
-    this.isInitializingCamera.set(false);
-
-    // Prefer the form value — saveSettings may still be persisting to the store.
-    const formLayouts = this.settingsForm.get('layouts')?.value;
-    if (formLayouts?.length === 1) {
-      void this.layoutNavigation.navigateToLayout(formLayouts[0]);
+  async startFotobox(): Promise<void> {
+    const config = resolveStartConfig(this.settingsForm.getRawValue());
+    if (!config) {
+      // Same guard as saving: never start with a malformed PIN.
+      this.markPinFieldsTouched();
       return;
     }
-
-    this.layoutNavigation.navigateToEntryPoint().catch((err) => {
-      console.error('Navigation after start failed:', err);
-    });
+    // Save settings first (no "saved" toast — we are leaving the page).
+    this.saveSettings(false);
+    // saveSettings may have filled in the default layout.
+    await this.fotoboxStart.start(
+      resolveStartConfig(this.settingsForm.getRawValue()) ?? config,
+    );
+    this.cdr.markForCheck();
   }
 
-  readonly galleryPinLength = GALLERY_LENGTH;
+  readonly galleryPinLength = PIN_LENGTH;
 
   onGalleryPinInput(event: Event): void {
+    this.applyPinInput(event, 'galleryPassword');
+  }
+
+  onOperatorPinInput(event: Event): void {
+    this.applyPinInput(event, 'operatorPin');
+  }
+
+  private applyPinInput(
+    event: Event,
+    control: 'galleryPassword' | 'operatorPin',
+  ): void {
     const input = event.target as HTMLInputElement;
-    const sanitized = sanitizeGalleryPinInput(input.value);
+    const sanitized = sanitizePinInput(input.value);
     if (sanitized !== input.value) {
       input.value = sanitized;
     }
-    this.settingsForm.controls.galleryPassword.setValue(sanitized);
+    this.settingsForm.controls[control].setValue(sanitized);
+    this.cdr.markForCheck();
+  }
+
+  private markPinFieldsTouched(): void {
+    this.settingsForm.controls.galleryPassword.markAsTouched();
+    this.settingsForm.controls.operatorPin.markAsTouched();
     this.cdr.markForCheck();
   }
 
   saveSettings(confirm = true): void {
-    if (this.settingsForm.controls.galleryPassword.invalid) {
-      this.settingsForm.controls.galleryPassword.markAsTouched();
-      this.cdr.markForCheck();
+    if (
+      this.settingsForm.controls.galleryPassword.invalid ||
+      this.settingsForm.controls.operatorPin.invalid
+    ) {
+      this.markPinFieldsTouched();
       return;
     }
 

@@ -271,8 +271,14 @@ without any input after power-on:
 Edge-swipe, lock-screen and update policies are best effort on Windows **Home**. Ctrl+Alt+Del can't be blocked on
 Home/Pro; it only leads to the sign-in screen of a standard user.
 
-**Operator access:** press **Ctrl+Alt+Del → Switch user** and sign in with an administrator account. Fotobox opens as
-a normal window there.
+**Booth settings for kiosks** (Settings → _Betrieb_):
+
+- **Betreiber-PIN:** 4 digits; the settings (start screen and the hidden 5-tap corner) then ask for it.
+- **Beim Start direkt die Fotobox öffnen:** after a restart the booth goes straight to the guest screen instead of the
+  settings.
+- **Zu Windows wechseln** (desktop app): closes Fotobox for 30 minutes of maintenance; the kiosk task doesn't reopen it
+  meanwhile. Then press **Ctrl+Alt+Del → Switch user** and sign in with an administrator account, where Fotobox opens
+  as a normal window.
 
 **Change mode later** (as administrator, from the Start menu folder _Fotobox_): **Fotobox Kiosk einrichten** /
 **Fotobox Kiosk deaktivieren**, or:

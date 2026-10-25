@@ -1,0 +1,126 @@
+:host {
+  display: block;
+}
+
+.pin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 40px;
+  border-radius: var(--mat-sys-corner-extra-large);
+  background: var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level1);
+  text-align: center;
+
+  h2 {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &--shake {
+    animation: shake 0.4s ease-in-out;
+  }
+}
+
+.pin-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--mat-sys-primary);
+}
+
+.pin-dots {
+  display: flex;
+  gap: 20px;
+  padding: 12px 0 0;
+
+  .pin-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--mat-sys-outline);
+    box-sizing: border-box;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+
+    &--filled {
+      background: var(--mat-sys-primary);
+      border-color: var(--mat-sys-primary);
+    }
+  }
+}
+
+.pin-error {
+  min-height: 1.5rem;
+  margin: 0;
+  font: var(--mat-sys-title-medium);
+  color: var(--mat-sys-error);
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  gap: 14px;
+  justify-content: center;
+}
+
+.keypad-key {
+  --mat-button-tonal-container-height: 80px;
+  --mat-button-text-container-height: 80px;
+  --mat-button-tonal-container-shape: 50%;
+  --mat-button-text-container-shape: 50%;
+  --mat-button-tonal-horizontal-padding: 0;
+  --mat-button-text-horizontal-padding: 0;
+  --mat-button-tonal-label-text-size: 2rem;
+  width: 80px;
+  min-width: 80px;
+  font-variant-numeric: tabular-nums;
+
+  &--icon mat-icon {
+    margin: 0;
+    font-size: 30px;
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-10px);
+  }
+  40%,
+  80% {
+    transform: translateX(10px);
+  }
+}
+
+@media (max-height: 640px) {
+  .keypad {
+    grid-template-columns: repeat(3, 64px);
+    gap: 10px;
+  }
+
+  .keypad-key {
+    --mat-button-tonal-container-height: 64px;
+    --mat-button-text-container-height: 64px;
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .pin-card {
+    padding: 20px 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-card--shake {
+    animation: none;
+  }
+}
