@@ -4,6 +4,7 @@
 mod config;
 mod kiosk;
 mod legacy_data;
+mod maintenance;
 mod sidecar;
 mod supervisor;
 mod windows;
@@ -26,12 +27,27 @@ fn open_collage_editor(
         .map_err(|error| error.to_string())
 }
 
+/// "Zu Windows wechseln": pauses the kiosk autostart and closes the app so
+/// the operator can switch to an administrator account.
+#[tauri::command]
+fn exit_kiosk(app: AppHandle) -> Result<(), String> {
+    maintenance::begin(&app).map_err(|error| error.to_string())?;
+    app.state::<ApiSidecar>().stop();
+    app.exit(0);
+    Ok(())
+}
+
 pub fn run() {
     let config = HostConfig::load();
 
     let app = tauri::Builder::default()
         // Must be registered first so a second launch only focuses the kiosk.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        // The kiosk task re-launches every minute with --autostart; those
+        // launches must not steal focus.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if args.iter().any(|arg| arg == maintenance::AUTOSTART_ARG) {
+                return;
+            }
             if let Some(window) = app.get_webview_window(windows::MAIN_WINDOW) {
                 let _ = window.unminimize();
                 let _ = window.set_focus();
@@ -55,9 +71,15 @@ pub fn run() {
         ))
         .manage(config.clone())
         .manage(ApiSidecar::default())
-        .invoke_handler(tauri::generate_handler![open_collage_editor])
+        .invoke_handler(tauri::generate_handler![open_collage_editor, exit_kiosk])
         .setup(move |app| {
             let handle = app.handle().clone();
+            let args: Vec<String> = std::env::args().collect();
+            if maintenance::should_skip_autostart(&handle, &args) {
+                log::info!("Maintenance pause active; not starting from the kiosk task");
+                handle.exit(0);
+                return Ok(());
+            }
             log::info!(
                 "Starting Fotobox (kiosk: {}, API: {})",
                 config.kiosk,

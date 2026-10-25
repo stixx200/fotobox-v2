@@ -244,7 +244,8 @@ function Register-KioskTask {
         return
     }
     $account = "$([Environment]::MachineName)\$UserName"
-    $action = New-ScheduledTaskAction -Execute $ExePath -WorkingDirectory (Split-Path -Parent $ExePath)
+    # --autostart lets the app honour a maintenance pause ("Zu Windows wechseln").
+    $action = New-ScheduledTaskAction -Execute $ExePath -Argument '--autostart' -WorkingDirectory (Split-Path -Parent $ExePath)
     $logon = New-ScheduledTaskTrigger -AtLogOn -User $account
     # Re-check every minute: starts Fotobox again if it exited or crashed.
     # MultipleInstances IgnoreNew + the app's single-instance guard prevent

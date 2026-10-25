@@ -66,6 +66,7 @@ Describe 'Fotobox installer (kiosk mode)' -Skip:$skip {
     It 'registers the relaunching autostart task for the kiosk user' {
         $task = Get-ScheduledTask -TaskPath '\Fotobox\' -TaskName 'Kiosk'
         $task.Actions[0].Execute | Should -Be (Join-Path $installDir 'Fotobox.exe')
+        $task.Actions[0].Arguments | Should -Be '--autostart'
         $task.Principal.UserId | Should -Match 'Fotobox$'
         $task.Settings.MultipleInstances | Should -Be 'IgnoreNew'
         $task.Triggers[0].Repetition.Interval | Should -Be 'PT1M'
