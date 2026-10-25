@@ -6,6 +6,7 @@
 import { app, ipcMain, dialog, BrowserWindow } from 'electron';
 import { getLogger } from '@fotobox/logging';
 import { openCollageEditorWindow } from '../editor-window';
+import { resolveRendererApiToken } from '../api-endpoint';
 
 const logger = getLogger('electron-events');
 
@@ -23,6 +24,12 @@ export function registerElectronEvents(): void {
   }
   registered = true;
 
+  // LAN API token for an external API (tablet mode). Synchronous so the
+  // preload can expose it before the renderer creates its Apollo client.
+  ipcMain.on('get-api-token', (event) => {
+    event.returnValue = resolveRendererApiToken();
+  });
+
   // Retrieve app version
   ipcMain.handle('get-app-version', () => app.getVersion());
 
@@ -36,13 +43,10 @@ export function registerElectronEvents(): void {
     return result.canceled ? null : result.filePaths[0];
   });
 
-  ipcMain.handle(
-    'open-collage-editor',
-    (_event, collageDirectory?: string) => {
-      openCollageEditorWindow(collageDirectory);
-      return { success: true };
-    },
-  );
+  ipcMain.handle('open-collage-editor', (_event, collageDirectory?: string) => {
+    openCollageEditorWindow(collageDirectory);
+    return { success: true };
+  });
 
   // Print a photo by URL using a hidden window + webContents.print.
   ipcMain.handle(
@@ -58,9 +62,7 @@ export function registerElectronEvents(): void {
   });
 }
 
-async function waitForPrintImage(
-  printWindow: BrowserWindow,
-): Promise<void> {
+async function waitForPrintImage(printWindow: BrowserWindow): Promise<void> {
   await printWindow.webContents.executeJavaScript(`
     new Promise((resolve, reject) => {
       const img = document.querySelector('img');
@@ -78,6 +80,14 @@ async function waitForPrintImage(
       });
     })
   `);
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 async function printPhoto(
@@ -98,7 +108,7 @@ async function printPhoto(
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
     body { display: flex; align-items: center; justify-content: center; }
     img { width: 100%; height: 100%; object-fit: contain; }
-  </style></head><body><img src="${photoUrl}" /></body></html>`;
+  </style></head><body><img src="${escapeHtmlAttribute(photoUrl)}" /></body></html>`;
 
   try {
     await printWindow.loadURL(

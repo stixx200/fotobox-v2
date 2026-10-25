@@ -11,6 +11,11 @@ if (apiUrl) {
   contextBridge.exposeInMainWorld('__FOTOBOX_API_URL__', apiUrl);
 }
 
+const apiToken = ipcRenderer.sendSync('get-api-token') as string | null;
+if (apiToken) {
+  contextBridge.exposeInMainWorld('__FOTOBOX_API_TOKEN__', apiToken);
+}
+
 // Minimal native bridge. Camera/printer/settings all go through GraphQL.
 contextBridge.exposeInMainWorld('electron', {
   platform: process.platform,

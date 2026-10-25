@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { getLogger } from '@fotobox/logging';
 import { getMainWindow } from './window-state';
 import { APP_NAME, getAppIcon } from './app-branding';
+import { resolveApiUrl } from './api-endpoint';
 
 const logger = getLogger('collage-editor-window');
 
@@ -12,18 +13,8 @@ let editorWindow: BrowserWindow | null = null;
 function getCollageEditorUrl(): string {
   return (
     process.env.FOTOBOX_COLLAGE_EDITOR_DEV_SERVER ||
-    pathToFileURL(
-      join(__dirname, 'collage-editor-ui/index.html'),
-    ).toString()
+    pathToFileURL(join(__dirname, 'collage-editor-ui/index.html')).toString()
   );
-}
-
-function resolveApiUrl(): string {
-  if (process.env.FOTOBOX_API_URL) {
-    return process.env.FOTOBOX_API_URL.replace(/\/+$/, '');
-  }
-  const port = Number(process.env.PORT) || 3000;
-  return `http://localhost:${port}`;
 }
 
 export function openCollageEditorWindow(collageDirectory?: string): void {
@@ -36,7 +27,7 @@ export function openCollageEditorWindow(collageDirectory?: string): void {
   }
 
   const isProd = !process.env.FOTOBOX_COLLAGE_EDITOR_DEV_SERVER;
-  const parent = isProd ? getMainWindow() ?? undefined : undefined;
+  const parent = isProd ? (getMainWindow() ?? undefined) : undefined;
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   editorWindow = new BrowserWindow({
@@ -52,6 +43,7 @@ export function openCollageEditorWindow(collageDirectory?: string): void {
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
+      devTools: !isProd,
       preload: join(__dirname, 'main.preload.js'),
       additionalArguments: [`--fotobox-api-url=${resolveApiUrl()}`],
     },

@@ -3,17 +3,13 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/nest/database/src",
   "projectType": "library",
-  "tags": [
-    "scope:server",
-    "type:data-access",
-    "platform:node"
-  ],
+  "tags": ["scope:server", "type:data-access", "platform:node"],
   "targets": {
     "lint": {
       "executor": "@nx/eslint:lint"
     },
     "test": {
-      "executor": "@nx/vite:test",
+      "executor": "@nx/vitest:test",
       "options": {
         "configFile": "libs/nest/database/vitest.config.ts"
       }

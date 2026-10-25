@@ -1,68 +1,75 @@
 import { Request, Response, NextFunction } from 'express';
 import { getLogger } from '@fotobox/logging';
+import {
+  API_TOKEN_HEADER,
+  API_TOKEN_QUERY_PARAM,
+  isFullAccessAllowed,
+  isGuestSharePath,
+  normalizeClientIp,
+  readOriginHeader,
+  resolveAccessPolicy,
+  type AccessPolicy,
+} from './access-policy';
 
 const logger = getLogger('LanAccessMiddleware');
 
-const SHARE_PATH_PREFIX = '/api/share/';
+export function isGuestShareRequest(req: Request): boolean {
+  return isGuestSharePath(req.method, req.path);
+}
+
+function readRequestToken(req: Request): unknown {
+  const header = req.headers[API_TOKEN_HEADER];
+  if (typeof header === 'string' && header) {
+    return header;
+  }
+  return req.query?.[API_TOKEN_QUERY_PARAM];
+}
 
 /**
- * When the API listens on all interfaces (0.0.0.0), restrict LAN clients to
- * token-based share downloads only. Localhost keeps full access (kiosk UI).
- *
- * Set FOTOBOX_ALLOW_LAN_API=1 to also expose GraphQL, photos, settings, etc.
- * on the LAN (needed for tablet/browser clients pointed at the host IP).
+ * Enforces the {@link AccessPolicy} for HTTP requests. WebSocket upgrades do
+ * not pass through Express — they are checked in the graphql-ws `onConnect`
+ * hook (see `api.module.ts`).
  */
-export function isLanApiRestrictionEnabled(): boolean {
-  const allowLan = process.env['FOTOBOX_ALLOW_LAN_API'];
-  return allowLan !== '1' && allowLan !== 'true';
-}
+export function createLanAccessMiddleware(
+  policy: AccessPolicy = resolveAccessPolicy(),
+) {
+  return function lanAccessMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void {
+    // Guest share links are public by design (token in the path).
+    if (isGuestShareRequest(req)) {
+      next();
+      return;
+    }
 
-function normalizeClientIp(raw: string | undefined): string {
-  if (!raw) {
-    return '';
-  }
-  if (raw.startsWith('::ffff:')) {
-    return raw.slice(7);
-  }
-  return raw;
-}
+    // CORS preflights carry no credentials; the CORS layer answers them.
+    if (req.method === 'OPTIONS') {
+      next();
+      return;
+    }
 
-function isLoopbackClient(ip: string): boolean {
-  return ip === '127.0.0.1' || ip === '::1';
-}
+    const allowed = isFullAccessAllowed(
+      {
+        remoteAddress: req.socket.remoteAddress,
+        origin: readOriginHeader(req.headers),
+        token: readRequestToken(req),
+      },
+      policy,
+    );
+    if (allowed) {
+      next();
+      return;
+    }
 
-export function isGuestShareRequest(req: Request): boolean {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    return false;
-  }
-  const path = req.path.split('?')[0];
-  return path.startsWith(SHARE_PATH_PREFIX) && path.length > SHARE_PATH_PREFIX.length;
-}
-
-export function lanAccessMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
-  if (!isLanApiRestrictionEnabled()) {
-    next();
-    return;
-  }
-
-  const clientIp = normalizeClientIp(req.socket.remoteAddress);
-  if (!clientIp || isLoopbackClient(clientIp)) {
-    next();
-    return;
-  }
-
-  if (isGuestShareRequest(req)) {
-    next();
-    return;
-  }
-
-  logger.warn(`Blocked LAN request from ${clientIp}: ${req.method} ${req.path}`);
-  res.status(403).json({
-    statusCode: 403,
-    message: 'Forbidden',
-  });
+    const clientIp = normalizeClientIp(req.socket.remoteAddress);
+    logger.warn(
+      `Blocked request from ${clientIp || 'unknown'}: ${req.method} ${req.path}`,
+    );
+    res.status(403).json({
+      statusCode: 403,
+      message: 'Forbidden',
+    });
+  };
 }

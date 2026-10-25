@@ -8,9 +8,11 @@ import { WinstonLoggerService } from '@fotobox/nest-logger';
 import * as os from 'os';
 import { ApiModule } from './api.module';
 import {
-  isLanApiRestrictionEnabled,
-  lanAccessMiddleware,
-} from './lan-access.middleware';
+  isLanApiEnabled,
+  isTrustedOrigin,
+  resolveAccessPolicy,
+} from './access-policy';
+import { createLanAccessMiddleware } from './lan-access.middleware';
 
 const logger = getLogger('fotobox-api');
 
@@ -78,14 +80,28 @@ export async function bootstrapApiServer(
     bodyParser: false,
   });
 
-  // Allow the UI client (potentially served from a different origin/device)
-  // to reach the API.
-  app.enableCors();
+  const policy = resolveAccessPolicy();
+  const lanApiEnabled = isLanApiEnabled(policy);
 
-  if (isLanApiRestrictionEnabled()) {
-    app.use(lanAccessMiddleware);
+  // Browser clients on the host (Electron renderer, dev servers) are trusted.
+  // In tablet mode any origin may call the API, but must present the token.
+  app.enableCors({
+    origin: (origin, callback) =>
+      callback(null, lanApiEnabled || isTrustedOrigin(origin, policy)),
+  });
+
+  app.use(createLanAccessMiddleware(policy));
+  if (lanApiEnabled) {
     logger.info(
-      'LAN access restricted to /api/share/* — set FOTOBOX_ALLOW_LAN_API=1 for full LAN API (tablet mode).',
+      'Tablet mode: full LAN API enabled for clients presenting FOTOBOX_LAN_API_TOKEN.',
+    );
+  } else if (policy.lanApiRequested) {
+    logger.error(
+      'FOTOBOX_ALLOW_LAN_API is set but FOTOBOX_LAN_API_TOKEN is missing — LAN access stays restricted to /api/share/*.',
+    );
+  } else {
+    logger.info(
+      'LAN access restricted to /api/share/* — set FOTOBOX_ALLOW_LAN_API=1 and FOTOBOX_LAN_API_TOKEN for tablet mode.',
     );
   }
 

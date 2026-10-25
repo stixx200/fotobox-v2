@@ -7,6 +7,10 @@
  *  3. Same-host default: `<protocol>//<hostname>:3000`
  */
 const API_STORAGE_KEY = 'fotobox.apiUrl';
+const API_TOKEN_STORAGE_KEY = 'fotobox.apiToken';
+const API_TOKEN_QUERY_PARAM = 'token';
+/** Header the API checks for the LAN token (see access-policy.ts). */
+export const API_TOKEN_HEADER = 'x-fotobox-token';
 const COLLAGE_DIRECTORY_KEY = 'collage-editor.directory';
 const LANGUAGE_STORAGE_KEY = 'fotobox.language';
 const DEFAULT_PORT = 3000;
@@ -14,6 +18,7 @@ const DEFAULT_PORT = 3000;
 declare global {
   interface Window {
     __FOTOBOX_API_URL__?: string;
+    __FOTOBOX_API_TOKEN__?: string;
   }
 }
 
@@ -60,6 +65,51 @@ export function getStoredApiBaseUrl(): string | null {
   }
 }
 
+/**
+ * LAN API token for tablet mode. Only needed when the API runs on another
+ * machine; the kiosk on the host talks to localhost without one.
+ *
+ * Resolution order: injected `window.__FOTOBOX_API_TOKEN__`, a `?token=` query
+ * parameter (persisted so a tablet only needs the link once), localStorage.
+ */
+export function resolveApiToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  if (window.__FOTOBOX_API_TOKEN__) {
+    return window.__FOTOBOX_API_TOKEN__;
+  }
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get(
+      API_TOKEN_QUERY_PARAM,
+    );
+    if (fromQuery) {
+      setApiToken(fromQuery);
+      return fromQuery;
+    }
+    return window.localStorage?.getItem(API_TOKEN_STORAGE_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setApiToken(token: string | null): void {
+  try {
+    if (token) {
+      window.localStorage?.setItem(API_TOKEN_STORAGE_KEY, token);
+    } else {
+      window.localStorage?.removeItem(API_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function getApiAuthHeaders(): Record<string, string> {
+  const token = resolveApiToken();
+  return token ? { [API_TOKEN_HEADER]: token } : {};
+}
+
 export function getGraphqlHttpUri(): string {
   return `${resolveApiBaseUrl()}/graphql`;
 }
@@ -75,7 +125,14 @@ export function getPhotoUrl(photoPath: string): string {
     return photoPath;
   }
   const base = resolveApiBaseUrl();
-  return `${base}${photoPath.startsWith('/') ? '' : '/'}${photoPath}`;
+  const url = `${base}${photoPath.startsWith('/') ? '' : '/'}${photoPath}`;
+  // <img src> cannot send headers, so the token travels as a query parameter.
+  const token = resolveApiToken();
+  if (!token) {
+    return url;
+  }
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${API_TOKEN_QUERY_PARAM}=${encodeURIComponent(token)}`;
 }
 
 export function getStoredCollageDirectory(): string | null {

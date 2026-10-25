@@ -13,10 +13,43 @@ import { CollageMakerModule } from '@fotobox/nest-collage-maker';
 import { AppServiceModule } from '@fotobox/nest-app-service';
 import { NestPhotoStorageModule } from '@fotobox/nest-photo-storage';
 import { ShareApiModule } from '@fotobox/nest-share-api';
+import type { IncomingMessage } from 'http';
+import type { Context } from 'graphql-ws';
 import { getDefaultConfig } from './api.config';
+import {
+  isFullAccessAllowed,
+  normalizeClientIp,
+  readOriginHeader,
+  resolveAccessPolicy,
+} from './access-policy';
 import { FotoboxExceptionFilter } from './fotobox-exception.filter';
 
 const logger = getLogger('ApiModule');
+
+/**
+ * WebSocket upgrades bypass Express middleware, so the access policy must be
+ * enforced here as well — graphql-ws executes queries and mutations, not just
+ * subscriptions. Returning false closes the socket with 4403 Forbidden.
+ */
+function authorizeGraphqlWsConnection(
+  context: Context<Record<string, unknown> | undefined, unknown>,
+): boolean {
+  const { request } = context.extra as { request: IncomingMessage };
+  const allowed = isFullAccessAllowed(
+    {
+      remoteAddress: request.socket.remoteAddress,
+      origin: readOriginHeader(request.headers),
+      token: context.connectionParams?.['token'],
+    },
+    resolveAccessPolicy(),
+  );
+  if (!allowed) {
+    logger.warn(
+      `Blocked GraphQL WebSocket from ${normalizeClientIp(request.socket.remoteAddress) || 'unknown'}`,
+    );
+  }
+  return allowed;
+}
 
 /**
  * Shared backend module for the Fotobox API. Used by both the standalone
@@ -50,7 +83,9 @@ const logger = getLogger('ApiModule');
         process.env['NODE_ENV'] !== 'production',
       path: '/graphql',
       subscriptions: {
-        'graphql-ws': true,
+        'graphql-ws': {
+          onConnect: authorizeGraphqlWsConnection,
+        },
       },
       formatError: (error) => {
         logger.error('GraphQL Error:', {

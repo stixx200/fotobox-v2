@@ -1,11 +1,7 @@
-import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
+import { Controller, Get, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-import { getLogger } from '@fotobox/logging';
 import { PhotoStorageProviderService } from './photo-storage-provider.service';
-
-const logger = getLogger('PhotosController');
+import { resolvePhotoPath, sendPhotoFile } from './photo-file';
 
 @Controller('photos')
 export class PhotosController {
@@ -14,31 +10,16 @@ export class PhotosController {
   ) {}
 
   @Get(':filename')
-  async getPhoto(@Param('filename') filename: string, @Res() res: Response) {
-    const photoDirectory = this.photoStorageProviderService.getPhotoDirectory();
-
-    const filePath = path.join(photoDirectory, filename);
-
-    const resolvedPath = path.resolve(filePath);
-    const resolvedPhotoDir = path.resolve(photoDirectory);
-
-    if (!resolvedPath.startsWith(resolvedPhotoDir)) {
-      throw new NotFoundException('File not found');
-    }
-
-    try {
-      if (!fs.existsSync(filePath)) {
-        throw new NotFoundException('File not found');
-      }
-
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
-    } catch (error) {
-      logger.error(`Error serving photo ${filename}:`, error);
-      throw new NotFoundException('File not found');
-    }
+  async getPhoto(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const filePath = resolvePhotoPath(
+      this.photoStorageProviderService.getPhotoDirectory(),
+      filename,
+    );
+    await sendPhotoFile(res, filePath, {
+      'Cache-Control': 'public, max-age=31536000',
+    });
   }
 }

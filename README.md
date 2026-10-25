@@ -149,12 +149,12 @@ npx nx run-many -t test
 
 Build outputs:
 
-| App                | Output directory              |
-| ------------------ | ----------------------------- |
-| `fotobox-ui`       | `dist/apps/fotobox-ui/`       |
-| `collage-editor-ui`| `dist/apps/collage-editor-ui/`|
-| `fotobox-api`      | `dist/apps/fotobox-api/`      |
-| `fotobox-electron` | `dist/apps/fotobox-electron/` |
+| App                 | Output directory               |
+| ------------------- | ------------------------------ |
+| `fotobox-ui`        | `dist/apps/fotobox-ui/`        |
+| `collage-editor-ui` | `dist/apps/collage-editor-ui/` |
+| `fotobox-api`       | `dist/apps/fotobox-api/`       |
+| `fotobox-electron`  | `dist/apps/fotobox-electron/`  |
 
 The Electron dist bundles both UIs plus runtime assets (templates, migrations, images). Verify before packaging:
 
@@ -216,6 +216,7 @@ The MSI configuration lives in [`apps/fotobox-electron/src/app/options/maker.opt
 Installs per-user under `%LOCALAPPDATA%` (`msi.perMachine: false`).
 
 After install, the app:
+
 - Launches once automatically (`msi.runAfterFinish`)
 - Configures **open-at-login** on first run
 - Prompts to run **`setup-kiosk.ps1`** for advanced kiosk options (Startup shortcut fallback, Assigned Access guidance, optional firewall rule)
@@ -315,11 +316,27 @@ Application settings, share tokens, and photo metadata are stored in a SQLite da
 
 Database location:
 
-| Platform           | Path                                                           |
-| ------------------ | -------------------------------------------------------------- |
-| Windows (Electron) | `%APPDATA%\fotobox-electron\fotobox.db`                       |
-| macOS (Electron)   | `~/Library/Application Support/fotobox-electron/fotobox.db`  |
-| Standalone API     | `tmp/runtime/fotobox/fotobox.db` or `FOTOBOX_DATABASE_PATH`    |
+| Platform           | Path                                                        |
+| ------------------ | ----------------------------------------------------------- |
+| Windows (Electron) | `%APPDATA%\fotobox-electron\fotobox.db`                     |
+| macOS (Electron)   | `~/Library/Application Support/fotobox-electron/fotobox.db` |
+| Standalone API     | `tmp/runtime/fotobox/fotobox.db` or `FOTOBOX_DATABASE_PATH` |
+
+### Network access
+
+The API listens on all interfaces so guest phones can open QR share links. Access is restricted by default:
+
+- **Localhost** (the kiosk UI) has full access. Browser requests from untrusted origins (any web page that is not the Electron renderer or a `localhost` dev server) are rejected with 403, over HTTP and WebSocket.
+- **LAN clients** may only open `GET /api/share/<token>` links.
+
+| Environment variable      | Description                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `FOTOBOX_ALLOW_LAN_API`   | `1` enables tablet mode: full API access for LAN clients that present the token below                 |
+| `FOTOBOX_LAN_API_TOKEN`   | Shared secret for tablet mode. Required; without it tablet mode stays disabled                        |
+| `FOTOBOX_TRUSTED_ORIGINS` | Comma-separated extra browser origins trusted for localhost clients (e.g. `http://kiosk.local:8080`)  |
+| `FOTOBOX_API_URL`         | Electron only: use an external API instead of the embedded one (sends `FOTOBOX_LAN_API_TOKEN` if set) |
+
+Tablet/browser clients send the token as the `x-fotobox-token` header, the `token` WebSocket connection param, or the `?token=` query parameter (used for `<img>` URLs). Opening the UI once with `?token=<secret>` stores the token in the browser.
 
 ---
 

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, retry, timeout, catchError } from 'rxjs';
 import { of } from 'rxjs';
-import { getGraphqlHttpUri } from '../api-config';
+import { getApiAuthHeaders, getGraphqlHttpUri } from '../api-config';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +21,11 @@ export class ApiHealthService {
       // This will test connectivity without requiring valid schema
       await firstValueFrom(
         this.http
-          .post<any>(this.API_HEALTH_URL, { query: '{ __typename }' })
+          .post<unknown>(
+            this.API_HEALTH_URL,
+            { query: '{ __typename }' },
+            { headers: getApiAuthHeaders() },
+          )
           .pipe(
             timeout(this.TIMEOUT),
             retry({

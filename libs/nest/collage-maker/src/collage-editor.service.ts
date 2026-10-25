@@ -34,6 +34,31 @@ const nodeRequire: NodeRequire =
     ? __non_webpack_require__
     : createRequire(import.meta.url);
 
+/**
+ * Resolve `<directory>/<templateId>` and make sure it is a direct child of the
+ * template directory. Template ids arrive from GraphQL clients, so ids such as
+ * `..` or `a/../../etc` must never reach `fs.rmSync`/`fs.writeFileSync`.
+ */
+export function resolveTemplateFolder(
+  directory: string,
+  templateId: string,
+): string {
+  const root = path.resolve(directory);
+  const folder = path.resolve(root, templateId);
+  if (
+    !templateId ||
+    templateId.includes('\0') ||
+    path.dirname(folder) !== root ||
+    path.basename(folder) !== templateId
+  ) {
+    throw new FotoboxError(`Invalid template id '${templateId}'.`, {
+      code: 'MAIN.COLLAGE-EDITOR.INVALID_TEMPLATE_ID',
+      info: { templateId },
+    });
+  }
+  return folder;
+}
+
 export interface SaveProjectPayload {
   project: CollageEditorProject;
   backgroundBase64: string;
@@ -50,7 +75,16 @@ export class CollageEditorService {
   }
 
   resolveTemplateDirectory(userDirectory?: string): string | undefined {
-    return userDirectory || this.config.get('templateDirectory');
+    if (userDirectory) {
+      if (!path.isAbsolute(userDirectory)) {
+        throw new FotoboxError('Collage directory must be an absolute path.', {
+          code: 'MAIN.COLLAGE-EDITOR.INVALID_DIRECTORY',
+          info: { userDirectory },
+        });
+      }
+      return path.resolve(userDirectory);
+    }
+    return this.config.get('templateDirectory');
   }
 
   listProjects(userDirectory?: string): CollageEditorProjectSummary[] {
@@ -103,7 +137,10 @@ export class CollageEditorService {
         code: 'MAIN.COLLAGE-EDITOR.NO_DIRECTORY',
       });
     }
-    const sidecarPath = path.join(directory, templateId, SIDECAR_FILENAME);
+    const sidecarPath = path.join(
+      resolveTemplateFolder(directory, templateId),
+      SIDECAR_FILENAME,
+    );
     if (fs.existsSync(sidecarPath)) {
       return JSON.parse(
         fs.readFileSync(sidecarPath, 'utf8'),
@@ -121,7 +158,7 @@ export class CollageEditorService {
       userDirectory,
       this.builtInDirectory,
     );
-    const folder = path.join(userDirectory, templateId);
+    const folder = resolveTemplateFolder(userDirectory, templateId);
     const backgroundCandidates = [
       template.background,
       path.join(folder, BACKGROUND_FILENAME),
@@ -156,8 +193,12 @@ export class CollageEditorService {
       });
     }
 
-    const { project, backgroundBase64, assets = [], overwrite = false } =
-      payload;
+    const {
+      project,
+      backgroundBase64,
+      assets = [],
+      overwrite = false,
+    } = payload;
     if (project.version !== COLLAGE_EDITOR_VERSION) {
       throw new FotoboxError(
         `Unsupported editor project version: ${project.version}`,
@@ -165,11 +206,14 @@ export class CollageEditorService {
       );
     }
 
-    const templateFolder = path.join(directory, project.id);
+    const templateFolder = resolveTemplateFolder(directory, project.id);
     if (fs.existsSync(templateFolder) && !overwrite) {
       throw new FotoboxError(
         `Template '${project.id}' already exists. Pass overwrite to replace it.`,
-        { code: 'MAIN.COLLAGE-EDITOR.ALREADY_EXISTS', info: { id: project.id } },
+        {
+          code: 'MAIN.COLLAGE-EDITOR.ALREADY_EXISTS',
+          info: { id: project.id },
+        },
       );
     }
 
@@ -179,6 +223,11 @@ export class CollageEditorService {
 
     for (const asset of assets) {
       const safeName = path.basename(asset.filename);
+      if (!safeName || safeName === '.' || safeName === '..') {
+        throw new FotoboxError(`Invalid asset filename '${asset.filename}'.`, {
+          code: 'MAIN.COLLAGE-EDITOR.INVALID_ASSET',
+        });
+      }
       fs.writeFileSync(
         path.join(assetsFolder, safeName),
         Buffer.from(asset.base64, 'base64'),
@@ -261,7 +310,7 @@ export class CollageEditorService {
         code: 'MAIN.COLLAGE-EDITOR.NO_DIRECTORY',
       });
     }
-    const templateFolder = path.join(directory, templateId);
+    const templateFolder = resolveTemplateFolder(directory, templateId);
     if (!fs.existsSync(templateFolder)) {
       throw new FotoboxError(`Template '${templateId}' not found.`, {
         code: 'MAIN.COLLAGE-EDITOR.NOT_FOUND',
@@ -286,8 +335,8 @@ export class CollageEditorService {
         code: 'MAIN.COLLAGE-EDITOR.NO_DIRECTORY',
       });
     }
-    const sourceFolder = path.join(directory, sourceId);
-    const targetFolder = path.join(directory, newId);
+    const sourceFolder = resolveTemplateFolder(directory, sourceId);
+    const targetFolder = resolveTemplateFolder(directory, newId);
     if (!fs.existsSync(sourceFolder)) {
       throw new FotoboxError(`Template '${sourceId}' not found.`, {
         code: 'MAIN.COLLAGE-EDITOR.NOT_FOUND',

@@ -2,15 +2,16 @@ import {
   Controller,
   Get,
   GoneException,
-  NotFoundException,
   Param,
   Query,
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
+import {
+  PhotoStorageProviderService,
+  resolvePhotoPath,
+  sendPhotoFile,
+} from '@fotobox/nest-photo-storage';
 import { ShareTokenService } from './share-token.service';
 
 @Controller('share')
@@ -32,33 +33,22 @@ export class ShareController {
       throw new GoneException('This share link has expired or is invalid');
     }
 
-    const photoDirectory = this.photoStorage.getPhotoDirectory();
-    const filePath = path.join(photoDirectory, record.filename);
-    const resolvedPath = path.resolve(filePath);
-    const resolvedPhotoDir = path.resolve(photoDirectory);
-
-    if (!resolvedPath.startsWith(resolvedPhotoDir)) {
-      throw new NotFoundException('Photo not found');
-    }
-
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('Photo not found');
-    }
+    const filePath = resolvePhotoPath(
+      this.photoStorage.getPhotoDirectory(),
+      record.filename,
+    );
 
     if (download === '1' || download === 'true') {
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${record.filename}"`,
-      );
-      fs.createReadStream(filePath).pipe(res);
+      await sendPhotoFile(res, filePath, {
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(record.filename)}"`,
+      });
       return;
     }
 
     if (inline === '1' || inline === 'true') {
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'private, max-age=3600');
-      fs.createReadStream(filePath).pipe(res);
+      await sendPhotoFile(res, filePath, {
+        'Cache-Control': 'private, max-age=3600',
+      });
       return;
     }
 

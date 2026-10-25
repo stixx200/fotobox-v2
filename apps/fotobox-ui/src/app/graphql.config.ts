@@ -10,7 +10,12 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from 'graphql-ws';
 import { GraphQLError } from 'graphql';
-import { getGraphqlHttpUri, getGraphqlWsUri } from './api-config';
+import {
+  getApiAuthHeaders,
+  getGraphqlHttpUri,
+  getGraphqlWsUri,
+  resolveApiToken,
+} from './api-config';
 import { ClientLogService } from './services/client-log.service';
 import { RecoveryService } from './services/recovery.service';
 
@@ -21,15 +26,17 @@ export function createApolloOptions(
   // Create HTTP link for queries and mutations
   const http = new HttpLink({
     uri: getGraphqlHttpUri(),
+    headers: getApiAuthHeaders(),
   });
 
   // Create WebSocket link for subscriptions
   const ws = new GraphQLWsLink(
     createClient({
       url: getGraphqlWsUri(),
-      connectionParams: () => ({
-        // Add any auth headers here if needed
-      }),
+      connectionParams: () => {
+        const token = resolveApiToken();
+        return token ? { token } : {};
+      },
       on: {
         error: (error) => {
           const message =
@@ -40,7 +47,6 @@ export function createApolloOptions(
         connected: () => {
           recovery?.clearNetworkDegraded();
         },
-        closed: () => {},
       },
     }),
   );

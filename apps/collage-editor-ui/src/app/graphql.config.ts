@@ -1,7 +1,11 @@
 import { inject } from '@angular/core';
+import { HttpHeaders } from '@angular/common/http';
 import { InMemoryCache, ApolloLink } from '@apollo/client/core';
 import { HttpLink } from 'apollo-angular/http';
-import { createGraphqlErrorLink } from '@fotobox/frontend-core';
+import {
+  createGraphqlErrorLink,
+  getApiAuthHeaders,
+} from '@fotobox/frontend-core';
 import { getGraphqlHttpUri } from './api-config';
 
 export function createApolloOptions() {
@@ -9,7 +13,10 @@ export function createApolloOptions() {
   return {
     link: ApolloLink.from([
       createGraphqlErrorLink(),
-      httpLink.create({ uri: getGraphqlHttpUri() }),
+      httpLink.create({
+        uri: getGraphqlHttpUri(),
+        headers: new HttpHeaders(getApiAuthHeaders()),
+      }),
     ]),
     cache: new InMemoryCache(),
     defaultOptions: {

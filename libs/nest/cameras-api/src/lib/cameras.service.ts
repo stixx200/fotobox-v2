@@ -1,4 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PubSub } from 'graphql-subscriptions';
 import { getLogger } from '@fotobox/logging';
 import { FotoboxError } from '@fotobox/error';
@@ -10,9 +11,11 @@ import {
 import { PhotoStorageProviderService } from '@fotobox/nest-photo-storage';
 import { CameraInfo, LiveViewFrame, Picture } from './models/camera.model';
 import {
+  EMPTY,
   firstValueFrom,
-  map,
+  mergeMap,
   Observable,
+  of,
   ReplaySubject,
   Subject,
   Subscription,
@@ -24,6 +27,44 @@ const logger = getLogger('CameraService');
 
 const LIVE_VIEW_TOPIC = 'liveView';
 const PICTURE_TAKEN_TOPIC = 'pictureTaken';
+
+const TAKE_PICTURE_TIMEOUT_MS = 30_000;
+
+/**
+ * Decode picture data from a camera driver or client upload. Accepts raw
+ * base64 or a `data:` URL; only JPEG is supported because photos are stored
+ * and served as `.jpg`.
+ */
+export function decodeJpegPicture(pictureData: string): Buffer {
+  const dataUrlPrefix = /^data:[^,]*,/.exec(pictureData);
+  const base64 = (
+    dataUrlPrefix ? pictureData.slice(dataUrlPrefix[0].length) : pictureData
+  ).replace(/\s+/g, '');
+
+  if (!base64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    throw new FotoboxError('Picture data is not valid base64.', {
+      code: 'MAIN.CAMERA.UNSUPPORTED_PICTURE_FORMAT',
+    });
+  }
+
+  const buffer = Buffer.from(base64, 'base64');
+  const isJpeg =
+    buffer.length > 3 &&
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff;
+  if (!isJpeg) {
+    throw new FotoboxError('Picture data is not a JPEG image.', {
+      code: 'MAIN.CAMERA.UNSUPPORTED_PICTURE_FORMAT',
+    });
+  }
+  return buffer;
+}
+
+/** Unique, time-sortable photo id (`photo-<ms>-<random>`). */
+export function createPhotoId(now = Date.now()): string {
+  return `photo-${now}-${crypto.randomBytes(3).toString('hex')}`;
+}
 
 export interface PhotoSavedEvent {
   photoId: string;
@@ -39,6 +80,9 @@ export class CameraService implements OnModuleDestroy {
   private liveViewSubject = new ReplaySubject<string>(1);
   private liveViewSubscriptionCount = 0;
   private readonly pictureReady$ = new Subject<Picture>();
+  /** Pictures produced by the server camera only (not client uploads). */
+  private readonly cameraPicture$ = new Subject<Picture>();
+  private pendingCapture: Promise<Picture> | null = null;
   private pictureTakenServerSubscription: Subscription | null = null;
   private liveViewBroadcastSubscription: Subscription | null = null;
 
@@ -134,6 +178,7 @@ export class CameraService implements OnModuleDestroy {
           timestamp: pictureData.timestamp,
           path: pictureData.path,
         };
+        this.cameraPicture$.next(picture);
         this.publishPicture(picture);
       },
     );
@@ -163,10 +208,31 @@ export class CameraService implements OnModuleDestroy {
     return picture;
   }
 
+  /**
+   * Trigger the server camera and resolve with the picture it produces.
+   * Only one capture runs at a time, and client uploads arriving meanwhile are
+   * ignored, so the caller always gets the camera's own picture.
+   */
   async takePictureAndWait(): Promise<Picture> {
+    if (this.pendingCapture) {
+      throw new FotoboxError('A picture is already being taken.', {
+        code: 'MAIN.CAMERA.BUSY',
+      });
+    }
+    this.pendingCapture = this.captureNextPicture();
+    try {
+      return await this.pendingCapture;
+    } finally {
+      this.pendingCapture = null;
+    }
+  }
+
+  private async captureNextPicture(): Promise<Picture> {
     const picturePending = firstValueFrom(
-      this.pictureReady$.pipe(timeout(30_000)),
+      this.cameraPicture$.pipe(timeout(TAKE_PICTURE_TIMEOUT_MS)),
     );
+    // Avoid an unhandled rejection if takePicture() throws first.
+    picturePending.catch(() => undefined);
     await this.takePicture();
     try {
       return await picturePending;
@@ -221,27 +287,8 @@ export class CameraService implements OnModuleDestroy {
   }
 
   private handleCapturedPicture(pictureData: string): PhotoSavedEvent {
-    const photoId = `photo-${Date.now()}`;
-
-    let photoBuffer: Buffer;
-
-    if (
-      pictureData.startsWith('data:') ||
-      pictureData.match(/^[A-Za-z0-9+/=]+$/)
-    ) {
-      const base64Data = pictureData.includes(',')
-        ? pictureData.split(',')[1]
-        : pictureData;
-      photoBuffer = Buffer.from(base64Data, 'base64');
-    } else if (pictureData.startsWith('/') || pictureData.includes('.')) {
-      logger.debug(`Captured picture at path: ${pictureData}`);
-      throw new FotoboxError(
-        'Received picture as file path, but file handling is not implemented.',
-        { code: 'MAIN.CAMERA.UNSUPPORTED_PICTURE_FORMAT' },
-      );
-    } else {
-      photoBuffer = Buffer.from(pictureData);
-    }
+    const photoId = createPhotoId();
+    const photoBuffer = decodeJpegPicture(pictureData);
 
     const filePath = this.photoStorage.savePhoto(photoId, photoBuffer);
     logger.info(`Photo saved to ${filePath}`);
@@ -353,8 +400,16 @@ export class CameraService implements OnModuleDestroy {
         code: 'MAIN.CAMERA.NOT_INITIALIZED',
       });
     }
-    return this.currentCamera
-      .observePictures()
-      .pipe(map((pictureData) => this.handleCapturedPicture(pictureData)));
+    // A single bad picture must not terminate the camera's picture stream.
+    return this.currentCamera.observePictures().pipe(
+      mergeMap((pictureData) => {
+        try {
+          return of(this.handleCapturedPicture(pictureData));
+        } catch (error) {
+          logger.error('Discarding picture from camera:', error);
+          return EMPTY;
+        }
+      }),
+    );
   }
 }

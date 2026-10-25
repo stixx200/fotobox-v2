@@ -37,7 +37,7 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "@nx/vitest:vitest": {
+    "@nx/vitest:test": {
       "cache": true,
       "inputs": ["default", "^production"],
       "options": {
@@ -176,10 +176,7 @@
         "version": {
           "conventionalCommits": true,
           "fallbackCurrentVersionResolver": "disk",
-          "manifestRootsToUpdate": [
-            "apps/fotobox-electron",
-            "."
-          ],
+          "manifestRootsToUpdate": ["apps/fotobox-electron", "."],
           "git": {
             "commit": true,
             "tag": true,
