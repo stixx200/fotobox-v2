@@ -35,12 +35,29 @@ BeforeAll {
     }
 
     $script:originalStandby = Get-StandbyAcIndex
+
+    function Write-SidecarDiagnostic {
+        # App and API logs of this (runner) account, then the API started
+        # directly to capture its start-up error.
+        $logDir = Join-Path $env:LOCALAPPDATA 'de.se-voelk.fotobox\logs'
+        $logs = Get-ChildItem -LiteralPath $logDir -Filter '*.log' -ErrorAction SilentlyContinue |
+            ForEach-Object { "=== $($_.FullName)"; Get-Content -LiteralPath $_.FullName -Tail 60 }
+        Write-Information -MessageData ($logs | Out-String) -InformationAction Continue
+
+        $out = Join-Path $env:TEMP 'fotobox-api-direct'
+        $node = Start-Process -FilePath (Join-Path $installDir 'node.exe') -ArgumentList '"api\main.js"' `
+            -WorkingDirectory $installDir -RedirectStandardOutput "$out.out" -RedirectStandardError "$out.err" -PassThru
+        Start-Sleep -Seconds 20
+        Stop-Process -Id $node.Id -Force -ErrorAction SilentlyContinue
+        $direct = foreach ($file in "$out.out", "$out.err") { "=== $file"; Get-Content -LiteralPath $file -Tail 60 -ErrorAction SilentlyContinue }
+        Write-Information -MessageData ($direct | Out-String) -InformationAction Continue
+    }
 }
 
 Describe 'Fotobox installer (kiosk mode)' -Skip:$skip {
     It 'installs silently in kiosk mode' {
         Invoke-Setup @('/S', '/KIOSK=1', '/LANTOKEN=auto')
-        Get-Content (Join-Path $configDir 'setup.log') -Raw | Write-Information -InformationAction Continue
+        Write-Information -MessageData (Get-Content (Join-Path $configDir 'setup.log') -Raw) -InformationAction Continue
     }
 
     It 'installs the app, the Node sidecar and the setup scripts' {
@@ -106,6 +123,7 @@ Describe 'Fotobox installer (kiosk mode)' -Skip:$skip {
                 }
                 catch { $null = $_ }
             }
+            if (-not $healthy) { Write-SidecarDiagnostic }
             $healthy | Should -BeTrue -Because 'the bundled Node sidecar (sharp, node:sqlite) must run from the install dir'
         }
         finally {
@@ -132,7 +150,7 @@ Describe 'Fotobox installer (kiosk mode)' -Skip:$skip {
         $uninstaller = Join-Path $installDir 'uninstall.exe'
         $process = Start-Process -FilePath $uninstaller -ArgumentList @('/S', "_?=$installDir") -Wait -PassThru
         $process.ExitCode | Should -Be 0
-        Get-Content (Join-Path $configDir 'setup.log') -Raw | Write-Information -InformationAction Continue
+        Write-Information -MessageData (Get-Content (Join-Path $configDir 'setup.log') -Raw) -InformationAction Continue
 
         Get-ScheduledTask -TaskPath '\Fotobox\' -TaskName 'Kiosk' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
         Get-NetFirewallRule -Name 'Fotobox-API' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
