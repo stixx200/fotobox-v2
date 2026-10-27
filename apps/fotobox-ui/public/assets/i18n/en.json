@@ -81,7 +81,8 @@
     "CONNECTING": "Connecting to the photo booth…",
     "API_UNAVAILABLE": "The photo booth software is not responding. Please check that the Fotobox app is running and try again.",
     "RETRY": "Retry",
-    "API_UNAVAILABLE_TITLE": "No connection"
+    "API_UNAVAILABLE_TITLE": "No connection",
+    "SLOW_START": "Starting takes a little longer – the first start after the installation can take a few minutes."
   },
   "DEBUG": {
     "TITLE": "Debug",

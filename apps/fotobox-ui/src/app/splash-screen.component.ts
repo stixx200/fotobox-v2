@@ -56,6 +56,11 @@ import { TranslatePipe } from '@ngx-translate/core';
           <h1>Fotobox</h1>
           <mat-progress-bar mode="indeterminate" class="splash-progress" />
           <p>{{ 'SPLASH.CONNECTING' | translate }}</p>
+          @if (slowStart) {
+            <p class="slow-start-hint">
+              {{ 'SPLASH.SLOW_START' | translate }}
+            </p>
+          }
         }
       </div>
     </div>
@@ -99,6 +104,10 @@ import { TranslatePipe } from '@ngx-translate/core';
         color: var(--mat-sys-on-surface-variant);
       }
 
+      .slow-start-hint {
+        font: var(--mat-sys-body-medium);
+      }
+
       .error-text {
         margin-bottom: 16px;
       }
@@ -131,5 +140,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class SplashScreenComponent {
   @Input() errorMessage: string | null = null;
+  /** Starting takes longer than usual (e.g. the first start after setup). */
+  @Input() slowStart = false;
   @Output() retry = new EventEmitter<void>();
 }

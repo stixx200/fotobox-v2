@@ -16,9 +16,11 @@ use config::HostConfig;
 use sidecar::ApiSidecar;
 
 /// Opens the collage editor window. Called by the settings screen through
-/// `openCollageEditorWindow()` in frontend-core.
+/// `openCollageEditorWindow()` in frontend-core. Must be async: creating a
+/// window from a synchronous command deadlocks on Windows (WebView2), which
+/// left a white, frozen editor window.
 #[tauri::command]
-fn open_collage_editor(
+async fn open_collage_editor(
     app: AppHandle,
     config: State<'_, HostConfig>,
     collage_directory: Option<String>,

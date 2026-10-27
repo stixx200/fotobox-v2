@@ -87,12 +87,13 @@ pub fn open_collage_editor(
         existing.destroy()?;
     }
 
+    // A normal, maximized window even in kiosk mode, so the operator can
+    // close it (only reachable from the PIN-protected settings).
     let mut builder = WebviewWindowBuilder::new(app, EDITOR_WINDOW, editor_url(config)?)
         .title(format!("{APP_TITLE} Collage Editor"))
         .initialization_script(init_script(config, collage_directory))
         .inner_size(1600.0, 1000.0)
-        .fullscreen(config.kiosk)
-        .decorations(!config.kiosk);
+        .maximized(config.kiosk);
     if config.kiosk {
         if let Some(main) = app.get_webview_window(MAIN_WINDOW) {
             // Stays above the always-on-top kiosk window.

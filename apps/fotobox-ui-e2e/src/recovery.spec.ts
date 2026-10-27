@@ -34,10 +34,14 @@ test.describe('API unreachable', () => {
     graphql.setOffline(true);
     await page.goto('/');
 
-    // The health check retries every second for about 30 seconds.
+    // The first start can be slow: a hint after 20 s, the error after 3 min.
+    await page.clock.fastForward(21_000);
+    await expect(
+      page.getByText('Starting takes a little longer'),
+    ).toBeVisible();
     const noConnection = page.getByRole('heading', { name: 'No connection' });
     await expect(async () => {
-      await page.clock.fastForward(1000);
+      await page.clock.fastForward(10_000);
       await expect(noConnection).toBeVisible({ timeout: 100 });
     }).toPass({ timeout: 30_000 });
     await expect(
@@ -49,6 +53,28 @@ test.describe('API unreachable', () => {
     await expect(
       page.getByRole('heading', { name: 'Fotobox Settings' }),
     ).toBeVisible();
+  });
+
+  test('keeps trying in the background after giving up', async ({
+    page,
+    graphql,
+  }) => {
+    await page.clock.install();
+    graphql.setOffline(true);
+    await page.goto('/');
+    const noConnection = page.getByRole('heading', { name: 'No connection' });
+    await expect(async () => {
+      await page.clock.fastForward(10_000);
+      await expect(noConnection).toBeVisible({ timeout: 100 });
+    }).toPass({ timeout: 30_000 });
+
+    // An unattended kiosk comes up on its own once the API is there.
+    graphql.setOffline(false);
+    const settings = page.getByRole('heading', { name: 'Fotobox Settings' });
+    await expect(async () => {
+      await page.clock.fastForward(5_000);
+      await expect(settings).toBeVisible({ timeout: 100 });
+    }).toPass({ timeout: 30_000 });
   });
 });
 

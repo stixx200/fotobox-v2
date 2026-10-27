@@ -12,11 +12,13 @@ use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
 use crate::config::{HostConfig, HostFile};
-use crate::supervisor::{Action, Supervisor};
+use crate::supervisor::{Action, Check, Supervisor};
 
 const HEALTH_INTERVAL: Duration = Duration::from_secs(30);
 const HEALTH_TIMEOUT: Duration = Duration::from_secs(5);
 const HEALTH_MAX_FAILURES: u32 = 3;
+/// Checks a (re)started API may miss before it counts as failed: 6 × 30 s.
+const HEALTH_STARTUP_GRACE: u32 = 6;
 
 /// Handle to the running API process, stored in Tauri state.
 #[derive(Default)]
@@ -218,13 +220,23 @@ pub fn spawn_supervisor(app: AppHandle, config: HostConfig) {
     }
 
     thread::spawn(move || {
-        let mut supervisor = Supervisor::new(HEALTH_MAX_FAILURES);
+        let mut supervisor = Supervisor::new(HEALTH_MAX_FAILURES, HEALTH_STARTUP_GRACE);
         loop {
             thread::sleep(HEALTH_INTERVAL);
             let sidecar = app.state::<ApiSidecar>();
-            let healthy = sidecar.is_running() && check_api_health(config.api_port);
-            match supervisor.on_check(healthy) {
-                Action::None => {}
+            let check = if !sidecar.is_running() {
+                Check::Exited
+            } else if check_api_health(config.api_port) {
+                Check::Healthy
+            } else {
+                Check::NotResponding
+            };
+            match supervisor.on_check(check) {
+                Action::None => {
+                    if check == Check::NotResponding {
+                        log::info!("API not answering yet, waiting for it to start");
+                    }
+                }
                 Action::RestartApi => {
                     log::error!(
                         "API health check failed ({}/{HEALTH_MAX_FAILURES}), restarting",

@@ -1,23 +1,42 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom, retry, timeout, catchError } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { getApiAuthHeaders, getGraphqlHttpUri } from '../api-config';
+
+/**
+ * How long the UI waits for the API. The first start on a kiosk PC can take
+ * minutes (virus scan of the bundled API files, database migrations).
+ */
+export const API_STARTUP_TIMEOUT_MS = 180_000;
+const RETRY_DELAY_MS = 2000;
+const REQUEST_TIMEOUT_MS = 5000;
 
 @Injectable({
   providedIn: 'root',
 })
 export class ApiHealthService {
   private readonly API_HEALTH_URL = getGraphqlHttpUri();
-  private readonly RETRY_ATTEMPTS = 30;
-  private readonly RETRY_DELAY = 1000; // 1 second
-  private readonly TIMEOUT = 5000; // 5 seconds
 
   private readonly http = inject(HttpClient);
 
-  async waitForApiReady(): Promise<boolean> {
+  /** Polls the API until it answers or `timeoutMs` has passed. */
+  async waitForApiReady(timeoutMs = API_STARTUP_TIMEOUT_MS): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      if (await this.isApiReachable()) {
+        return true;
+      }
+      if (Date.now() >= deadline) {
+        console.error(`API not available after ${timeoutMs / 1000} s`);
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    }
+  }
+
+  /** One `{ __typename }` request to the GraphQL endpoint. */
+  async isApiReachable(): Promise<boolean> {
     try {
-      // Try a simple POST request to the GraphQL endpoint with an invalid query
-      // This will test connectivity without requiring valid schema
       await firstValueFrom(
         this.http
           .post<unknown>(
@@ -25,31 +44,11 @@ export class ApiHealthService {
             { query: '{ __typename }' },
             { headers: getApiAuthHeaders() },
           )
-          .pipe(
-            timeout(this.TIMEOUT),
-            retry({
-              count: this.RETRY_ATTEMPTS,
-              delay: () => {
-                // Exponential backoff with jitter
-                return new Promise((resolve) =>
-                  setTimeout(resolve, this.RETRY_DELAY),
-                );
-              },
-            }),
-            catchError((error) => {
-              console.error('API health check failed:', error);
-              throw error;
-            }),
-          ),
+          .pipe(timeout(REQUEST_TIMEOUT_MS)),
       );
       return true;
-    } catch (error) {
-      console.error('API is not available after retries:', error);
+    } catch {
       return false;
     }
-  }
-
-  isApiReachable(): Promise<boolean> {
-    return this.waitForApiReady();
   }
 }

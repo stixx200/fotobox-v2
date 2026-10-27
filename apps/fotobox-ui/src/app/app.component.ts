@@ -19,6 +19,11 @@ import { IdleService } from './services/idle.service';
 import { ClientLogService } from './services/client-log.service';
 import { RecoveryService } from './services/recovery.service';
 
+/** Show the "starting takes a while" hint after this long. */
+const SLOW_START_MS = 20_000;
+/** Background check interval after the splash screen gave up. */
+const BACKGROUND_RETRY_MS = 15_000;
+
 @Component({
   standalone: true,
   imports: [
@@ -39,6 +44,8 @@ export class AppComponent implements OnInit {
   title = 'fotobox-ui';
   readonly isApiReady = signal(false);
   readonly apiError = signal<string | null>(null);
+  /** The API takes longer than usual to start (shown on the splash screen). */
+  readonly slowStart = signal(false);
   readonly showRouter = signal(false);
   readonly recovery = inject(RecoveryService);
   private readonly router = inject(Router);
@@ -48,6 +55,8 @@ export class AppComponent implements OnInit {
   // Activating the idle service here starts the idle timer for the whole app.
   private readonly _idle = inject(IdleService);
   private readonly apiHealthService = inject(ApiHealthService);
+  /** Ignores results of a wait that "Retry" replaced. */
+  private waitAttempt = 0;
 
   ngOnInit() {
     this.updateShowRouter();
@@ -68,26 +77,58 @@ export class AppComponent implements OnInit {
 
   private async waitForApi() {
     this.apiError.set(null);
+    this.slowStart.set(false);
+    const attempt = ++this.waitAttempt;
+    const slowTimer = setTimeout(() => this.slowStart.set(true), SLOW_START_MS);
     try {
       const isReady = await this.apiHealthService.waitForApiReady();
+      if (attempt !== this.waitAttempt) {
+        return;
+      }
       if (isReady) {
-        this.isApiReady.set(true);
-        this.apiError.set(null);
-        this.recovery.clearNetworkDegraded();
-        this.updateShowRouter();
+        this.onApiReady();
         return;
       }
 
       const message = this.translateService.instant('SPLASH.API_UNAVAILABLE');
       this.apiError.set(message);
       this.clientLogService.error('Backend API unreachable', message);
+      this.keepTrying(attempt);
     } catch (error) {
       // Raw error details go to the log (debug page), never on screen.
       this.apiError.set(
         this.translateService.instant('SPLASH.API_UNAVAILABLE'),
       );
       this.clientLogService.error('Error waiting for API', error);
+      this.keepTrying(attempt);
+    } finally {
+      clearTimeout(slowTimer);
     }
+  }
+
+  /**
+   * After giving up, keep checking in the background so an unattended kiosk
+   * comes up on its own once the API is there ("Retry" checks at once).
+   */
+  private async keepTrying(attempt: number) {
+    while (attempt === this.waitAttempt && !this.isApiReady()) {
+      await new Promise((resolve) => setTimeout(resolve, BACKGROUND_RETRY_MS));
+      if (attempt !== this.waitAttempt) {
+        return;
+      }
+      if (await this.apiHealthService.isApiReachable()) {
+        this.onApiReady();
+        return;
+      }
+    }
+  }
+
+  private onApiReady(): void {
+    this.isApiReady.set(true);
+    this.apiError.set(null);
+    this.slowStart.set(false);
+    this.recovery.clearNetworkDegraded();
+    this.updateShowRouter();
   }
 
   /**

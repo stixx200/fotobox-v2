@@ -21,6 +21,7 @@
 } @else {
   <app-splash-screen
     [errorMessage]="apiError()"
+    [slowStart]="slowStart()"
     (retry)="retryApi()"
   ></app-splash-screen>
 }

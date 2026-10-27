@@ -81,7 +81,8 @@
     "CONNECTING": "Verbindung zur Fotobox wird hergestellt…",
     "API_UNAVAILABLE": "Die Fotobox-Software antwortet nicht. Bitte prüfen, ob die Fotobox-App läuft, und erneut versuchen.",
     "RETRY": "Erneut versuchen",
-    "API_UNAVAILABLE_TITLE": "Keine Verbindung"
+    "API_UNAVAILABLE_TITLE": "Keine Verbindung",
+    "SLOW_START": "Der Start dauert etwas länger – beim ersten Start nach der Installation kann das ein paar Minuten dauern."
   },
   "DEBUG": {
     "TITLE": "Debug",
